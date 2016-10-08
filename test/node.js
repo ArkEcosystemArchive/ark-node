@@ -7,8 +7,6 @@ var node = {};
 node.bignum = require('../helpers/bignum.js');
 node.config = require('../config.json');
 node.constants = require('../helpers/constants.js');
-node.dappCategories = require('../helpers/dappCategories.js');
-node.dappTypes = require('../helpers/dappTypes.js');
 node.txTypes = require('../helpers/transactionTypes.js');
 
 node._ = require('lodash');
@@ -37,15 +35,9 @@ node.fees = {
 	transactionFee: node.constants.fees.send,
 	secondPasswordFee: node.constants.fees.secondsignature,
 	delegateRegistrationFee: node.constants.fees.delegate,
-	multisignatureRegistrationFee: node.constants.fees.multisignature,
-	dappAddFee: node.constants.fees.dapp
+	multisignatureRegistrationFee: node.constants.fees.multisignature
 };
 
-// Test application
-node.guestbookDapp = {
-	icon: 'https://raw.githubusercontent.com/MaxKK/guestbookDapp/master/icon.png',
-	link: 'https://github.com/MaxKK/guestbookDapp/archive/master.zip'
-};
 
 // Existing delegate account
 node.eAccount = {

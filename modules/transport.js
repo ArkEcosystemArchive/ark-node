@@ -9,7 +9,6 @@ var ip = require('ip');
 var popsicle = require('popsicle');
 var Router = require('../helpers/router.js');
 var schema = require('../schema/transport.js');
-var sandboxHelper = require('../helpers/sandbox.js');
 var sql = require('../sql/transport.js');
 var zlib = require('zlib');
 
@@ -77,10 +76,6 @@ __private.attachApi = function () {
 			req.peer.state = 2;
 			req.peer.os = headers.os;
 			req.peer.version = headers.version;
-
-			if (req.body && req.body.dappid) {
-				req.peer.dappid = req.body.dappid;
-			}
 
 			if ((req.peer.version === library.config.version) && (headers.nethash === library.config.nethash)) {
 				if (!modules.blocks.lastReceipt()) {
@@ -268,83 +263,6 @@ __private.attachApi = function () {
 		});
 	});
 
-	router.post('/dapp/message', function (req, res) {
-		res.set(__private.headers);
-
-		try {
-			if (!req.body.dappid) {
-				return res.status(200).json({success: false, message: 'Missing dappid'});
-			}
-			if (!req.body.timestamp || !req.body.hash) {
-				return res.status(200).json({
-					success: false,
-					message: 'Missing hash sum'
-				});
-			}
-			var newHash = __private.hashsum(req.body.body, req.body.timestamp);
-			if (newHash !== req.body.hash) {
-				return res.status(200).json({success: false, message: 'Invalid hash sum'});
-			}
-		} catch (e) {
-			library.logger.error(e.stack);
-			return res.status(200).json({success: false, message: e.toString()});
-		}
-
-		if (__private.messages[req.body.hash]) {
-			return res.status(200);
-		}
-
-		__private.messages[req.body.hash] = true;
-
-		modules.dapps.message(req.body.dappid, req.body.body, function (err, body) {
-			if (!err && body.error) {
-				err = body.error;
-			}
-
-			if (err) {
-				return res.status(200).json({success: false, message: err.toString()});
-			}
-
-			library.bus.message('message', req.body, true);
-			res.status(200).json(extend({}, body, {success: true}));
-		});
-	});
-
-	router.post('/dapp/request', function (req, res) {
-		res.set(__private.headers);
-
-		try {
-			if (!req.body.dappid) {
-				return res.status(200).json({success: false, message: 'Missing dappid'});
-			}
-			if (!req.body.timestamp || !req.body.hash) {
-				return res.status(200).json({
-					success: false,
-					message: 'Missing hash sum'
-				});
-			}
-			var newHash = __private.hashsum(req.body.body, req.body.timestamp);
-			if (newHash !== req.body.hash) {
-				return res.status(200).json({success: false, message: 'Invalid hash sum'});
-			}
-		} catch (e) {
-			library.logger.error(e.stack);
-			return res.status(200).json({success: false, message: e.toString()});
-		}
-
-		modules.dapps.request(req.body.dappid, req.body.body.method, req.body.body.path, req.body.body.query, function (err, body) {
-			if (!err && body.error) {
-				err = body.error;
-			}
-
-			if (err) {
-				return res.status(200).json({success: false, message: err});
-			}
-
-			res.status(200).json(extend({}, body, {success: true}));
-		});
-	});
-
 	router.use(function (req, res, next) {
 		res.status(500).send({success: false, error: 'API endpoint not found'});
 	});
@@ -499,10 +417,6 @@ Transport.prototype.getFromPeer = function (peer, options, cb) {
 	});
 };
 
-Transport.prototype.sandboxApi = function (call, args, cb) {
-	sandboxHelper.callMethod(shared, call, args, cb);
-};
-
 // Events
 Transport.prototype.onBind = function (scope) {
 	modules = scope;
@@ -540,41 +454,12 @@ Transport.prototype.onNewBlock = function (block, broadcast) {
 	}
 };
 
-Transport.prototype.onMessage = function (msg, broadcast) {
-	if (broadcast) {
-		self.broadcast({limit: 100, dappid: msg.dappid}, {api: '/dapp/message', data: msg, method: 'POST'});
-	}
-};
 
 Transport.prototype.cleanup = function (cb) {
 	__private.loaded = false;
 	return setImmediate(cb);
 };
 
-// Shared
-shared.message = function (msg, cb) {
-	msg.timestamp = (new Date()).getTime();
-	msg.hash = __private.hashsum(msg.body, msg.timestamp);
-
-	self.broadcast({limit: 100, dappid: msg.dappid}, {api: '/dapp/message', data: msg, method: 'POST'});
-
-	return setImmediate(cb, null, {});
-};
-
-shared.request = function (msg, cb) {
-	msg.timestamp = (new Date()).getTime();
-	msg.hash = __private.hashsum(msg.body, msg.timestamp);
-
-	if (msg.body.peer) {
-		self.getFromPeer({ip: msg.body.peer.ip, port: msg.body.peer.port}, {
-			api: '/dapp/request',
-			data: msg,
-			method: 'POST'
-		}, cb);
-	} else {
-		self.getFromRandomPeer({dappid: msg.dappid}, {api: '/dapp/request', data: msg, method: 'POST'}, cb);
-	}
-};
 
 // Export
 module.exports = Transport;

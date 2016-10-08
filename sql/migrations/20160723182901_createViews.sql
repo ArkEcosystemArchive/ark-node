@@ -59,16 +59,6 @@ SELECT b."id" AS "b_id",
        m."min" AS "m_min",
        m."lifetime" AS "m_lifetime",
        m."keysgroup" AS "m_keysgroup",
-       dapp."name" AS "dapp_name",
-       dapp."description" AS "dapp_description",
-       dapp."tags" AS "dapp_tags",
-       dapp."type" AS "dapp_type",
-       dapp."link" AS "dapp_link",
-       dapp."category" AS "dapp_category",
-       dapp."icon" AS "dapp_icon",
-       it."dappId" AS "in_dappId",
-       ot."dappId" AS "ot_dappId",
-       ot."outTransactionId" AS "ot_outTransactionId",
        ENCODE(t."requesterPublicKey", 'hex') AS "t_requesterPublicKey",
        t."signatures" AS "t_signatures"
 
@@ -78,10 +68,7 @@ LEFT OUTER JOIN trs AS t ON t."blockId" = b."id"
 LEFT OUTER JOIN delegates AS d ON d."transactionId" = t."id"
 LEFT OUTER JOIN votes AS v ON v."transactionId" = t."id"
 LEFT OUTER JOIN signatures AS s ON s."transactionId" = t."id"
-LEFT OUTER JOIN multisignatures AS m ON m."transactionId" = t."id"
-LEFT OUTER JOIN dapps AS dapp ON dapp."transactionId" = t."id"
-LEFT OUTER JOIN intransfer AS it ON it."transactionId" = t."id"
-LEFT OUTER JOIN outtransfer AS ot ON ot."transactionId" = t."id";
+LEFT OUTER JOIN multisignatures AS m ON m."transactionId" = t."id";
 
 DROP VIEW IF EXISTS trs_list;
 

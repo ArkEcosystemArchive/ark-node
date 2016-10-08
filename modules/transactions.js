@@ -8,7 +8,6 @@ var extend = require('extend');
 var genesisblock = null;
 var OrderBy = require('../helpers/orderBy.js');
 var Router = require('../helpers/router.js');
-var sandboxHelper = require('../helpers/sandbox.js');
 var schema = require('../schema/transactions.js');
 var slots = require('../helpers/slots.js');
 var sql = require('../sql/transactions.js');
@@ -415,10 +414,6 @@ Transactions.prototype.receiveTransactions = function (transactions, cb) {
 	}, function (err) {
 		return setImmediate(cb, err, transactions);
 	});
-};
-
-Transactions.prototype.sandboxApi = function (call, args, cb) {
-	sandboxHelper.callMethod(shared, call, args, cb);
 };
 
 // Events

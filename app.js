@@ -86,7 +86,6 @@ var config = {
 		delegates: './modules/delegates.js',
 		rounds: './modules/rounds.js',
 		multisignatures: './modules/multisignatures.js',
-		dapps: './modules/dapps.js',
 		crypto: './modules/crypto.js',
 		sql: './modules/sql.js'
 	}
@@ -111,26 +110,7 @@ d.run(function () {
 				logger.error('Failed to assign nethash from genesis block');
 				throw Error(e);
 			}
-
-			if (appConfig.dapp.masterrequired && !appConfig.dapp.masterpassword) {
-				var randomstring = require('randomstring');
-
-				appConfig.dapp.masterpassword = randomstring.generate({
-					length: 12,
-					readable: true,
-					charset: 'alphanumeric'
-				});
-
-				if (appConfig.loading.snapshot != null) {
-					delete appConfig.loading.snapshot;
-				}
-
-				fs.writeFile('./config.json', JSON.stringify(appConfig, null, 4), 'utf8', function (err) {
-					cb(err, appConfig);
-				});
-			} else {
-				cb(null, appConfig);
-			}
+			cb(null, appConfig);
 		},
 
 		logger: function (cb) {
@@ -145,10 +125,6 @@ d.run(function () {
 			cb(null, {
 				block: genesisblock
 			});
-		},
-
-		public: function (cb) {
-			cb(null, path.join(__dirname, 'public'));
 		},
 
 		schema: function (cb) {
@@ -222,7 +198,7 @@ d.run(function () {
 			cb(null, sequence);
 		}],
 
-		connect: ['config', 'public', 'genesisblock', 'logger', 'build', 'network', function (scope, cb) {
+		connect: ['config', 'genesisblock', 'logger', 'build', 'network', function (scope, cb) {
 			var path = require('path');
 			var bodyParser = require('body-parser');
 			var methodOverride = require('method-override');
@@ -230,10 +206,6 @@ d.run(function () {
 			var queryParser = require('express-query-int');
 
 			scope.network.app.engine('html', require('ejs').renderFile);
-			scope.network.app.use(require('express-domain-middleware'));
-			scope.network.app.set('view engine', 'ejs');
-			scope.network.app.set('views', path.join(__dirname, 'public'));
-			scope.network.app.use(scope.network.express.static(path.join(__dirname, 'public')));
 			scope.network.app.use(bodyParser.raw({limit: '2mb'}));
 			scope.network.app.use(bodyParser.urlencoded({extended: true, limit: '2mb', parameterLimit: 5000}));
 			scope.network.app.use(bodyParser.json({limit: '2mb'}));
@@ -439,14 +411,17 @@ d.run(function () {
 			});
 
 			process.once('SIGTERM', function () {
+				scope.logger.info('caught SIGTERM');
 				process.emit('cleanup');
 			});
 
 			process.once('exit', function () {
+				scope.logger.info('caught internal exit');
 				process.emit('cleanup');
 			});
 
 			process.once('SIGINT', function () {
+				scope.logger.info('caught SIGINT');
 				process.emit('cleanup');
 			});
 		}

@@ -5,7 +5,6 @@ var crypto = require('crypto');
 var extend = require('extend');
 var genesisblock = null;
 var Router = require('../helpers/router.js');
-var sandboxHelper = require('../helpers/sandbox.js');
 var schema = require('../schema/multisignatures.js');
 var slots = require('../helpers/slots.js');
 var sql = require('../sql/multisignatures.js');
@@ -61,9 +60,6 @@ __private.attachApi = function () {
 };
 
 // Public methods
-Multisignatures.prototype.sandboxApi = function (call, args, cb) {
-	sandboxHelper.callMethod(shared, call, args, cb);
-};
 
 // Events
 Multisignatures.prototype.onBind = function (scope) {

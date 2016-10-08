@@ -19,7 +19,6 @@ var PeersSql = {
   randomList: function (params) {
     return [
       'SELECT p."ip", p."port", p."state", p."os", p."version" FROM peers p',
-      (params.dappid ? 'INNER JOIN peers_dapp AS pd ON p."id" = pd."peerId" AND pd."dappid" = ${dappid}' : ''),
       'WHERE p."state" > 0 ORDER BY RANDOM() LIMIT ${limit}'
     ].filter(Boolean).join(' ');
   },
@@ -29,8 +28,6 @@ var PeersSql = {
   remove: 'DELETE FROM peers WHERE "ip" = ${ip} AND "port" = ${port};',
 
   getByIdPort: 'SELECT "id" FROM peers WHERE "ip" = ${ip} AND "port" = ${port}',
-
-  addDapp: 'INSERT INTO peers_dapp ("peerId", "dappid") VALUES (${peerId}, ${dappId}) ON CONFLICT DO NOTHING;',
 
   insert: 'INSERT INTO peers ("ip", "port", "state", "os", "version") VALUES (${ip}, ${port}, ${state}, ${os}, ${version}) ON CONFLICT DO NOTHING;',
 

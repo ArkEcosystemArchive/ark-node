@@ -3,7 +3,6 @@
 var async = require('async');
 var constants = require('../helpers/constants.js');
 var Round = require('../logic/round.js');
-var sandboxHelper = require('../helpers/sandbox.js');
 var slots = require('../helpers/slots.js');
 var sql = require('../sql/rounds.js');
 
@@ -200,10 +199,6 @@ Rounds.prototype.tick = function (block, done) {
 			return done(err);
 		}
 	});
-};
-
-Rounds.prototype.sandboxApi = function (call, args, cb) {
-	sandboxHelper.callMethod(shared, call, args, cb);
 };
 
 // Events

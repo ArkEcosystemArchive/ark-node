@@ -5,7 +5,6 @@ var constants = require('../helpers/constants.js');
 var crypto = require('crypto');
 var MilestoneBlocks = require('../helpers/milestoneBlocks.js');
 var Router = require('../helpers/router.js');
-var sandboxHelper = require('../helpers/sandbox.js');
 var schema = require('../schema/signatures.js');
 var slots = require('../helpers/slots.js');
 var transactionTypes = require('../helpers/transactionTypes.js');
@@ -57,9 +56,6 @@ __private.attachApi = function () {
 };
 
 // Public methods
-Signatures.prototype.sandboxApi = function (call, args, cb) {
-	sandboxHelper.callMethod(shared, call, args, cb);
-};
 
 // Events
 Signatures.prototype.onBind = function (scope) {

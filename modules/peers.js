@@ -8,7 +8,6 @@ var ip = require('ip');
 var OrderBy = require('../helpers/orderBy.js');
 var path = require('path');
 var Router = require('../helpers/router.js');
-var sandboxHelper = require('../helpers/sandbox.js');
 var schema = require('../schema/peers.js');
 var sql = require('../sql/peers.js');
 var util = require('util');
@@ -286,34 +285,8 @@ Peers.prototype.remove = function (pip, port, cb) {
 	});
 };
 
-Peers.prototype.addDapp = function (config, cb) {
-	library.db.query(sql.getByIdPort, {
-		ip: config.ip,
-		port: config.port
-	}).then(function (rows) {
-		if (!rows.length) {
-			return setImmediate(cb);
-		}
-
-		var params = {
-			dappId: config.dappid,
-			peerId: rows[0].id
-		};
-		library.db.query(sql.addDapp, params).then(function (res) {
-			library.logger.debug('Added dapp peer', params);
-			return setImmediate(cb, null, res);
-		}).catch(function (err) {
-			library.logger.error(err.stack);
-			return setImmediate(cb, 'Peers#addDapp error');
-		});
-	}).catch(function (err) {
-		library.logger.error(err.stack);
-		return setImmediate(cb, 'Peers#addDapp error');
-	});
-};
 
 Peers.prototype.update = function (peer, cb) {
-	var dappid = peer.dappid;
 	var params = {
 		ip: peer.ip,
 		port: peer.port,
@@ -343,11 +316,7 @@ Peers.prototype.update = function (peer, cb) {
 			});
 		},
 		function (cb) {
-			if (dappid) {
-				self.addDapp({dappid: dappid, ip: peer.ip, port: peer.port}, cb);
-			} else {
-				return setImmediate(cb);
-			}
+			return setImmediate(cb);
 		}
 	], function (err) {
 		if (err) {
@@ -355,10 +324,6 @@ Peers.prototype.update = function (peer, cb) {
 		}
 		return cb && setImmediate(cb);
 	});
-};
-
-Peers.prototype.sandboxApi = function (call, args, cb) {
-	sandboxHelper.callMethod(shared, call, args, cb);
 };
 
 // Events

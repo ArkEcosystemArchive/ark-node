@@ -3,7 +3,6 @@
 .idea/
 .project
 __MACOSX/
-dapps/
 logs/*.log
 node_modules
 nodejs/
@@ -12,3 +11,4 @@ release
 ssl/
 stacktrace*
 tmp
+.tags

@@ -42,16 +42,6 @@ describe('GET /peer/blocks', function () {
 					node.expect(block).to.have.property('m_min');
 					node.expect(block).to.have.property('m_lifetime');
 					node.expect(block).to.have.property('m_keysgroup');
-					node.expect(block).to.have.property('dapp_name');
-					node.expect(block).to.have.property('dapp_description');
-					node.expect(block).to.have.property('dapp_tags');
-					node.expect(block).to.have.property('dapp_type');
-					node.expect(block).to.have.property('dapp_link');
-					node.expect(block).to.have.property('dapp_category');
-					node.expect(block).to.have.property('dapp_icon');
-					node.expect(block).to.have.property('in_dappId');
-					node.expect(block).to.have.property('ot_dappId');
-					node.expect(block).to.have.property('ot_outTransactionId');
 					node.expect(block).to.have.property('t_requesterPublicKey');
 					node.expect(block).to.have.property('t_signatures');
 				});

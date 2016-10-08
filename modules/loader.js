@@ -5,7 +5,6 @@ var bignum = require('../helpers/bignum.js');
 var constants = require('../helpers/constants.js');
 var ip = require('ip');
 var Router = require('../helpers/router.js');
-var sandboxHelper = require('../helpers/sandbox.js');
 var schema = require('../schema/loader.js');
 var sql = require('../sql/loader.js');
 
@@ -295,7 +294,7 @@ __private.loadBlockChain = function () {
 			});
 		});
 	}).catch(function (err) {
-		library.logger.error(err.stack);
+		library.logger.error(err);
 		return process.exit(0);
 	});
 };
@@ -488,10 +487,6 @@ Loader.prototype.getNetwork = function (cb) {
 
 Loader.prototype.syncing = function () {
 	return !!__private.syncIntervalId;
-};
-
-Loader.prototype.sandboxApi = function (call, args, cb) {
-	sandboxHelper.callMethod(shared, call, args, cb);
 };
 
 // Events

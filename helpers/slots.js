@@ -26,7 +26,7 @@ function getEpochTime (time) {
 }
 
 module.exports = {
-	interval: 10,
+	interval: 8,
 	delegates: constants.activeDelegates,
 
 	getTime: function (time) {

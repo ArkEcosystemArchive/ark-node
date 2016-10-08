@@ -11,7 +11,6 @@ var extend = require('extend');
 var MilestoneBlocks = require('../helpers/milestoneBlocks.js');
 var OrderBy = require('../helpers/orderBy.js');
 var Router = require('../helpers/router.js');
-var sandboxHelper = require('../helpers/sandbox.js');
 var schema = require('../schema/delegates.js');
 var slots = require('../helpers/slots.js');
 var sql = require('../sql/delegates.js');
@@ -516,10 +515,6 @@ Delegates.prototype.validateBlockSlot = function (block, cb) {
 			return setImmediate(cb, 'Failed to verify slot: ' + currentSlot);
 		}
 	});
-};
-
-Delegates.prototype.sandboxApi = function (call, args, cb) {
-	sandboxHelper.callMethod(shared, call, args, cb);
 };
 
 // Events

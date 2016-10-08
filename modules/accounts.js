@@ -7,7 +7,6 @@ var crypto = require('crypto');
 var extend = require('extend');
 var Router = require('../helpers/router.js');
 var schema = require('../schema/accounts.js');
-var sandboxHelper = require('../helpers/sandbox.js');
 var slots = require('../helpers/slots.js');
 var transactionTypes = require('../helpers/transactionTypes.js');
 
@@ -203,10 +202,6 @@ Accounts.prototype.mergeAccountAndGet = function (data, cb) {
 	}
 
 	return library.logic.account.merge(address, data, cb);
-};
-
-Accounts.prototype.sandboxApi = function (call, args, cb) {
-	sandboxHelper.callMethod(shared, call, args, cb);
 };
 
 // Events

@@ -11,7 +11,6 @@ var Inserts = require('../helpers/inserts.js');
 var ip = require('ip');
 var OrderBy = require('../helpers/orderBy.js');
 var Router = require('../helpers/router.js');
-var sandboxHelper = require('../helpers/sandbox.js');
 var schema = require('../schema/blocks.js');
 var slots = require('../helpers/slots.js');
 var sql = require('../sql/blocks.js');
@@ -55,16 +54,6 @@ __private.blocksDataFields = {
 	'm_min': Number,
 	'm_lifetime': Number,
 	'm_keysgroup': String,
-	'dapp_name': String,
-	'dapp_description': String,
-	'dapp_tags': String,
-	'dapp_type': Number,
-	'dapp_link': String,
-	'dapp_category': Number,
-	'dapp_icon': String,
-	'in_dappId': String,
-	'ot_dappId': String,
-	'ot_outTransactionId': String,
 	't_requesterPublicKey': String,
 	't_signatures': String
 };
@@ -763,7 +752,9 @@ __private.applyBlock = function (block, broadcast, cb, saveBlock) {
 				modules.transactions.undoUnconfirmedList(function (err, transactions) {
 					if (err) {
 						__private.isActive = false;
+
 						// TODO: Send a numbered signal to be caught by forever to trigger a rebuild.
+						library.logger.error(err);
 						return process.exit(0);
 					} else {
 						unconfirmedTransactions = transactions;
@@ -926,6 +917,7 @@ __private.applyGenesisBlock = function (block, cb) {
 	}, function (err) {
 		if (err) {
 			// If genesis block is invalid, kill the node...
+			library.logger.error(err);
 			return process.exit(0);
 		} else {
 			__private.lastBlock = block;
@@ -1152,10 +1144,6 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 
 		self.processBlock(block, true, cb, true);
 	});
-};
-
-Blocks.prototype.sandboxApi = function (call, args, cb) {
-	sandboxHelper.callMethod(shared, call, args, cb);
 };
 
 // Events
