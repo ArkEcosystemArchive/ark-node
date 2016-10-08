@@ -1,13 +1,13 @@
 {
   "name": "ark-node",
-  "version": "0.3.3",
+  "version": "0.1",
   "private": true,
   "scripts": {
     "start": "node app.js",
     "test": "./node_modules/.bin/mocha",
     "cov": "./node_modules/.bin/mocha --require blanket -R html-cov test/helpers test/logic > tmp/coverage.html"
   },
-  "author": "Boris Povod <boris@crypti.me>, Pavel Nekrasov <landgraf.paul@gmail.com>",
+  "author": "Boris Povod <boris@crypti.me>, Pavel Nekrasov <landgraf.paul@gmail.com>, Oliver Beddows <oliver@lisk.io>",
   "dependencies": {
     "async": "=2.0.1",
     "body-parser": "=1.15.2",

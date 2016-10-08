@@ -335,7 +335,6 @@ __private.popLastBlock = function (oldLastBlock, cb) {
 					}, function (cb) {
 						modules.transactions.undoUnconfirmed(transaction, cb);
 					}, function (cb) {
-						modules.transactions.pushHiddenTransaction(transaction);
 						return setImmediate(cb);
 					}
 				], cb);
@@ -758,7 +757,7 @@ __private.applyBlock = function (block, broadcast, cb, saveBlock) {
 						return process.exit(0);
 					} else {
 						unconfirmedTransactions = transactions;
-						return setImmediate(seriesCb);
+						return seriesCb();
 					}
 				});
 			},
@@ -773,7 +772,7 @@ __private.applyBlock = function (block, broadcast, cb, saveBlock) {
 								err = ['Failed to apply transaction:', transaction.id, '-', err].join(' ');
 								library.logger.error(err);
 								library.logger.error('Transaction', transaction);
-								return setImmediate(eachSeriesCb, err);
+								return eachSeriesCb(err);
 							}
 
 							appliedTransactions[transaction.id] = transaction;
@@ -784,7 +783,7 @@ __private.applyBlock = function (block, broadcast, cb, saveBlock) {
 								unconfirmedTransactions.splice(index, 1);
 							}
 
-							return setImmediate(eachSeriesCb);
+							return eachSeriesCb();
 						});
 					});
 				}, function (err) {
@@ -798,14 +797,14 @@ __private.applyBlock = function (block, broadcast, cb, saveBlock) {
 									// DATABASE: write
 									library.logic.transaction.undoUnconfirmed(transaction, sender, eachSeriesCb);
 								} else {
-									return setImmediate(eachSeriesCb);
+									return eachSeriesCb();
 								}
 							});
 						}, function (err) {
-							return setImmediate(seriesCb, err);
+							return seriesCb(err);
 						});
 					} else {
-						return setImmediate(seriesCb);
+						return seriesCb();
 					}
 				});
 			},
@@ -832,11 +831,11 @@ __private.applyBlock = function (block, broadcast, cb, saveBlock) {
 							}
 							// Transaction applied, removed from the unconfirmed list.
 							modules.transactions.removeUnconfirmedTransaction(transaction.id);
-							return setImmediate(eachSeriesCb);
+							return eachSeriesCb();
 						});
 					});
 				}, function (err) {
-					return setImmediate(seriesCb);
+					return seriesCb();
 				});
 			},
 			// Optionally save the block to the database.
@@ -871,7 +870,7 @@ __private.applyBlock = function (block, broadcast, cb, saveBlock) {
 			applyUnconfirmedList: function (seriesCb) {
 				// DATABASE write
 				modules.transactions.applyUnconfirmedList(unconfirmedTransactions, function () {
-					return setImmediate(seriesCb);
+					return seriesCb();
 				});
 			},
 		}, function (err) {
@@ -975,7 +974,7 @@ Blocks.prototype.processBlock = function (block, broadcast, cb, saveBlock) {
 						try {
 							transaction.id = library.logic.transaction.getId(transaction);
 						} catch (e) {
-							return setImmediate(cb, e.toString());
+							return cb(e.toString());
 						}
 						transaction.blockId = block.id;
 						// Check if transaction is already in database, otherwise fork 2.
@@ -983,7 +982,7 @@ Blocks.prototype.processBlock = function (block, broadcast, cb, saveBlock) {
 						library.db.query(sql.getTransactionId, { id: transaction.id }).then(function (rows) {
 							if (rows.length > 0) {
 								modules.delegates.fork(block, 2);
-								setImmediate(cb, ['Transaction', transaction.id, 'already exists'].join(' '));
+								return cb(['Transaction', transaction.id, 'already exists'].join(' '));
 							} else {
 								// Get account from database if any (otherwise cold wallet).
 								// DATABASE: read only
@@ -991,7 +990,7 @@ Blocks.prototype.processBlock = function (block, broadcast, cb, saveBlock) {
 							}
 						}).catch(function (err) {
 							library.logger.error(err.stack);
-							setImmediate(cb, 'Blocks#processBlock error');
+							return cb('Blocks#processBlock error');
 						});
 					},
 					function (sender, cb) {
@@ -1001,7 +1000,7 @@ Blocks.prototype.processBlock = function (block, broadcast, cb, saveBlock) {
 					}
 				],
 				function (err) {
-					return setImmediate(cb, err);
+					return cb(err);
 				});
 			},
 			function (err) {
@@ -1071,7 +1070,7 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, cb) {
 						library.logger.warn(['Block', id, 'is not valid, ban 60 min'].join(' '), peer.string);
 						modules.peers.state(peer.ip, peer.port, 0, 3600);
 					}
-					return setImmediate(cb, err);
+					return cb(err);
 				}, true);
 			}, function (err) {
 				// Nullify large array of blocks.

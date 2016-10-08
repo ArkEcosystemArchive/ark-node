@@ -108,7 +108,11 @@ __private.updatePeersList = function (cb) {
 
 						return setImmediate(cb);
 					} else {
-						return self.update(peer, cb);
+						library.dbSequence.add(function (cb) {
+							self.update(peer, cb);
+						});
+
+						return setImmediate(cb);
 					}
 				});
 			}, cb);
@@ -291,16 +295,17 @@ Peers.prototype.update = function (peer, cb) {
 		ip: peer.ip,
 		port: peer.port,
 		os: peer.os || null,
-		version: peer.version || null
+		version: peer.version || null,
+		state: 1
 	};
 	async.series([
 		function (cb) {
-			library.db.query(sql.insert, extend({}, params, { state: 1 })).then(function (res) {
+			library.db.query(sql.insert, params).then(function (res) {
 				library.logger.debug('Inserted peer', params);
-				return setImmediate(cb, null, res);
+				return cb(null, res);
 			}).catch(function (err) {
 				library.logger.error(err.stack);
-				return setImmediate(cb, 'Peers#update error');
+				return cb('Peers#update error');
 			});
 		},
 		function (cb) {
@@ -309,10 +314,10 @@ Peers.prototype.update = function (peer, cb) {
 			}
 			library.db.query(sql.update(params), params).then(function (res) {
 				library.logger.debug('Updated peer', params);
-				return setImmediate(cb, null, res);
+				return cb(null, res);
 			}).catch(function (err) {
 				library.logger.error(err.stack);
-				return setImmediate(cb, 'Peers#update error');
+				return cb('Peers#update error');
 			});
 		},
 		function (cb) {

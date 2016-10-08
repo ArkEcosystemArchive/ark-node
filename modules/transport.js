@@ -54,8 +54,9 @@ __private.attachApi = function () {
 			return res.status(406).send({success: false, error: 'Invalid request headers'});
 		}
 
-		var headers = req.headers;
-		headers.port = parseInt(req.headers.port);
+		var headers      = req.headers;
+		    headers.ip   = req.peer.ip;
+		    headers.port = req.peer.port;
 
 		req.sanitize(headers, schema.headers, function (err, report) {
 			if (err) { return next(err); }
@@ -82,7 +83,9 @@ __private.attachApi = function () {
 					modules.delegates.enableForging();
 				}
 
-				modules.peers.update(req.peer);
+				library.dbSequence.add(function (cb) {
+					modules.peers.update(req.peer, cb);
+				});
 			}
 
 			return next();
@@ -370,8 +373,9 @@ Transport.prototype.getFromPeer = function (peer, options, cb) {
 
 			return setImmediate(cb, ['Received bad response code', res.status, req.method, req.url].join(' '));
 		} else {
-			var headers = res.headers;
-			headers.port = parseInt(headers.port);
+			var headers      = res.headers;
+			    headers.ip   = peer.ip;
+			    headers.port = peer.port;
 
 			var report = library.schema.validate(headers, schema.headers);
 			if (!report) {
@@ -389,12 +393,14 @@ Transport.prototype.getFromPeer = function (peer, options, cb) {
 			}
 
 			if (headers.version === library.config.version) {
-				modules.peers.update({
-					ip: peer.ip,
-					port: headers.port,
-					state: 2,
-					os: headers.os,
-					version: headers.version
+				library.dbSequence.add(function (cb) {
+					modules.peers.update({
+						ip: peer.ip,
+						port: headers.port,
+						state: 2,
+						os: headers.os,
+						version: headers.version
+					}, cb);
 				});
 			}
 
