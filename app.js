@@ -86,8 +86,7 @@ var config = {
 		delegates: './modules/delegates.js',
 		rounds: './modules/rounds.js',
 		multisignatures: './modules/multisignatures.js',
-		crypto: './modules/crypto.js',
-		sql: './modules/sql.js'
+		crypto: './modules/crypto.js'
 	}
 };
 
