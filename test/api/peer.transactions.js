@@ -225,7 +225,7 @@ describe('POST /peer/transactions', function () {
 	});
 
 	it('using very large amount and genesis block id should fail', function (done) {
-		var transaction = node.lisk.transaction.createTransaction('12L', 10000000000000000, node.gAccount.password);
+		var transaction = node.lisk.transaction.createTransaction('12L', 100000000000000000, node.gAccount.password);
 		transaction.blockId = genesisblock.id;
 
 		postTransaction(transaction, function (err, res) {

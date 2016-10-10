@@ -289,7 +289,6 @@ Peers.prototype.remove = function (pip, port, cb) {
 	});
 };
 
-
 Peers.prototype.update = function (peer, cb) {
 	var params = {
 		ip: peer.ip,
@@ -298,36 +297,21 @@ Peers.prototype.update = function (peer, cb) {
 		version: peer.version || null,
 		state: 1
 	};
-	async.series([
-		function (cb) {
-			library.db.query(sql.insert, params).then(function (res) {
-				library.logger.debug('Inserted peer', params);
-				return cb(null, res);
-			}).catch(function (err) {
-				library.logger.error(err.stack);
-				return cb('Peers#update error');
-			});
-		},
-		function (cb) {
-			if (peer.state !== undefined) {
-				params.state = peer.state;
-			}
-			library.db.query(sql.update(params), params).then(function (res) {
-				library.logger.debug('Updated peer', params);
-				return cb(null, res);
-			}).catch(function (err) {
-				library.logger.error(err.stack);
-				return cb('Peers#update error');
-			});
-		},
-		function (cb) {
-			return setImmediate(cb);
-		}
-	], function (err) {
-		if (err) {
-			library.logger.error(err);
-		}
-		return cb && setImmediate(cb);
+
+	var query;
+	if (peer.state !== undefined) {
+		params.state = peer.state;
+		query = sql.upsertWithState;
+	} else {
+		query = sql.upsertWithoutState;
+	}
+
+	library.db.query(query, params).then(function () {
+		library.logger.debug('Upserted peer', params);
+		return setImmediate(cb);
+	}).catch(function (err) {
+		library.logger.error(err.stack);
+		return setImmediate(cb, 'Peers#update error');
 	});
 };
 

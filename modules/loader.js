@@ -20,7 +20,7 @@ __private.network = {
 
 __private.loaded = false;
 __private.isActive = false;
-__private.loadingLastBlock = null;
+__private.lastBlock = null;
 __private.genesisBlock = null;
 __private.total = 0;
 __private.blocksToSync = 0;
@@ -32,7 +32,7 @@ function Loader (cb, scope) {
 	self = this;
 
 	__private.attachApi();
-	__private.genesisBlock = __private.loadingLastBlock = library.genesisblock;
+	__private.genesisBlock = __private.lastBlock = library.genesisblock;
 
 	setImmediate(cb, null, self);
 }
@@ -170,13 +170,13 @@ __private.loadBlockChain = function () {
 								if (count > 1) {
 									library.logger.info('Rebuilding blockchain, current block height: '  + (offset + 1));
 								}
-								modules.blocks.loadBlocksOffset(limit, offset, verify, function (err, lastBlockOffset) {
+								modules.blocks.loadBlocksOffset(limit, offset, verify, function (err, lastBlock) {
 									if (err) {
 										return setImmediate(cb, err);
 									}
 
 									offset = offset + limit;
-									__private.loadingLastBlock = lastBlockOffset;
+									__private.lastBlock = lastBlock;
 
 									return setImmediate(cb);
 								});
@@ -282,11 +282,11 @@ __private.loadBlockChain = function () {
 				return reload(count, 'No delegates found');
 			}
 
-			modules.blocks.loadBlocksOffset(1, count, verify, function (err, lastBlock) {
+			modules.blocks.loadLastBlock(function (err, block) {
 				if (err) {
-					return reload(count, err || 'Failed to load blocks offset');
+					return reload(count, err || 'Failed to load last block');
 				} else {
-					__private.lastBlock = lastBlock;
+					__private.lastBlock = block;
 					library.logger.info('Blockchain ready');
 					library.bus.message('blockchainReady');
 				}
@@ -360,6 +360,33 @@ __private.loadBlocksFromNetwork = function (cb) {
 				}
 			);
 		}
+	});
+};
+
+__private.sync = function (cb) {
+	var transactions = modules.transactions.getUnconfirmedTransactionList(true);
+
+	__private.isActive = true;
+	__private.syncTrigger(true);
+
+	async.series({
+		undoUnconfirmedList: function (cb) {
+			library.logger.debug('Undoing unconfirmed transactions before sync');
+			return modules.transactions.undoUnconfirmedList(cb);
+		},
+		loadBlocksFromNetwork: function (cb) {
+			return __private.loadBlocksFromNetwork(cb);
+		},
+		receiveTransactions: function (cb) {
+			library.logger.debug('Receiving unconfirmed transactions after sync');
+			return modules.transactions.receiveTransactions(transactions, cb);
+		}
+	}, function (err) {
+		__private.isActive = false;
+		__private.syncTrigger(false);
+		__private.blocksToSync = 0;
+
+		return setImmediate(cb, err);
 	});
 };
 
@@ -496,17 +523,11 @@ Loader.prototype.onPeersReady = function () {
 		if (__private.loaded && !self.syncing() && (!lastReceipt || lastReceipt.stale)) {
 			library.logger.debug('Loading blocks from network');
 			library.sequence.add(function (cb) {
-				__private.isActive = true;
-				__private.syncTrigger(true);
-				__private.loadBlocksFromNetwork(cb);
+				__private.sync(cb);
 			}, function (err) {
 				if (err) {
 					library.logger.warn('Blocks timer', err);
 				}
-
-				__private.isActive = false;
-				__private.syncTrigger(false);
-				__private.blocksToSync = 0;
 
 				setTimeout(nextLoadBlock, 10000);
 			});
@@ -576,7 +597,7 @@ __private.ping = function (cb) {
 shared.status = function (req, cb) {
 	return setImmediate(cb, null, {
 		loaded: __private.loaded,
-		now: __private.loadingLastBlock.height,
+		now: __private.lastBlock.height,
 		blocksCount: __private.total
 	});
 };

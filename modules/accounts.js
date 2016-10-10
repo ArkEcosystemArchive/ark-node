@@ -41,10 +41,8 @@ __private.attachApi = function () {
 	});
 
 	router.map(shared, {
-		'post /open': 'open',
 		'get /getBalance': 'getBalance',
 		'get /getPublicKey': 'getPublickey',
-		'post /generatePublicKey': 'generatePublicKey',
 		'get /delegates': 'getDelegates',
 		'get /delegates/fee': 'getDelegatesFee',
 		'put /delegates': 'addDelegates',
@@ -101,34 +99,6 @@ __private.attachApi = function () {
 		if (!err) { return next(); }
 		library.logger.error('API error ' + req.url, err);
 		res.status(500).send({success: false, error: 'API error: ' + err.message});
-	});
-};
-
-__private.openAccount = function (secret, cb) {
-	var hash = crypto.createHash('sha256').update(secret, 'utf8').digest();
-	var keypair = library.ed.makeKeypair(hash);
-	var publicKey = keypair.publicKey.toString('hex');
-
-	self.getAccount({publicKey: publicKey}, function (err, account) {
-		if (err) {
-			return setImmediate(cb, err);
-		}
-
-		if (account) {
-			return setImmediate(cb, null, account);
-		} else {
-			return setImmediate(cb, null, {
-				address: self.generateAddressByPublicKey(publicKey),
-				u_balance: '0',
-				balance: '0',
-				publicKey: publicKey,
-				u_secondSignature: 0,
-				secondSignature: 0,
-				secondPublicKey: null,
-				multisignatures: null,
-				u_multisignatures: null
-			});
-		}
 	});
 };
 
@@ -213,35 +183,6 @@ Accounts.prototype.onBind = function (scope) {
 	});
 };
 
-// Shared
-shared.open = function (req, cb) {
-	library.schema.validate(req.body, schema.open, function (err) {
-		if (err) {
-			return setImmediate(cb, err[0].message);
-		}
-
-		__private.openAccount(req.body.secret, function (err, account) {
-			if (!err) {
-				var accountData = {
-					address: account.address,
-					unconfirmedBalance: account.u_balance,
-					balance: account.balance,
-					publicKey: account.publicKey,
-					unconfirmedSignature: account.u_secondSignature,
-					secondSignature: account.secondSignature,
-					secondPublicKey: account.secondPublicKey,
-					multisignatures: account.multisignatures,
-					u_multisignatures: account.u_multisignatures
-				};
-
-				return setImmediate(cb, null, {account: accountData});
-			} else {
-				return setImmediate(cb, err);
-			}
-		});
-	});
-};
-
 shared.getBalance = function (req, cb) {
 	library.schema.validate(req.body, schema.getBalance, function (err) {
 		if (err) {
@@ -287,26 +228,6 @@ shared.getPublickey = function (req, cb) {
 			}
 
 			return setImmediate(cb, null, {publicKey: account.publicKey});
-		});
-	});
-};
-
-shared.generatePublicKey = function (req, cb) {
-	library.schema.validate(req.body, schema.generatePublicKey, function (err) {
-		if (err) {
-			return setImmediate(cb, err[0].message);
-		}
-
-		__private.openAccount(req.body.secret, function (err, account) {
-			var publicKey = null;
-
-			if (!err && account) {
-				publicKey = account.publicKey;
-			}
-
-			return setImmediate(cb, err, {
-				publicKey: publicKey
-			});
 		});
 	});
 };

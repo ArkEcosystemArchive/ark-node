@@ -187,14 +187,16 @@ __private.addUnconfirmedTransaction = function (transaction, sender, cb) {
 		if (err) {
 			self.removeUnconfirmedTransaction(transaction.id);
 			return setImmediate(cb, err);
+		} else if (modules.loader.syncing()) {
+			self.undoUnconfirmed(transaction, cb);
+		} else {
+			transaction.receivedAt = new Date();
+			__private.unconfirmedTransactions.push(transaction);
+			var index = __private.unconfirmedTransactions.length - 1;
+			__private.unconfirmedTransactionsIdIndex[transaction.id] = index;
+
+			return setImmediate(cb);
 		}
-
-		transaction.receivedAt = new Date();
-		__private.unconfirmedTransactions.push(transaction);
-		var index = __private.unconfirmedTransactions.length - 1;
-		__private.unconfirmedTransactionsIdIndex[transaction.id] = index;
-
-		return setImmediate(cb);
 	});
 };
 
@@ -302,13 +304,13 @@ Transactions.prototype.applyUnconfirmedList = function (ids, cb) {
 		modules.accounts.setAccountAndGet({publicKey: transaction.senderPublicKey}, function (err, sender) {
 			if (err) {
 				self.removeUnconfirmedTransaction(id);
-				return setImmediate(cb);
+				return setImmediate(cb, err);
 			}
 			self.applyUnconfirmed(transaction, sender, function (err) {
 				if (err) {
 					self.removeUnconfirmedTransaction(id);
 				}
-				return setImmediate(cb);
+				return setImmediate(cb, err);
 			});
 		});
 	}, cb);
@@ -362,14 +364,18 @@ Transactions.prototype.expireUnconfirmedList = function (cb) {
 };
 
 Transactions.prototype.apply = function (transaction, block, sender, cb) {
+	library.logger.debug('Applying confirmed transaction', transaction.id);
 	library.logic.transaction.apply(transaction, block, sender, cb);
 };
 
 Transactions.prototype.undo = function (transaction, block, sender, cb) {
+	library.logger.debug('Undoing confirmed transaction', transaction.id);
 	library.logic.transaction.undo(transaction, block, sender, cb);
 };
 
 Transactions.prototype.applyUnconfirmed = function (transaction, sender, cb) {
+	library.logger.debug('Applying unconfirmed transaction', transaction.id);
+
 	if (!sender && transaction.blockId !== genesisblock.block.id) {
 		return setImmediate(cb, 'Invalid block id');
 	} else {
@@ -392,6 +398,8 @@ Transactions.prototype.applyUnconfirmed = function (transaction, sender, cb) {
 };
 
 Transactions.prototype.undoUnconfirmed = function (transaction, cb) {
+	library.logger.debug('Undoing unconfirmed transaction', transaction.id);
+
 	modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, function (err, sender) {
 		if (err) {
 			return setImmediate(cb, err);
