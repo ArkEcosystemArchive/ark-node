@@ -29,7 +29,7 @@ describe('GET /api/accounts/getBalance?address=', function () {
 	});
 
 	it('using invalid address should fail', function (done) {
-		getBalance('thisIsNOTALiskAddress', function (err, res) {
+		getBalance('thisIsNOTAArkAddress', function (err, res) {
 			node.expect(res.body).to.have.property('success').to.be.not.ok;
 			node.expect(res.body).to.have.property('error').to.eql('Invalid address');
 			done();
@@ -69,7 +69,7 @@ describe('GET /api/accounts/getPublicKey?address=', function () {
 	});
 
 	it('using invalid address should fail', function (done) {
-		getPublicKey('thisIsNOTALiskAddress', function (err, res) {
+		getPublicKey('thisIsNOTAArkAddress', function (err, res) {
 			node.expect(res.body).to.have.property('success').to.be.not.ok;
 			node.expect(res.body).to.have.property('error').to.contain('Invalid address');
 			done();
@@ -135,7 +135,7 @@ describe('GET /accounts?address=', function () {
 	});
 
 	it('using invalid address should fail', function (done) {
-		getAccounts('thisIsNOTAValidLiskAddress', function (err, res) {
+		getAccounts('thisIsNOTAValidArkAddress', function (err, res) {
 			node.expect(res.body).to.have.property('success').to.be.not.ok;
 			node.expect(res.body).to.have.property('error');
 			node.expect(res.body.error).to.contain('Invalid address');

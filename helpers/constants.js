@@ -1,7 +1,7 @@
 'use strict';
 
 module.exports = {
-	activeDelegates: 101,
+	activeDelegates: 51,
 	addressLength: 208,
 	blockHeaderLength: 248,
 	confirmationLength: 77,

@@ -16,7 +16,7 @@ node.expect = require('chai').expect;
 node.chai = require('chai');
 node.chai.config.includeStack = true;
 node.chai.use(require('chai-bignumber')(node.bignum));
-node.lisk = require('./lisk-js');
+node.ark = require('./ark-js');
 node.supertest = require('supertest');
 require('colors');
 
@@ -24,7 +24,7 @@ require('colors');
 node.baseUrl = 'http://' + node.config.address + ':' + node.config.port;
 node.api = node.supertest(node.baseUrl);
 
-node.normalizer = 100000000; // Use this to convert LISK amount to normal value
+node.normalizer = 100000000; // Use this to convert ARK amount to normal value
 node.blockTime = 10000; // Block time in miliseconds
 node.blockTimePlus = 12000; // Block time + 2 seconds in miliseconds
 node.version = '0.0.0'; // Node version
@@ -63,8 +63,8 @@ if (process.env.SILENT === 'true') {
 	node.debug = console.log;
 }
 
-// Random LSK amount
-node.LISK = Math.floor(Math.random() * (100000 * 100000000)) + 1;
+// Random ARK amount
+node.Ark = Math.floor(Math.random() * (100000 * 100000000)) + 1;
 
 // Returns a random delegate name
 node.randomDelegateName = function () {
@@ -91,7 +91,7 @@ node.randomProperty = function (obj, needKey) {
 };
 
 // Returns random LSK amount
-node.randomLISK = function () {
+node.randomArk = function () {
 	return Math.floor(Math.random() * (10000 * 100000000)) + (1000 * 100000000);
 };
 
@@ -273,8 +273,8 @@ node.randomAccount = function () {
 	account.password = node.randomPassword();
 	account.secondPassword = node.randomPassword();
 	account.username = node.randomDelegateName();
-	account.publicKey = node.lisk.crypto.getKeys(account.password).publicKey;
-	account.address = node.lisk.crypto.getAddress(account.publicKey);
+	account.publicKey = node.ark.crypto.getKeys(account.password).publicKey;
+	account.address = node.ark.crypto.getAddress(account.publicKey);
 
 	return account;
 };

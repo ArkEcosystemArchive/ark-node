@@ -1,13 +1,9 @@
 {
     "port": 4000,
     "address": "0.0.0.0",
-<<<<<<< HEAD
     "version": "0.1.0",
-=======
-    "version": "0.4.0",
->>>>>>> 0dac98a5277b8a5085f4c76abc54e9dd0a7637e2
     "fileLogLevel": "info",
-    "logFileName": "logs/lisk.log",
+    "logFileName": "logs/ark.log",
     "consoleLogLevel": "debug",
     "trustProxy": false,
     "db": {
@@ -170,8 +166,8 @@
         "options": {
             "port": 443,
             "address": "0.0.0.0",
-            "key": "./ssl/lisk.key",
-            "cert": "./ssl/lisk.crt"
+            "key": "./ssl/ark.key",
+            "cert": "./ssl/ark.crt"
         }
     },
     "nethash":"198f2b61a8eb95fbeed58b8216780b68f697f26b849acf00c8c93bb9b24f783d"

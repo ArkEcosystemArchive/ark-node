@@ -19,23 +19,23 @@ var multiSigTx = {
 	txId: ''
 };
 
-function sendLISK (account, i, done) {
-	var randomLISK = node.randomLISK();
+function sendArk (account, i, done) {
+	var randomArk = node.randomArk();
 
 	node.put('/api/transactions/', {
 		secret: node.gAccount.password,
-		amount: randomLISK,
+		amount: randomArk,
 		recipientId: account.address
 	}, function (err, res) {
 		node.expect(res.body).to.have.property('success').to.be.ok;
 		if (res.body.success && i != null) {
-			accounts[i].balance = randomLISK / node.normalizer;
+			accounts[i].balance = randomArk / node.normalizer;
 		}
 		done();
 	});
 }
 
-function sendLISKFromMultisigAccount (amount, recipient, done) {
+function sendArkFromMultisigAccount (amount, recipient, done) {
 	node.put('/api/transactions/', {
 		secret: multisigAccount.password,
 		amount: amount,
@@ -88,7 +88,7 @@ function makeKeysGroup () {
 before(function (done) {
 	var i = 0;
 	async.eachSeries(accounts, function (account, eachCb) {
-		sendLISK(account, i, function () {
+		sendArk(account, i, function () {
 			i++;
 			return eachCb();
 		});
@@ -98,7 +98,7 @@ before(function (done) {
 });
 
 before(function (done) {
-	sendLISK(multisigAccount, null, done);
+	sendArk(multisigAccount, null, done);
 });
 
 before(function (done) {
@@ -365,7 +365,7 @@ describe('GET /api/multisignatures/pending', function () {
 describe('PUT /api/api/transactions/', function () {
 
 	it('when group transaction is pending should be ok', function (done) {
-		sendLISKFromMultisigAccount(100000000, node.gAccount.address, function (err, transactionId) {
+		sendArkFromMultisigAccount(100000000, node.gAccount.address, function (err, transactionId) {
 			node.onNewBlock(function (err) {
 				node.get('/api/transactions/get?id=' + transactionId, function (err, res) {
 					node.expect(res.body).to.have.property('success').to.be.ok;
@@ -453,7 +453,7 @@ describe('POST /api/multisignatures/sign (group)', function () {
 describe('POST /api/multisignatures/sign (transaction)', function () {
 
 	before(function (done) {
-		sendLISKFromMultisigAccount(100000000, node.gAccount.address, function (err, transactionId) {
+		sendArkFromMultisigAccount(100000000, node.gAccount.address, function (err, transactionId) {
 			multiSigTx.txId = transactionId;
 			done();
 		});

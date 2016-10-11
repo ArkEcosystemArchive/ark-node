@@ -9,23 +9,18 @@ var account3 = node.randomTxAccount();
 var transactionList = [];
 var offsetTimestamp = 0;
 
-function openAccount (params, done) {
-	node.post('/api/accounts/open', params, function (err, res) {
-		done(err, res);
-	});
-}
 
 function putTransaction (params, done) {
 	node.put('/api/transactions', params, done);
 }
 
-function sendLISK (account, done) {
-	var randomLISK = node.randomLISK();
-	var expectedFee = node.expectedFee(randomLISK);
+function sendArk (account, done) {
+	var randomArk = node.randomArk();
+	var expectedFee = node.expectedFee(randomArk);
 
 	putTransaction({
 		secret: node.gAccount.password,
-		amount: randomLISK,
+		amount: randomArk,
 		recipientId: account.address
 	}, function (err, res) {
 		node.expect(res.body).to.have.property('success').to.be.ok;
@@ -33,9 +28,9 @@ function sendLISK (account, done) {
 		transactionList.push({
 			'sender': node.gAccount.address,
 			'recipient': account.address,
-			'grossSent': (randomLISK + expectedFee) / node.normalizer,
+			'grossSent': (randomArk + expectedFee) / node.normalizer,
 			'fee': expectedFee / node.normalizer,
-			'netSent': randomLISK / node.normalizer,
+			'netSent': randomArk / node.normalizer,
 			'txId': res.body.transactionId,
 			'type': node.txTypes.SEND
 		});
@@ -45,13 +40,13 @@ function sendLISK (account, done) {
 
 before(function (done) {
 	setTimeout(function () {
-		sendLISK(account, done);
+		sendArk(account, done);
 	}, 2000);
 });
 
 before(function (done) {
 	setTimeout(function () {
-		sendLISK(account2, done);
+		sendArk(account2, done);
 	}, 2000);
 });
 
@@ -327,24 +322,6 @@ describe('PUT /api/transactions', function () {
 			node.expect(res.body).to.have.property('success').to.be.not.ok;
 			node.expect(res.body).to.have.property('error');
 			done();
-		});
-	});
-
-	it('using entire balance should fail', function (done) {
-		openAccount({ secret: account.password }, function (err, res) {
-			node.expect(res.body).to.have.property('account').that.is.an('object');
-			node.expect(res.body.account).to.have.property('balance').that.is.a('string');
-			account.balance = res.body.account.balance;
-
-			putTransaction({
-				secret: account.password,
-				amount: Math.floor(account.balance),
-				recipientId: account2.address
-			}, function (err, res) {
-				node.expect(res.body).to.have.property('success').to.be.not.ok;
-				node.expect(res.body).to.have.property('error').to.match(/Account does not have enough LSK: [0-9]+L balance: [0-9.]+/);
-				done();
-			});
 		});
 	});
 

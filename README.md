@@ -46,7 +46,7 @@ Install node modules:
 npm install
 ```
 
-Load git submodule [ark-js](https://github.com/LiskHQ/ark-js):
+Load git submodule [ark-js](PLACEHOLDER):
 
 ```
 git submodule init

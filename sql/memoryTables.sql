@@ -1,4 +1,4 @@
-/* Lisk Memory Tables
+/* Ark Memory Tables
  *
  */
 

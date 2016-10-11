@@ -18,13 +18,13 @@ function putDelegate (params, done) {
 	node.put('/api/delegates', params, done);
 }
 
-function sendLISK (account, done) {
-	var randomLISK = node.randomLISK();
-	var expectedFee = node.expectedFee(randomLISK);
+function sendArk (account, done) {
+	var randomArk = node.randomArk();
+	var expectedFee = node.expectedFee(randomArk);
 
 	putTransaction({
 		secret: node.gAccount.password,
-		amount: randomLISK,
+		amount: randomArk,
 		recipientId: account.address
 	}, function (err, res) {
 		node.expect(res.body).to.have.property('success').to.be.ok;
@@ -34,13 +34,13 @@ function sendLISK (account, done) {
 
 before(function (done) {
 	setTimeout(function () {
-		sendLISK(account, done);
+		sendArk(account, done);
 	}, 2000);
 });
 
 before(function (done) {
 	setTimeout(function () {
-		sendLISK(account2, done);
+		sendArk(account2, done);
 	}, 2000);
 });
 
