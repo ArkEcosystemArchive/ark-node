@@ -36,7 +36,7 @@ Signature.prototype.verify = function (trs, sender, cb) {
 	if (trs.amount !== 0) {
 		return setImmediate(cb, 'Invalid transaction amount');
 	}
-
+	
 	try {
 		if (!trs.asset.signature.publicKey || new Buffer(trs.asset.signature.publicKey, 'hex').length !== 32) {
 			return setImmediate(cb, 'Invalid public key');

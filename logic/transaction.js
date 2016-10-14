@@ -48,6 +48,7 @@ Transaction.prototype.create = function (data) {
 		senderPublicKey: data.sender.publicKey,
 		requesterPublicKey: data.requester ? data.requester.publicKey.toString('hex') : null,
 		timestamp: slots.getTime(),
+		vendorField: data.vendorField,
 		asset: {}
 	};
 
@@ -118,7 +119,7 @@ Transaction.prototype.getBytes = function (trs, skipSignature, skipSecondSignatu
 		var assetSize = assetBytes ? assetBytes.length : 0;
 		var i;
 
-		bb = new ByteBuffer(1 + 4 + 32 + 32 + 8 + 8 + 64 + 64 + assetSize, true);
+		bb = new ByteBuffer(1 + 4 + 32 + 32 + 8 + 8 + 64 + 64 + 64 + assetSize, true);
 		bb.writeByte(trs.type);
 		bb.writeInt(trs.timestamp);
 
@@ -143,6 +144,17 @@ Transaction.prototype.getBytes = function (trs, skipSignature, skipSecondSignatu
 			}
 		} else {
 			for (i = 0; i < 8; i++) {
+				bb.writeByte(0);
+			}
+		}
+
+		if (trs.vendorField) {
+			var vf = new Buffer(trs.vendorField, 'hex');
+			for (i = 0; i < vf.length; i++) {
+				bb.writeByte(vf[i]);
+			}
+		} else {
+			for (i = 0; i < 64; i++) {
 				bb.writeByte(0);
 			}
 		}

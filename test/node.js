@@ -48,7 +48,7 @@ node.eAccount = {
 	delegateName: 'genesis_100'
 };
 
-// Genesis account, initially holding 100M total supply
+// Genesis account, initially holding 125M total supply
 node.gAccount = {
 	address: '16313739661670634666L',
 	publicKey: 'c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f',

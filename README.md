@@ -13,10 +13,16 @@ sudo apt-get update
 sudo apt-get install -y curl build-essential python git
 ```
 
+Clone this repository
+```
+git clone https://bitbucket.com/arkio/ark-node.git
+cd ark-node
+```
+
 Install PostgreSQL (version 9.5.2):
 
 ```
-curl -sL "https://downloads.ark.io/scripts/setup_postgresql.Linux" | bash -
+curl -sL "https://downloads.lisk.io/scripts/setup_postgresql.Linux" | bash -
 sudo -u postgres createuser --createdb --password $USER
 createdb ark_test
 ```
@@ -34,12 +40,6 @@ Install grunt-cli (globally):
 sudo npm install grunt-cli -g
 ```
 
-Install bower (globally):
-
-```
-sudo npm install bower -g
-```
-
 Install node modules:
 
 ```
@@ -51,15 +51,6 @@ Load git submodule [ark-js](PLACEHOLDER):
 ```
 git submodule init
 git submodule update
-```
-
-Build the user-interface:
-
-```
-cd public
-npm install
-bower install
-grunt release
 ```
 
 ## Launch
@@ -107,22 +98,23 @@ npm test
 Run individual tests:
 
 ```
-npm test -- test/lib/accounts.js
-npm test -- test/lib/transactions.js
+npm test -- test/api/accounts.js
+npm test -- test/api/transactions.js
 ```
 
 ## Authors
-
+- FX Thoorens <fx@ark.io>
 - Boris Povod <boris@crypti.me>
 - Pavel Nekrasov <landgraf.paul@gmail.com>
 - Sebastian Stupurac <stupurac.sebastian@gmail.com>
-- Oliver Beddows <oliver@ark>
+- Oliver Beddows <oliver@lisk.io>
 
 ## License
 
 The MIT License (MIT)
 
-Copyright (c) 2016 Ark  
+Copyright (c) 2016 Ark
+Copyright (c) 2016 Lisk
 Copyright (c) 2014-2015 Crypti
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:  
