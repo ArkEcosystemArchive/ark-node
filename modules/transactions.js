@@ -17,7 +17,6 @@ var transactionTypes = require('../helpers/transactionTypes.js');
 var modules, library, self, __private = {}, shared = {};
 
 __private.assetTypes = {};
-__private.unconfirmedTransactions = [];
 __private.unconfirmedTransactionsIdIndex = {};
 
 // Constructor
@@ -49,7 +48,8 @@ __private.attachApi = function () {
 		'get /': 'getTransactions',
 		'get /get': 'getTransaction',
 		'get /unconfirmed/get': 'getUnconfirmedTransaction',
-		'get /unconfirmed': 'getUnconfirmedTransactions'
+		'get /unconfirmed': 'getUnconfirmedTransactions',
+		'put /': 'addTransactions'
 	});
 
 	router.use(function (req, res, next) {
@@ -190,9 +190,7 @@ __private.addUnconfirmedTransaction = function (transaction, sender, cb) {
 			self.undoUnconfirmed(transaction, cb);
 		} else {
 			transaction.receivedAt = new Date();
-			__private.unconfirmedTransactions.push(transaction);
-			var index = __private.unconfirmedTransactions.length - 1;
-			__private.unconfirmedTransactionsIdIndex[transaction.id] = index;
+			__private.unconfirmedTransactionsIdIndex[transaction.id] = transaction;
 
 			return setImmediate(cb);
 		}
@@ -201,16 +199,15 @@ __private.addUnconfirmedTransaction = function (transaction, sender, cb) {
 
 // Public methods
 Transactions.prototype.getUnconfirmedTransaction = function (id) {
-	var index = __private.unconfirmedTransactionsIdIndex[id];
-	return __private.unconfirmedTransactions[index];
+	return __private.unconfirmedTransactionsIdIndex[id];
 };
 
 Transactions.prototype.getUnconfirmedTransactionList = function (reverse, limit) {
 	var a = [];
-
-	for (var i = 0; i < __private.unconfirmedTransactions.length; i++) {
-		if (__private.unconfirmedTransactions[i] !== false) {
-			a.push(__private.unconfirmedTransactions[i]);
+	var ids = Object.keys(__private.unconfirmedTransactionsIdIndex);
+	for (var i = 0; i < ids.length; i++) {
+		if (__private.unconfirmedTransactionsIdIndex[ids[i]]) {
+			a.push(__private.unconfirmedTransactionsIdIndex[ids[i]]);
 		}
 	}
 
@@ -224,9 +221,7 @@ Transactions.prototype.getUnconfirmedTransactionList = function (reverse, limit)
 };
 
 Transactions.prototype.removeUnconfirmedTransaction = function (id) {
-	var index = __private.unconfirmedTransactionsIdIndex[id];
 	delete __private.unconfirmedTransactionsIdIndex[id];
-	__private.unconfirmedTransactions[index] = false;
 };
 
 Transactions.prototype.processUnconfirmedTransaction = function (transaction, broadcast, cb) {
@@ -237,8 +232,8 @@ Transactions.prototype.processUnconfirmedTransaction = function (transaction, br
 
 	// Check transaction indexes
 	if (__private.unconfirmedTransactionsIdIndex[transaction.id] !== undefined) {
-		library.logger.debug('Transaction is already processed: ' + transaction.id);
-		return setImmediate(cb);
+		library.logger.debug('Transaction is already processed', transaction.id);
+		return setImmediate(cb, 'Transaction ignored, because it is already processed');
 	}
 
 	modules.accounts.setAccountAndGet({publicKey: transaction.senderPublicKey}, function (err, sender) {
@@ -300,6 +295,9 @@ Transactions.prototype.processUnconfirmedTransaction = function (transaction, br
 Transactions.prototype.applyUnconfirmedList = function (ids, cb) {
 	async.eachSeries(ids, function (id, cb) {
 		var transaction = self.getUnconfirmedTransaction(id);
+		if(!transaction){
+			return setImmediate(cb);
+		}
 		modules.accounts.setAccountAndGet({publicKey: transaction.senderPublicKey}, function (err, sender) {
 			if (err) {
 				self.removeUnconfirmedTransaction(id);
@@ -319,7 +317,7 @@ Transactions.prototype.undoUnconfirmedList = function (cb) {
 	var ids = [];
 
 	async.eachSeries(__private.unconfirmedTransactions, function (transaction, cb) {
-		if (transaction !== false) {
+		if (transaction) {
 			ids.push(transaction.id);
 			self.undoUnconfirmed(transaction, cb);
 		} else {
@@ -335,7 +333,7 @@ Transactions.prototype.expireUnconfirmedList = function (cb) {
 	var ids = [];
 
 	async.eachSeries(__private.unconfirmedTransactions, function (transaction, cb) {
-		if (transaction === false) {
+		if (!transaction) {
 			return setImmediate(cb);
 		}
 
@@ -408,6 +406,9 @@ Transactions.prototype.undoUnconfirmed = function (transaction, cb) {
 };
 
 Transactions.prototype.receiveTransactions = function (transactions, cb) {
+	if(Object.keys(__private.unconfirmedTransactionsIdIndex).length > constants.maxTxsPerBlock){
+		return setImmediate(cb, "Rejecting your transaction because the maximum node transactions stack is reached.", transactions);
+	}
 	async.eachSeries(transactions, function (transaction, cb) {
 		self.processUnconfirmedTransaction(transaction, true, cb);
 	}, function (err) {
@@ -506,6 +507,150 @@ shared.getUnconfirmedTransactions = function (req, cb) {
 		}
 
 		return setImmediate(cb, null, {transactions: toSend});
+	});
+};
+
+shared.addTransactions = function (req, cb) {
+	library.schema.validate(req.body, schema.addTransactions, function (err) {
+		if (err) {
+			return setImmediate(cb, err[0].message);
+		}
+
+		var hash = crypto.createHash('sha256').update(req.body.secret, 'utf8').digest();
+		var keypair = library.ed.makeKeypair(hash);
+
+		if (req.body.publicKey) {
+			if (keypair.publicKey.toString('hex') !== req.body.publicKey) {
+				return setImmediate(cb, 'Invalid passphrase');
+			}
+		}
+
+		var query = { address: req.body.recipientId };
+
+		library.balancesSequence.add(function (cb) {
+			modules.accounts.getAccount(query, function (err, recipient) {
+				if (err) {
+					return setImmediate(cb, err);
+				}
+
+				var recipientId = recipient ? recipient.address : req.body.recipientId;
+
+				if (!recipientId) {
+					return setImmediate(cb, 'Invalid recipient');
+				}
+
+				if (req.body.multisigAccountPublicKey && req.body.multisigAccountPublicKey !== keypair.publicKey.toString('hex')) {
+					modules.accounts.getAccount({publicKey: req.body.multisigAccountPublicKey}, function (err, account) {
+						if (err) {
+							return setImmediate(cb, err);
+						}
+
+						if (!account || !account.publicKey) {
+							return setImmediate(cb, 'Multisignature account not found');
+						}
+
+						if (!account.multisignatures || !account.multisignatures) {
+							return setImmediate(cb, 'Account does not have multisignatures enabled');
+						}
+
+						if (account.multisignatures.indexOf(keypair.publicKey.toString('hex')) < 0) {
+							return setImmediate(cb, 'Account does not belong to multisignature group');
+						}
+
+						modules.accounts.getAccount({publicKey: keypair.publicKey}, function (err, requester) {
+							if (err) {
+								return setImmediate(cb, err);
+							}
+
+							if (!requester || !requester.publicKey) {
+								return setImmediate(cb, 'Requester not found');
+							}
+
+							if (requester.secondSignature && !req.body.secondSecret) {
+								return setImmediate(cb, 'Missing requester second passphrase');
+							}
+
+							if (requester.publicKey === account.publicKey) {
+								return setImmediate(cb, 'Invalid requester public key');
+							}
+
+							var secondKeypair = null;
+
+							if (requester.secondSignature) {
+								var secondHash = crypto.createHash('sha256').update(req.body.secondSecret, 'utf8').digest();
+								secondKeypair = library.ed.makeKeypair(secondHash);
+							}
+
+							var transaction;
+
+							try {
+								transaction = library.logic.transaction.create({
+									type: transactionTypes.SEND,
+									amount: req.body.amount,
+									sender: account,
+									recipientId: recipientId,
+									keypair: keypair,
+									requester: keypair,
+									secondKeypair: secondKeypair
+								});
+
+								library.logger.log('trs ', transaction);
+
+							} catch (e) {
+								return setImmediate(cb, e.toString());
+							}
+
+							modules.transactions.receiveTransactions([transaction], cb);
+						});
+					});
+				} else {
+					modules.accounts.setAccountAndGet({publicKey: keypair.publicKey.toString('hex')}, function (err, account) {
+						if (err) {
+							return setImmediate(cb, err);
+						}
+
+						if (!account || !account.publicKey) {
+							return setImmediate(cb, 'Account not found');
+						}
+
+						if (account.secondSignature && !req.body.secondSecret) {
+							return setImmediate(cb, 'Missing second passphrase');
+						}
+
+						var secondKeypair = null;
+
+						if (account.secondSignature) {
+							var secondHash = crypto.createHash('sha256').update(req.body.secondSecret, 'utf8').digest();
+							secondKeypair = library.ed.makeKeypair(secondHash);
+						}
+
+						var transaction;
+
+						try {
+							transaction = library.logic.transaction.create({
+								type: transactionTypes.SEND,
+								amount: req.body.amount,
+								sender: account,
+								vendorField: req.body.vendorField,
+								recipientId: recipientId,
+								keypair: keypair,
+								secondKeypair: secondKeypair
+							});
+						} catch (e) {
+							return setImmediate(cb, e.toString());
+						}
+
+						modules.transactions.receiveTransactions([transaction], cb);
+					});
+				}
+			});
+		}, function (err, transaction) {
+			if (err) {
+				return setImmediate(cb, err);
+			}
+
+			return setImmediate(cb, null, {transactionId: transaction[0].id});
+		});
 	});
 };
 

@@ -27,6 +27,20 @@ z_schema.registerFormat('publicKey', function (str) {
   }
 });
 
+z_schema.registerFormat('vendorField', function (str) {
+  if (str.length === 0) {
+    return true;
+  }
+
+  try {
+    var vendorField = new Buffer(str);
+
+    return vendorField.length < 65;
+  } catch (e) {
+    return false;
+  }
+});
+
 z_schema.registerFormat('csv', function (str) {
   try {
     var a = str.split(',');

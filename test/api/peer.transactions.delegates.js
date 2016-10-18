@@ -15,7 +15,7 @@ function postTransaction (transaction, done) {
 }
 
 function sendArk (params, done) {
-	var transaction = node.ark.transaction.createTransaction(params.recipientId, params.amount, params.secret);
+	var transaction = node.ark.transaction.createTransaction(params.recipientId, params.amount, null, params.secret);
 
 	postTransaction(transaction, function (err, res) {
 		node.expect(res.body).to.have.property('success').to.be.ok;

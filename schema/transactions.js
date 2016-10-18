@@ -31,6 +31,10 @@ module.exports = {
 				type: 'string',
 				format: 'publicKey'
 			},
+			vendorField: {
+				type: 'string',
+				format: 'vendorField'
+			},
 			ownerPublicKey: {
 				type: 'string',
 				format: 'publicKey'
@@ -108,6 +112,10 @@ module.exports = {
 			recipientId: {
 				type: 'string',
 				minLength: 1
+			},
+			vendorField: {
+				type: 'string',
+				format: 'vendorField'
 			},
 			publicKey: {
 				type: 'string',

@@ -149,7 +149,7 @@ Transaction.prototype.getBytes = function (trs, skipSignature, skipSecondSignatu
 		}
 
 		if (trs.vendorField) {
-			var vf = new Buffer(trs.vendorField, 'hex');
+			var vf = new Buffer(trs.vendorField);
 			for (i = 0; i < vf.length; i++) {
 				bb.writeByte(vf[i]);
 			}
@@ -646,6 +646,7 @@ Transaction.prototype.dbFields = [
 	'timestamp',
 	'senderPublicKey',
 	'requesterPublicKey',
+	'vendorField',
 	'senderId',
 	'recipientId',
 	'amount',
@@ -660,12 +661,13 @@ Transaction.prototype.dbSave = function (trs) {
 		throw 'Unknown transaction type ' + trs.type;
 	}
 
-	var senderPublicKey, signature, signSignature, requesterPublicKey;
+	var senderPublicKey, signature, signSignature, requesterPublicKey, vendorField;
 
 	try {
 		senderPublicKey = new Buffer(trs.senderPublicKey, 'hex');
 		signature = new Buffer(trs.signature, 'hex');
 		signSignature = trs.signSignature ? new Buffer(trs.signSignature, 'hex') : null;
+		vendorField = trs.vendorField;
 		requesterPublicKey = trs.requesterPublicKey ? new Buffer(trs.requesterPublicKey, 'hex') : null;
 	} catch (e) {
 		throw e;
@@ -682,6 +684,7 @@ Transaction.prototype.dbSave = function (trs) {
 				timestamp: trs.timestamp,
 				senderPublicKey: senderPublicKey,
 				requesterPublicKey: requesterPublicKey,
+				vendorField: vendorField,
 				senderId: trs.senderId,
 				recipientId: trs.recipientId || null,
 				amount: trs.amount,
@@ -743,6 +746,10 @@ Transaction.prototype.schema = {
 			type: 'string',
 			format: 'publicKey'
 		},
+		vendorField: {
+			type: 'string',
+			format: 'vendorField'
+		},
 		senderId: {
 			type: 'string'
 		},
@@ -785,10 +792,12 @@ Transaction.prototype.objectNormalize = function (trs) {
 		}
 	}
 
-	var report = this.scope.schema.validate(trs, Transaction.prototype.schema);
 
+	var report = this.scope.schema.validate(trs, Transaction.prototype.schema);
 	if (!report) {
+		var log=this.scope.logger;
 		throw 'Failed to validate transaction schema: ' + this.scope.schema.getLastErrors().map(function (err) {
+			log.error(err);
 			return err.message;
 		}).join(', ');
 	}
@@ -814,6 +823,7 @@ Transaction.prototype.dbRead = function (raw) {
 			timestamp: parseInt(raw.t_timestamp),
 			senderPublicKey: raw.t_senderPublicKey,
 			requesterPublicKey: raw.t_requesterPublicKey,
+			vendorField:raw.t_vendorField,
 			senderId: raw.t_senderId,
 			recipientId: raw.t_recipientId,
 			amount: parseInt(raw.t_amount),

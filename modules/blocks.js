@@ -55,6 +55,7 @@ __private.blocksDataFields = {
 	'm_lifetime': Number,
 	'm_keysgroup': String,
 	't_requesterPublicKey': String,
+	't_vendorField': String,
 	't_signatures': String
 };
 // @formatter:on
@@ -1140,6 +1141,9 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 	var ready = [];
 
 	async.eachSeries(transactions, function (transaction, cb) {
+		if(!transaction){
+			return setImmediate(cb);
+		}
 		modules.accounts.getAccount({ publicKey: transaction.senderPublicKey }, function (err, sender) {
 			if (err || !sender) {
 				return setImmediate(cb, 'Sender not found');

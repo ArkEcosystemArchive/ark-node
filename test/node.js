@@ -21,7 +21,8 @@ node.supertest = require('supertest');
 require('colors');
 
 // Node configuration
-node.baseUrl = 'http://' + node.config.address + ':' + node.config.port;
+//node.baseUrl = 'http://' + node.config.address + ':' + node.config.port;
+node.baseUrl = 'http://localhost:' + node.config.port;
 node.api = node.supertest(node.baseUrl);
 
 node.normalizer = 100000000; // Use this to convert ARK amount to normal value

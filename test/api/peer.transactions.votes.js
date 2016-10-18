@@ -252,10 +252,10 @@ describe('POST /peer/transactions', function () {
 		});
 	});
 
-	it('voting for 51 delegates separately should be ok', function (done) {
+	it('voting for 20 delegates separately should be ok', function (done) {
 		node.onNewBlock(function (err) {
 			postVotes({
-				delegates: delegates,
+				delegates: delegates.slice(0, 20),
 				passphrase: account.password,
 				action: '+',
 				voteCb: function (err, res) {
@@ -280,9 +280,9 @@ describe('POST /peer/transactions', function () {
 		});
 	});
 
-	it('removing votes from 51 delegates separately should be ok', function (done) {
+	it('removing votes from 20 delegates separately should be ok', function (done) {
 		postVotes({
-			delegates: delegates,
+			delegates: delegates.slice(0, 20),
 			passphrase: account.password,
 			action: '-',
 			voteCb: function (err, res) {
