@@ -91,7 +91,7 @@ node.randomProperty = function (obj, needKey) {
 	}
 };
 
-// Returns random LSK amount
+// Returns random ARK amount
 node.randomArk = function () {
 	return Math.floor(Math.random() * (10000 * 100000000)) + (1000 * 100000000);
 };
