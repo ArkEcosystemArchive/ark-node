@@ -236,59 +236,65 @@ Transactions.prototype.processUnconfirmedTransaction = function (transaction, br
 		return setImmediate(cb, 'Transaction ignored, because it is already processed');
 	}
 
-	modules.accounts.setAccountAndGet({publicKey: transaction.senderPublicKey}, function (err, sender) {
-		function done (err, ignore) {
-			if (err) {
-				if (ignore) {
-					library.logger.debug(err);
-					return setImmediate(cb);
-				} else {
-					return setImmediate(cb, err);
+	// Check if already in blockchain
+	__private.getById(transaction.id, function (err, tbc) {
+		if (tbc) {
+			return setImmediate(cb, 'Transaction ID is already in blockchain');
+		}
+		modules.accounts.setAccountAndGet({publicKey: transaction.senderPublicKey}, function (err, sender) {
+			function done (err, ignore) {
+				if (err) {
+					if (ignore) {
+						library.logger.debug(err);
+						return setImmediate(cb);
+					} else {
+						return setImmediate(cb, err);
+					}
 				}
+
+				__private.addUnconfirmedTransaction(transaction, sender, function (err) {
+					if (err) {
+						return setImmediate(cb, err);
+					}
+
+					library.bus.message('unconfirmedTransaction', transaction, broadcast);
+
+					return setImmediate(cb);
+				});
 			}
 
-			__private.addUnconfirmedTransaction(transaction, sender, function (err) {
-				if (err) {
-					return setImmediate(cb, err);
-				}
+			if (err) {
+				return done(err);
+			}
 
-				library.bus.message('unconfirmedTransaction', transaction, broadcast);
+			if (transaction.requesterPublicKey && sender && Array.isArray(sender.multisignatures) && sender.multisignatures.length) {
+				modules.accounts.getAccount({publicKey: transaction.requesterPublicKey}, function (err, requester) {
+					if (err) {
+						return done(err);
+					}
 
-				return setImmediate(cb);
-			});
-		}
+					if (!requester) {
+						return done('Requester not found');
+					}
 
-		if (err) {
-			return done(err);
-		}
+					library.logic.transaction.process(transaction, sender, requester, function (err, transaction, ignore) {
+						if (err) {
+							return done(err, ignore);
+						}
 
-		if (transaction.requesterPublicKey && sender && Array.isArray(sender.multisignatures) && sender.multisignatures.length) {
-			modules.accounts.getAccount({publicKey: transaction.requesterPublicKey}, function (err, requester) {
-				if (err) {
-					return done(err);
-				}
-
-				if (!requester) {
-					return done('Requester not found');
-				}
-
-				library.logic.transaction.process(transaction, sender, requester, function (err, transaction, ignore) {
+						library.logic.transaction.verify(transaction, sender, done);
+					});
+				});
+			} else {
+				library.logic.transaction.process(transaction, sender, function (err, transaction, ignore) {
 					if (err) {
 						return done(err, ignore);
 					}
 
 					library.logic.transaction.verify(transaction, sender, done);
 				});
-			});
-		} else {
-			library.logic.transaction.process(transaction, sender, function (err, transaction, ignore) {
-				if (err) {
-					return done(err, ignore);
-				}
-
-				library.logic.transaction.verify(transaction, sender, done);
-			});
-		}
+			}
+		});
 	});
 };
 
@@ -594,7 +600,7 @@ shared.addTransactions = function (req, cb) {
 									secondKeypair: secondKeypair
 								});
 
-								library.logger.log('trs ', transaction);
+								//library.logger.log('trs ', transaction);
 
 							} catch (e) {
 								return setImmediate(cb, e.toString());

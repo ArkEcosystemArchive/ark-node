@@ -85,7 +85,7 @@ describe('POST /peer/transactions', function () {
 		});
 	});
 
-	it('using already confirmed transaction should be ok (no-op)', function (done) {
+	it('using already confirmed transaction should be not ok', function (done) {
 		var transaction = node.ark.transaction.createTransaction('3L', 1, null, node.gAccount.password);
 
 		postTransaction(transaction, function (err, res) {
@@ -94,8 +94,7 @@ describe('POST /peer/transactions', function () {
 
 			node.onNewBlock(function (err) {
 				postTransaction(transaction, function (err, res) {
-					node.expect(res.body).to.have.property('success').to.be.ok;
-					node.expect(res.body).to.have.property('transactionId').to.equal(transaction.id);
+					node.expect(res.body).to.have.property('success').to.be.not.ok;
 					done();
 				});
 			});

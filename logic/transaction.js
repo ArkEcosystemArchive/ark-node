@@ -150,8 +150,12 @@ Transaction.prototype.getBytes = function (trs, skipSignature, skipSecondSignatu
 
 		if (trs.vendorField) {
 			var vf = new Buffer(trs.vendorField);
-			for (i = 0; i < vf.length; i++) {
+			var fillstart=vf.length;
+			for (i = 0; i < fillstart; i++) {
 				bb.writeByte(vf[i]);
+			}
+			for (i = fillstart; i < 64; i++) {
+				bb.writeByte(0);
 			}
 		} else {
 			for (i = 0; i < 64; i++) {

@@ -722,6 +722,7 @@ Blocks.prototype.verifyBlock = function (block) {
 	// Checking if transactions of the block adds up to block values.
 	var totalAmount = 0,
 	    totalFee = 0,
+			size = 0,
 	    payloadHash = crypto.createHash('sha256'),
 	    appliedTransactions = {};
 
@@ -735,6 +736,12 @@ Blocks.prototype.verifyBlock = function (block) {
 			result.errors.push(e.toString());
 		}
 
+		if (size + bytes.length > constants.maxPayloadLength) {
+			result.errors.push("Payload is too large");
+		}
+
+		size += bytes.length;
+
 		if (appliedTransactions[transaction.id]) {
 			result.errors.push('Encountered duplicate transaction: ' + transaction.id);
 		}
@@ -745,7 +752,10 @@ Blocks.prototype.verifyBlock = function (block) {
 		totalFee += transaction.fee;
 	}
 
-	if (payloadHash.digest().toString('hex') !== block.payloadHash) {
+
+	var calculatedHash=payloadHash.digest().toString('hex');
+	library.logger.info(calculatedHash,block.payloadHash);
+	if (calculatedHash !== block.payloadHash) {
 		result.errors.push('Invalid payload hash');
 	}
 
@@ -1144,19 +1154,25 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 		if(!transaction){
 			return setImmediate(cb);
 		}
-		modules.accounts.getAccount({ publicKey: transaction.senderPublicKey }, function (err, sender) {
-			if (err || !sender) {
-				return setImmediate(cb, 'Sender not found');
+		// Check if tx id is already in blockchain
+		__private.getById(transaction.id, function (err, tbc) {
+			if (tbc) {
+				return setImmediate(cb, 'Transaction ID is already in blockchain');
 			}
+			modules.accounts.getAccount({ publicKey: transaction.senderPublicKey }, function (err, sender) {
+				if (err || !sender) {
+					return setImmediate(cb, 'Sender not found');
+				}
 
-			if (library.logic.transaction.ready(transaction, sender)) {
-				library.logic.transaction.verify(transaction, sender, function (err) {
-					ready.push(transaction);
+				if (library.logic.transaction.ready(transaction, sender)) {
+					library.logic.transaction.verify(transaction, sender, function (err) {
+						ready.push(transaction);
+						return setImmediate(cb);
+					});
+				} else {
 					return setImmediate(cb);
-				});
-			} else {
-				return setImmediate(cb);
-			}
+				}
+			});
 		});
 	}, function () {
 		var block;
