@@ -397,43 +397,38 @@ __private.findGoodPeers = function (heights) {
 		return item != null;
 	});
 
-	// Assuming that the node reached at least 10% of the network
-	if (heights.length < 10) {
-		return { height: 0, peers: [] };
-	} else {
-		// Ordering the peers with descending height
-		heights = heights.sort(function (a,b) {
-			return b.height - a.height;
-		});
+	// Ordering the peers with descending height
+	heights = heights.sort(function (a,b) {
+		return b.height - a.height;
+	});
 
-		var histogram = {};
-		var max = 0;
-		var height;
+	var histogram = {};
+	var max = 0;
+	var height;
 
-		// Aggregating height by 2. TODO: To be changed if node latency increases?
-		var aggregation = 2;
+	// Aggregating height by 2. TODO: To be changed if node latency increases?
+	var aggregation = 2;
 
-		// Histogram calculation, together with histogram maximum
-		for (var i in heights) {
-			var val = parseInt(heights[i].height / aggregation) * aggregation;
-			histogram[val] = (histogram[val] ? histogram[val] : 0) + 1;
+	// Histogram calculation, together with histogram maximum
+	for (var i in heights) {
+		var val = parseInt(heights[i].height / aggregation) * aggregation;
+		histogram[val] = (histogram[val] ? histogram[val] : 0) + 1;
 
-			if (histogram[val] > max) {
-				max = histogram[val];
-				height = val;
-			}
+		if (histogram[val] > max) {
+			max = histogram[val];
+			height = val;
 		}
-
-		// Performing histogram cut of peers too far from histogram maximum
-		var peers = heights.filter(function (item) {
-			return item && Math.abs(height - item.height) < aggregation + 1;
-		}).map(function (item) {
-			// Add the height info to the peer. To be removed?
-			item.peer.height = item.height;
-			return item.peer;
-		});
-		return {height: height, peers: peers};
 	}
+
+	// Performing histogram cut of peers too far from histogram maximum
+	var peers = heights.filter(function (item) {
+		return item && Math.abs(height - item.height) < aggregation + 1;
+	}).map(function (item) {
+		// Add the height info to the peer. To be removed?
+		item.peer.height = item.height;
+		return item.peer;
+	});
+	return {height: height, peers: peers};
 };
 
 // Public methods
