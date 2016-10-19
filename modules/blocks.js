@@ -1021,6 +1021,8 @@ Blocks.prototype.processBlock = function (block, broadcast, cb, saveBlock) {
 						library.db.query(sql.getTransactionId, { id: transaction.id }).then(function (rows) {
 							if (rows.length > 0) {
 								modules.delegates.fork(block, 2);
+								library.logger.error("error existing tx", block);
+								library.logger.error("error existing tx", rows);
 								return setImmediate(cb, ['Transaction', transaction.id, 'already exists'].join(' '));
 							} else {
 								// Get account from database if any (otherwise cold wallet).
@@ -1088,8 +1090,6 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, cb) {
 
 		var blocks = __private.readDbRows(res.body.blocks);
 
-		library.logger.info('blocks', blocks);
-
 		if (blocks.length === 0) {
 			return setImmediate(cb, null, lastValidBlock);
 		} else {
@@ -1151,14 +1151,17 @@ Blocks.prototype.deleteBlocksBefore = function (block, cb) {
 Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 	var transactions = modules.transactions.getUnconfirmedTransactionList(false, constants.maxTxsPerBlock);
 	var ready = [];
-
 	async.eachSeries(transactions, function (transaction, cb) {
+
 		if(!transaction){
+			library.logger.debug('no tx!!!');
 			return setImmediate(cb);
 		}
 		// Check if tx id is already in blockchain
-		__private.getById(transaction.id, function (err, tbc) {
-			if (tbc) {
+		library.db.query(sql.getTransactionId, { id: transaction.id }).then(function (rows) {
+			if (rows.length > 0) {
+				modules.transactions.removeUnconfirmedTransaction(transaction.id);
+				library.logger.debug('removing tx from unconfirmed', transaction.id);
 				return setImmediate(cb, 'Transaction ID is already in blockchain');
 			}
 			modules.accounts.getAccount({ publicKey: transaction.senderPublicKey }, function (err, sender) {
@@ -1190,7 +1193,6 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 			library.logger.error(e.stack);
 			return setImmediate(cb, e);
 		}
-
 		self.processBlock(block, true, cb, true);
 	});
 };

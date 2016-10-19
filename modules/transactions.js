@@ -18,6 +18,7 @@ var modules, library, self, __private = {}, shared = {};
 
 __private.assetTypes = {};
 __private.unconfirmedTransactionsIdIndex = {};
+__private.countfullstack=0;
 
 // Constructor
 function Transactions (cb, scope) {
@@ -413,10 +414,20 @@ Transactions.prototype.undoUnconfirmed = function (transaction, cb) {
 
 Transactions.prototype.receiveTransactions = function (transactions, cb) {
 	if(Object.keys(__private.unconfirmedTransactionsIdIndex).length > constants.maxTxsPerBlock){
+		// __private.countfullstack+=1;
+		// if(__private.countfullstack>100){
+		// 	__private.countfullstack=0;
+		// 	library.logger.info('unconfirmed tx list', Object.keys(__private.unconfirmedTransactionsIdIndex).length);
+		// 	//try to garbage collect the stack
+		// 	var ids = Object.keys(__private.unconfirmedTransactionsIdIndex);
+		// 	for (var i = 0; i < ids.length; i++) {
+		// 		delete __private.unconfirmedTransactionsIdIndex[ids[i]];
+		// 	}
+		// }
 		return setImmediate(cb, "Rejecting your transaction because the maximum node transactions stack is reached.", transactions);
 	}
 	async.eachSeries(transactions, function (transaction, cb) {
-		self.processUnconfirmedTransaction(transaction, true, cb);
+		self.processUnconfirmedTransaction(transaction, transactions.length == 1, cb);
 	}, function (err) {
 		return setImmediate(cb, err, transactions);
 	});

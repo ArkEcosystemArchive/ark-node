@@ -150,6 +150,8 @@ __private.attachApi = function () {
 					return res.json({blocks: []});
 				}
 
+				//library.logger.info("data", data);
+
 				res.json({blocks: data});
 			});
 		});

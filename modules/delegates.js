@@ -243,12 +243,10 @@ __private.forge = function (cb) {
 
 	var currentSlot = slots.getSlotNumber();
 	var lastBlock = modules.blocks.getLastBlock();
-
 	if (currentSlot === slots.getSlotNumber(lastBlock.timestamp)) {
 		library.logger.debug('Last block within same delegate slot');
 		return setImmediate(cb);
 	}
-
 	__private.getBlockSlotData(currentSlot, lastBlock.height + 1, function (err, currentBlockData) {
 		if (err || currentBlockData === null) {
 			library.logger.debug('Skipping delegate slot');
@@ -258,17 +256,17 @@ __private.forge = function (cb) {
 		library.sequence.add(function (cb) {
 			if (slots.getSlotNumber(currentBlockData.time) === slots.getSlotNumber()) {
 				modules.blocks.generateBlock(currentBlockData.keypair, currentBlockData.time, function (err) {
+					if(!err){
+						library.logger.info([
+							'Forged new block id:',
+							modules.blocks.getLastBlock().id,
+							'height:', modules.blocks.getLastBlock().height,
+							'round:', modules.rounds.calc(modules.blocks.getLastBlock().height),
+							'slot:', slots.getSlotNumber(currentBlockData.time),
+							'reward:' + modules.blocks.getLastBlock().reward
+						].join(' '));
+					}
 					modules.blocks.lastReceipt(new Date());
-
-					library.logger.info([
-						'Forged new block id:',
-						modules.blocks.getLastBlock().id,
-						'height:', modules.blocks.getLastBlock().height,
-						'round:', modules.rounds.calc(modules.blocks.getLastBlock().height),
-						'slot:', slots.getSlotNumber(currentBlockData.time),
-						'reward:' + modules.blocks.getLastBlock().reward
-					].join(' '));
-
 					return setImmediate(cb, err);
 				});
 			} else {
@@ -534,7 +532,11 @@ Delegates.prototype.onBlockchainReady = function () {
 			library.logger.error('Failed to load delegates', err);
 		}
 
-		__private.toggleForgingOnReceipt();
+		try {
+			__private.toggleForgingOnReceipt();
+		} catch(error){
+			library.logger.error('Failed to toggle Forging On Receipt', error);
+		}
 		__private.forge(function () {
 			setTimeout(nextForge, 1000);
 		});
