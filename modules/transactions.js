@@ -413,7 +413,7 @@ Transactions.prototype.undoUnconfirmed = function (transaction, cb) {
 };
 
 Transactions.prototype.receiveTransactions = function (transactions, cb) {
-	if(Object.keys(__private.unconfirmedTransactionsIdIndex).length > constants.maxTxsPerBlock){
+	if(Object.keys(__private.unconfirmedTransactionsIdIndex).length + transactions.length > constants.maxTxsPerBlock){
 		// __private.countfullstack+=1;
 		// if(__private.countfullstack>100){
 		// 	__private.countfullstack=0;
@@ -424,7 +424,7 @@ Transactions.prototype.receiveTransactions = function (transactions, cb) {
 		// 		delete __private.unconfirmedTransactionsIdIndex[ids[i]];
 		// 	}
 		// }
-		return setImmediate(cb, "Rejecting your transaction because the maximum node transactions stack is reached.", transactions);
+		return setImmediate(cb, "Rejecting your transactions because the maximum node transactions stack is reached.", transactions);
 	}
 	async.eachSeries(transactions, function (transaction, cb) {
 		self.processUnconfirmedTransaction(transaction, transactions.length == 1, cb);

@@ -25,6 +25,8 @@ function Peers (cb, scope) {
 	self = this;
 
 	__private.attachApi();
+	//prevents from looking too much around at coldstart
+	__private.lastPeersUpdate = new Date().getTime()+2*60*1000;
 
 	setImmediate(cb, null, self);
 }
@@ -57,6 +59,10 @@ __private.attachApi = function () {
 };
 
 __private.updatePeersList = function (cb) {
+	if(new Date().getTime()-__private.lastPeersUpdate<60*1000){
+		return setImmediate(cb);
+	}
+	__private.lastPeersUpdate = new Date().getTime();
 	modules.transport.getFromRandomPeer({
 		api: '/list',
 		method: 'GET'

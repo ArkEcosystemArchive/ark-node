@@ -754,7 +754,6 @@ Blocks.prototype.verifyBlock = function (block) {
 
 
 	var calculatedHash=payloadHash.digest().toString('hex');
-	library.logger.info(calculatedHash,block.payloadHash);
 	if (calculatedHash !== block.payloadHash) {
 		result.errors.push('Invalid payload hash');
 	}

@@ -82,10 +82,6 @@ __private.attachApi = function () {
 				if (!modules.blocks.lastReceipt()) {
 					modules.delegates.enableForging();
 				}
-
-				library.dbSequence.add(function (cb) {
-					modules.peers.update(req.peer, cb);
-				});
 			}
 
 			return next();
@@ -396,17 +392,17 @@ Transport.prototype.getFromPeer = function (peer, options, cb) {
 				return setImmediate(cb, ['Peer is not on the same network', headers.nethash, req.method, req.url].join(' '));
 			}
 
-			if (headers.version === library.config.version) {
-				library.dbSequence.add(function (cb) {
-					modules.peers.update({
-						ip: peer.ip,
-						port: headers.port,
-						state: 2,
-						os: headers.os,
-						version: headers.version
-					}, cb);
-				});
-			}
+			// if (headers.version === library.config.version) {
+			// 	library.dbSequence.add(function (cb) {
+			// 		modules.peers.update({
+			// 			ip: peer.ip,
+			// 			port: headers.port,
+			// 			state: 2,
+			// 			os: headers.os,
+			// 			version: headers.version
+			// 		}, cb);
+			// 	});
+			// }
 
 			return setImmediate(cb, null, {body: res.body, peer: peer});
 		}
