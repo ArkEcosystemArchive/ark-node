@@ -260,7 +260,8 @@ __private.attachApi = function () {
 		res.set(__private.headers);
 		res.status(200).json({
 			success: true,
-			height: modules.blocks.getLastBlock().height
+			height: modules.blocks.getLastBlock().height,
+			id: modules.blocks.getLastBlock().id
 		});
 	});
 

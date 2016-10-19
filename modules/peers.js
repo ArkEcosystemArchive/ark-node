@@ -26,7 +26,7 @@ function Peers (cb, scope) {
 
 	__private.attachApi();
 	//prevents from looking too much around at coldstart
-	__private.lastPeersUpdate = new Date().getTime()+2*60*1000;
+	__private.lastPeersUpdate = new Date().getTime();
 
 	setImmediate(cb, null, self);
 }

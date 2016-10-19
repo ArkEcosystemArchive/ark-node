@@ -1311,7 +1311,7 @@ shared.getHeight = function (req, cb) {
 		return setImmediate(cb, 'Blockchain is loading');
 	}
 
-	return setImmediate(cb, null, {height: __private.lastBlock.height});
+	return setImmediate(cb, null, {height: __private.lastBlock.height, id:__private.lastBlock.id});
 };
 
 shared.getFee = function (req, cb) {

@@ -482,7 +482,7 @@ Loader.prototype.getNetwork = function (cb) {
 
 						if (heightIsValid) {
 							library.logger.info(['Received height:', res.body.height, 'from peer'].join(' '), peer.string);
-							return setImmediate(cb, null, {peer: peer, height: res.body.height});
+							return setImmediate(cb, null, {peer: peer, height: res.body.height, block_id:res.body.id});
 						} else {
 							library.logger.warn('Received invalid height from peer', peer.string);
 							return setImmediate(cb);
