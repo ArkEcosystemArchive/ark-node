@@ -240,7 +240,7 @@ Transactions.prototype.processUnconfirmedTransaction = function (transaction, br
 	// Check if already in blockchain
 	__private.getById(transaction.id, function (err, tbc) {
 		if (tbc) {
-			return setImmediate(cb, 'Transaction ID is already in blockchain');
+			return setImmediate(cb, 'Transaction ID is already in blockchain - ' + transaction.id);
 		}
 		modules.accounts.setAccountAndGet({publicKey: transaction.senderPublicKey}, function (err, sender) {
 			function done (err, ignore) {

@@ -444,23 +444,24 @@ Loader.prototype.getNetwork = function (cb) {
 	}
 
 	// Fetch a list of 100 random peers
-	modules.transport.getFromRandomPeer({
-		api: '/list',
-		method: 'GET'
-	}, function (err, res) {
+	modules.peers.list({limit:100}, function (err, peers) {
+	// modules.transport.getFromRandomPeer({
+	// 	api: '/list',
+	// 	method: 'GET'
+	// }, function (err, res) {
 		if (err) {
 			library.logger.info('Failed to connect properly with network', err);
 			return setImmediate(cb, err);
 		}
 
-		library.schema.validate(res.body, schema.getNetwork.peers, function (err) {
+		library.schema.validate({peers:peers}, schema.getNetwork.peers, function (err) {
 			if (err) {
 				return setImmediate(cb, err);
 			}
 
-			var peers = res.body.peers;
+			//var peers = res.body.peers;
 
-			library.logger.debug(['Received', res.body.peers.length, 'peers from'].join(' '), res.peer.string);
+			//library.logger.debug(['Received', peers.length, 'peers from'].join(' '), res.peer.string);
 
 			// Validate each peer and then attempt to get its height
 			async.map(peers, function (peer, cb) {
@@ -524,10 +525,10 @@ Loader.prototype.onPeersReady = function () {
 					library.logger.warn('Blocks timer', err);
 				}
 
-				setTimeout(nextLoadBlock, 10000);
+				setTimeout(nextLoadBlock, 8000);
 			});
 		} else {
-			setTimeout(nextLoadBlock, 10000);
+			setTimeout(nextLoadBlock, 8000);
 		}
 	});
 

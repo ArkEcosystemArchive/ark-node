@@ -1161,7 +1161,7 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 			if (rows.length > 0) {
 				modules.transactions.removeUnconfirmedTransaction(transaction.id);
 				library.logger.debug('removing tx from unconfirmed', transaction.id);
-				return setImmediate(cb, 'Transaction ID is already in blockchain');
+				return setImmediate(cb, 'Transaction ID is already in blockchain - ' + transaction.id);
 			}
 			modules.accounts.getAccount({ publicKey: transaction.senderPublicKey }, function (err, sender) {
 				if (err || !sender) {

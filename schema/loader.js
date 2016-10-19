@@ -34,33 +34,33 @@ module.exports = {
 				}
 			},
 			required: ['peers']
-		},
-		peer: {
-			id: 'loader.getNetwork.peer',
-			type: 'object',
-			properties: {
-				ip: {
-					type: 'string',
-					format: 'ip'
-				},
-				port: {
-					type: 'integer',
-					minimum: 1,
-					maximum: 65535
-				},
-				state: {
-					type: 'integer',
-					minimum: 0,
-					maximum: 3
-				},
-				os: {
-					type: 'string'
-				},
-				version: {
-					type: 'string'
-				}
-			},
-			required: ['ip', 'port', 'state']
+		// },
+		// peer: {
+		// 	id: 'loader.getNetwork.peer',
+		// 	type: 'object',
+		// 	properties: {
+		// 		ip: {
+		// 			type: 'string',
+		// 			format: 'ip'
+		// 		},
+		// 		port: {
+		// 			type: 'integer',
+		// 			minimum: 1,
+		// 			maximum: 65535
+		// 		},
+		// 		state: {
+		// 			type: 'integer',
+		// 			minimum: 0,
+		// 			maximum: 3
+		// 		},
+		// 		os: {
+		// 			type: 'string'
+		// 		},
+		// 		version: {
+		// 			type: 'string'
+		// 		}
+		// 	},
+		// 	required: ['ip', 'port', 'state']
 		},
 		height: {
 			id: 'loader.getNetwork.height',

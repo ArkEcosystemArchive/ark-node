@@ -327,16 +327,22 @@ Transport.prototype.getFromRandomPeer = function (config, options, cb) {
 		config = {};
 	}
 	config.limit = 1;
-	async.retry(20, function (cb) {
-		modules.peers.list(config, function (err, peers) {
-			if (!err && peers.length) {
-				return self.getFromPeer(peers[0], options, cb);
-			} else {
-				return setImmediate(cb, err || 'No reachable peers in db');
-			}
-		});
-	}, function (err, results) {
-		return setImmediate(cb, err, results);
+
+	modules.loader.getNetwork(function (err, network) {
+		if (err) {
+			return setImmediate(cb, err);
+		}
+		return self.getFromPeer(network.peers[0], options, cb);
+		// async.retry(20, function (cb) {
+		// 	modules.peers.list(config, function (err, peers) {
+		// 		if (!err && peers.length) {
+		// 			return self.getFromPeer(peers[0], options, cb);
+		// 		} else {
+		// 			return setImmediate(cb, err || 'No reachable peers in db');
+		// 		}
+		// 	});
+		// }, function (err, results) {
+		// 	return setImmediate(cb, err, results);
 	});
 };
 
