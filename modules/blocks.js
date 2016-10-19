@@ -44,6 +44,7 @@ __private.blocksDataFields = {
 	't_senderPublicKey': String,
 	't_senderId': String,
 	't_recipientId': String,
+	't_vendorField': String,
 	't_amount': String,
 	't_fee': String,
 	't_signature': String,
@@ -55,7 +56,6 @@ __private.blocksDataFields = {
 	'm_lifetime': Number,
 	'm_keysgroup': String,
 	't_requesterPublicKey': String,
-	't_vendorField': String,
 	't_signatures': String
 };
 // @formatter:on
@@ -596,7 +596,7 @@ Blocks.prototype.loadBlocksOffset = function (limit, offset, verify, cb) {
 					var check = self.verifyBlock(block);
 
 					if (!check.verified) {
-						library.logger.error(['Block', block.id, 'verification failed'].join(' '), check.errors.join(', '));
+						library.logger.error(['loadBlocksOffset: Block ', block.id, 'verification failed'].join(' '), check.errors.join(', '));
 						return setImmediate(cb, check.errors[0]);
 					}
 				}
@@ -1087,6 +1087,8 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, cb) {
 		}
 
 		var blocks = __private.readDbRows(res.body.blocks);
+
+		library.logger.info('blocks', blocks);
 
 		if (blocks.length === 0) {
 			return setImmediate(cb, null, lastValidBlock);

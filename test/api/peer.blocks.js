@@ -30,6 +30,7 @@ describe('GET /peer/blocks', function () {
 					node.expect(block).to.have.property('t_type');
 					node.expect(block).to.have.property('t_timestamp');
 					node.expect(block).to.have.property('t_senderPublicKey');
+					node.expect(block).to.have.property('t_vendorField');
 					node.expect(block).to.have.property('t_senderId');
 					node.expect(block).to.have.property('t_recipientId');
 					node.expect(block).to.have.property('t_amount');
