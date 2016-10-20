@@ -329,26 +329,29 @@ Transport.prototype.getFromRandomPeer = function (config, options, cb) {
 	}
 	config.limit = 1;
 
-	modules.loader.getNetwork(function (err, network) {
-		if (err) {
-			return setImmediate(cb, err);
-		}
-		return self.getFromPeer(network.peers[0], options, cb);
-		// async.retry(20, function (cb) {
-		// 	modules.peers.list(config, function (err, peers) {
-		// 		if (!err && peers.length) {
-		// 			return self.getFromPeer(peers[0], options, cb);
-		// 		} else {
-		// 			return setImmediate(cb, err || 'No reachable peers in db');
-		// 		}
-		// 	});
-		// }, function (err, results) {
-		// 	return setImmediate(cb, err, results);
+	// modules.loader.getNetwork(function (err, network) {
+	// 	if (err) {
+	// 		return setImmediate(cb, err);
+	// 	}
+	// 	return self.getFromPeer(network.peers[0], options, cb);
+
+	async.retry(20, function (cb) {
+		modules.peers.list(config, function (err, peers) {
+			if (!err && peers.length) {
+				return self.getFromPeer(peers[0], options, cb);
+			} else {
+				return setImmediate(cb, err || 'No reachable peers in db');
+			}
+		});
+	}, function (err, results) {
+		return setImmediate(cb, err, results);
 	});
 };
 
 Transport.prototype.getFromPeer = function (peer, options, cb) {
 	var url;
+
+	library.logger.debug("getFromPeer", peer);
 
 	if (options.api) {
 		url = '/peer' + options.api;
@@ -399,17 +402,17 @@ Transport.prototype.getFromPeer = function (peer, options, cb) {
 				return setImmediate(cb, ['Peer is not on the same network', headers.nethash, req.method, req.url].join(' '));
 			}
 
-			// if (headers.version === library.config.version) {
-			// 	library.dbSequence.add(function (cb) {
-			// 		modules.peers.update({
-			// 			ip: peer.ip,
-			// 			port: headers.port,
-			// 			state: 2,
-			// 			os: headers.os,
-			// 			version: headers.version
-			// 		}, cb);
-			// 	});
-			// }
+			if (headers.version === library.config.version) {
+				library.dbSequence.add(function (cb) {
+					modules.peers.update({
+						ip: peer.ip,
+						port: headers.port,
+						state: 2,
+						os: headers.os,
+						version: headers.version
+					}, cb);
+				});
+			}
 
 			return setImmediate(cb, null, {body: res.body, peer: peer});
 		}

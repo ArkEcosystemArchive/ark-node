@@ -426,6 +426,7 @@ __private.findGoodPeers = function (heights) {
 	}).map(function (item) {
 		// Add the height info to the peer. To be removed?
 		item.peer.height = item.height;
+		modules.peers.update(item.peer, function(err, res){});
 		return item.peer;
 	});
 	return {height: height, peers: peers};
@@ -444,24 +445,24 @@ Loader.prototype.getNetwork = function (cb) {
 	}
 
 	// Fetch a list of 100 random peers
-	modules.peers.list({limit:100}, function (err, peers) {
-	// modules.transport.getFromRandomPeer({
-	// 	api: '/list',
-	// 	method: 'GET'
-	// }, function (err, res) {
+	//modules.peers.list({limit:100}, function (err, peers) {
+	 modules.transport.getFromRandomPeer({
+	 	api: '/list',
+	 	method: 'GET'
+	 }, function (err, res) {
 		if (err) {
 			library.logger.info('Failed to connect properly with network', err);
 			return setImmediate(cb, err);
 		}
+
+		var peers = res.body.peers;
 
 		library.schema.validate({peers:peers}, schema.getNetwork.peers, function (err) {
 			if (err) {
 				return setImmediate(cb, err);
 			}
 
-			//var peers = res.body.peers;
-
-			//library.logger.debug(['Received', peers.length, 'peers from'].join(' '), res.peer.string);
+			library.logger.debug(['Received', peers.length, 'peers from'].join(' '), res.peer.string);
 
 			// Validate each peer and then attempt to get its height
 			async.map(peers, function (peer, cb) {

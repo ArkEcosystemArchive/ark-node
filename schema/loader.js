@@ -60,7 +60,7 @@ module.exports = {
 					type: 'string'
 				}
 			},
-			required: ['ip', 'port', 'state']
+			required: ['ip', 'port']
 		},
 		height: {
 			id: 'loader.getNetwork.height',

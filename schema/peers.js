@@ -40,7 +40,7 @@ module.exports = {
 					maxLength: 11
 				}
 			},
-			required: ['ip', 'port', 'state']
+			required: ['ip', 'port']
 		}
 	},
 	getPeers: {
