@@ -307,6 +307,9 @@ Transport.prototype.broadcast = function (config, options, cb) {
 
 	config.limit = config.limit || 1;
 	modules.peers.list(config, function (err, peers) {
+		if (peers.length > config.limit) {
+			peers = peers.slice(0,config.limit);
+		}
 		if (!err) {
 			async.eachLimit(peers, 3, function (peer, cb) {
 				return self.getFromPeer(peer, options, cb);
@@ -451,21 +454,21 @@ Transport.prototype.onBlockchainReady = function () {
 
 Transport.prototype.onSignature = function (signature, broadcast) {
 	if (broadcast) {
-		self.broadcast({limit: 100}, {api: '/signatures', data: {signature: signature}, method: 'POST'});
+		self.broadcast({limit: 10}, {api: '/signatures', data: {signature: signature}, method: 'POST'});
 		library.network.io.sockets.emit('signature/change', {});
 	}
 };
 
 Transport.prototype.onUnconfirmedTransaction = function (transaction, broadcast) {
 	if (broadcast) {
-		self.broadcast({limit: 100}, {api: '/transactions', data: {transaction: transaction}, method: 'POST'});
+		self.broadcast({limit: 10}, {api: '/transactions', data: {transaction: transaction}, method: 'POST'});
 		library.network.io.sockets.emit('transactions/change', {});
 	}
 };
 
 Transport.prototype.onNewBlock = function (block, broadcast) {
 	if (broadcast) {
-		self.broadcast({limit: 100}, {api: '/blocks', data: {block: block}, method: 'POST'});
+		self.broadcast({limit: 10}, {api: '/blocks', data: {block: block}, method: 'POST'});
 		library.network.io.sockets.emit('blocks/change', {});
 	}
 };
