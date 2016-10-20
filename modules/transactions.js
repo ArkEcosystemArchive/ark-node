@@ -234,13 +234,14 @@ Transactions.prototype.processUnconfirmedTransaction = function (transaction, br
 	// Check transaction indexes
 	if (__private.unconfirmedTransactionsIdIndex[transaction.id] !== undefined) {
 		library.logger.debug('Transaction is already processed', transaction.id);
-		return setImmediate(cb, 'Transaction ignored, because it is already processed');
+		return setImmediate(cb);
 	}
 
 	// Check if already in blockchain
 	__private.getById(transaction.id, function (err, tbc) {
 		if (tbc) {
-			return setImmediate(cb, 'Transaction ID is already in blockchain - ' + transaction.id);
+			library.logger.debug('Transaction ID is already in blockchain', transaction.id);
+			return setImmediate(cb);
 		}
 		modules.accounts.setAccountAndGet({publicKey: transaction.senderPublicKey}, function (err, sender) {
 			function done (err, ignore) {
