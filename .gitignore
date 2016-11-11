@@ -12,3 +12,5 @@ ssl/
 stacktrace*
 tmp
 .tags
+config.main.json
+genesisBlock.main.json

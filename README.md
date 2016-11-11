@@ -2,6 +2,30 @@
 
 Ark is a next generation crypto-currency and decentralized application platform, written entirely in JavaScript. For more information please refer to our website: https://ark.io/.
 
+The Token Exchange Campaign is up at https://tec.ark.io
+
+This version is still alpha, use at your own risks
+
+## Details
+
+This is a fork from Lisk with the following features:
+- Removed sidechains
+- Removed custom node version
+- Removed UI for stability and security reasons
+- Changed some constants (block rewards, blocktime etc...)
+- Added vendorField as first iteration of smart bridge
+- Made peers management entirely in-memory for efficiency
+- Strengthened the transaction management and broadcast (reject often, reject soon)
+
+Planned features:
+- add IPFS as first class citizen (using smartbridge addressing)
+- Ditch addresses from the protocol in favor of publicKeys to prevent from collisions
+- Various protocol improvements (uncle forging, voting weights).
+- Rearchitect with relay nodes and forging nodes, relay nodes broadcasting only block headers.
+- Remove unsecured API
+- Routing tables
+
+
 ## Installation
 
 **NOTE:** The following is applicable to: **Ubuntu 14.04 (LTS) - x86_64**.
