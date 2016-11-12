@@ -1,3 +1,0 @@
-[submodule "test/ark-js"]
-	path = test/ark-js
-	url = https://bitbucket.org/fixcrypt/ark-js.git
