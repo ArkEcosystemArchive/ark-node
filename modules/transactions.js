@@ -234,8 +234,11 @@ Transactions.prototype.processUnconfirmedTransaction = function (transaction, br
 	// Check transaction indexes
 	if (__private.unconfirmedTransactionsIdIndex[transaction.id] !== undefined) {
 		library.logger.debug('Transaction is already processed', transaction.id);
-		return setImmediate(cb);
+		// return an error so the sender knows the tx is already circulating on the network
+		return setImmediate(cb,'Transaction is already processed');
 	}
+
+
 
 	// Check if already in blockchain
 	__private.getById(transaction.id, function (err, tbc) {

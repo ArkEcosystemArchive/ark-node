@@ -454,6 +454,7 @@ Transport.prototype.onBlockchainReady = function () {
 
 Transport.prototype.onSignature = function (signature, broadcast) {
 	if (broadcast) {
+		//no emergency for tx propagation
 		self.broadcast({limit: 10}, {api: '/signatures', data: {signature: signature}, method: 'POST'});
 		library.network.io.sockets.emit('signature/change', {});
 	}
@@ -461,6 +462,7 @@ Transport.prototype.onSignature = function (signature, broadcast) {
 
 Transport.prototype.onUnconfirmedTransaction = function (transaction, broadcast) {
 	if (broadcast) {
+		//No emergency for tx propagation
 		self.broadcast({limit: 10}, {api: '/transactions', data: {transaction: transaction}, method: 'POST'});
 		library.network.io.sockets.emit('transactions/change', {});
 	}
@@ -468,7 +470,8 @@ Transport.prototype.onUnconfirmedTransaction = function (transaction, broadcast)
 
 Transport.prototype.onNewBlock = function (block, broadcast) {
 	if (broadcast) {
-		self.broadcast({limit: 10}, {api: '/blocks', data: {block: block}, method: 'POST'});
+		//we want to propagate as fast as possible
+		self.broadcast({limit: 50}, {api: '/blocks', data: {block: block}, method: 'POST'});
 		library.network.io.sockets.emit('blocks/change', {});
 	}
 };
