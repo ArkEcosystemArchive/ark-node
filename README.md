@@ -43,9 +43,10 @@ git clone https://bitbucket.com/arkio/ark-node.git
 cd ark-node
 ```
 
-Install PostgreSQL (version 9.5.2) and then
+Install PostgreSQL (version 9.5.2)
 
 ```
+sudo apt-get install -y postgresql postgresql-contrib
 sudo -u postgres createuser --createdb --password $USER
 createdb ark_test
 ```
