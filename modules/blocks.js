@@ -1228,6 +1228,9 @@ Blocks.prototype.onReceiveBlock = function (block, peer) {
 					library.logger.debug('Cannot get transactions from last received block', block.id);
 					return setImmediate(cb, err, lastValidBlock);
 				}
+
+				library.logger.debug("received transactions",res.body);
+
 				block.transactions=res.body.transactions
 				self.processBlock(block, true, function(){}, true);
 			}
