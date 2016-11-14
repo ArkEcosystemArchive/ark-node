@@ -1243,7 +1243,7 @@ Blocks.prototype.onReceiveBlock = function (block, peer) {
 
 					 if(res.body.transactions.length==block.numberOfTransactions){
 						 block.transactions=res.body.transactions
-						 self.processBlock(block, true, cb true);
+						 self.processBlock(block, true, cb, true);
 					 }
 					 else{
 						 return setImmediate(cb,"Block transactions could not be downloaded.");
