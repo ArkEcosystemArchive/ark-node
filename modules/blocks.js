@@ -1209,7 +1209,7 @@ Blocks.prototype.onReceiveBlock = function (block, peer) {
 		return;
 	}
 
-if (block.previousBlock === __private.lastBlock.id && __private.lastBlock.height + 1 === block.height) {
+	if (block.previousBlock === __private.lastBlock.id && __private.lastBlock.height + 1 === block.height) {
 		library.logger.info([
 			'Received new block id:', block.id,
 			'height:', block.height,
@@ -1229,21 +1229,21 @@ if (block.previousBlock === __private.lastBlock.id && __private.lastBlock.height
 					return setImmediate(cb, err, lastValidBlock);
 				}
 				block.transactions=res.body.transactions
-				self.processBlock(block, true, cb, true);
+				self.processBlock(block, true, function(){}, true);
 			}
 		);
 	} else if (block.previousBlock !== __private.lastBlock.id && __private.lastBlock.height + 1 === block.height) {
 		// Fork: Same height but different previous block id
 		// TODO Uncle forging: check for grandfather
 		modules.delegates.fork(block, 1);
-		return setImmediate(cb, 'Fork');
+		return;
 	} else if (block.previousBlock === __private.lastBlock.previousBlock && block.height === __private.lastBlock.height && block.id !== __private.lastBlock.id) {
 		// Fork: Same height and previous block id, but different block id
 		// TODO Orphan Block: Decide winning branch
 		modules.delegates.fork(block, 5);
-		return setImmediate(cb, 'Fork');
+		return;
 	} else {
-		return setImmediate(cb);
+		return;
 	}
 };
 
