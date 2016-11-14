@@ -173,7 +173,7 @@ __private.attachApi = function () {
 			return res.status(200).json({success: false, error: e.toString()});
 		}
 
-		library.bus.message('receiveBlock', block);
+		library.bus.message('receiveBlock', block, req.peer);
 
 		return res.status(200).json({success: true, blockId: block.id});
 	});
@@ -484,7 +484,7 @@ Transport.prototype.onNewBlock = function (block, broadcast) {
 			generatorPublicKey: block.generatorPublicKey,
 			transactions:[]
 		}
-		self.broadcast({limit: 50}, {api: '/blocks', data: {block: blockheaders}, method: 'POST'});
+		self.broadcast({limit: 100}, {api: '/blocks', data: {block: blockheaders}, method: 'POST'});
 		library.network.io.sockets.emit('blocks/change', {});
 	}
 };

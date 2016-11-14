@@ -1201,7 +1201,7 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 };
 
 // Events
-Blocks.prototype.onReceiveBlock = function (block) {
+Blocks.prototype.onReceiveBlock = function (block, peer) {
 	// When client is not loaded, is syncing or round is ticking
 	// Do not receive new blocks as client is not ready
 	if (!__private.loaded || modules.loader.syncing() || modules.rounds.ticking()) {
@@ -1209,43 +1209,42 @@ Blocks.prototype.onReceiveBlock = function (block) {
 		return;
 	}
 
-	library.sequence.add(function (cb) {
-		if (block.previousBlock === __private.lastBlock.id && __private.lastBlock.height + 1 === block.height) {
-			library.logger.info([
-				'Received new block id:', block.id,
-				'height:', block.height,
-				'round:',  modules.rounds.calc(modules.blocks.getLastBlock().height),
-				'slot:', slots.getSlotNumber(block.timestamp),
-				'reward:', modules.blocks.getLastBlock().reward
-			].join(' '));
+if (block.previousBlock === __private.lastBlock.id && __private.lastBlock.height + 1 === block.height) {
+		library.logger.info([
+			'Received new block id:', block.id,
+			'height:', block.height,
+			'round:',  modules.rounds.calc(modules.blocks.getLastBlock().height),
+			'slot:', slots.getSlotNumber(block.timestamp),
+			'reward:', modules.blocks.getLastBlock().reward
+		].join(' '));
 
-			self.lastReceipt(new Date());
-			//let's download the fullblock transactions
-			modules.transport.getFromPeer(peer, {
-					method: 'GET',
-					api: '/transactions?blockId=' + block.id
-				}, function (err, res) {
-					if (err || res.body.error) {
-						return setImmediate(cb, err, lastValidBlock);
-					}
-					block.transactions=res.body.transactions
-					self.processBlock(block, true, cb, true);
+		self.lastReceipt(new Date());
+		//let's download the fullblock transactions
+		modules.transport.getFromPeer(peer, {
+				method: 'GET',
+				api: '/transactions?blockId=' + block.id
+			}, function (err, res) {
+				if (err || res.body.error) {
+					library.logger.debug('Cannot get transactions from last received block', block.id);
+					return setImmediate(cb, err, lastValidBlock);
 				}
-			);
-		} else if (block.previousBlock !== __private.lastBlock.id && __private.lastBlock.height + 1 === block.height) {
-			// Fork: Same height but different previous block id
-			// TODO Uncle forging: check for grandfather
-			modules.delegates.fork(block, 1);
-			return setImmediate(cb, 'Fork');
-		} else if (block.previousBlock === __private.lastBlock.previousBlock && block.height === __private.lastBlock.height && block.id !== __private.lastBlock.id) {
-			// Fork: Same height and previous block id, but different block id
-			// TODO Orphan Block: Decide winning branch
-			modules.delegates.fork(block, 5);
-			return setImmediate(cb, 'Fork');
-		} else {
-			return setImmediate(cb);
-		}
-	});
+				block.transactions=res.body.transactions
+				self.processBlock(block, true, cb, true);
+			}
+		);
+	} else if (block.previousBlock !== __private.lastBlock.id && __private.lastBlock.height + 1 === block.height) {
+		// Fork: Same height but different previous block id
+		// TODO Uncle forging: check for grandfather
+		modules.delegates.fork(block, 1);
+		return setImmediate(cb, 'Fork');
+	} else if (block.previousBlock === __private.lastBlock.previousBlock && block.height === __private.lastBlock.height && block.id !== __private.lastBlock.id) {
+		// Fork: Same height and previous block id, but different block id
+		// TODO Orphan Block: Decide winning branch
+		modules.delegates.fork(block, 5);
+		return setImmediate(cb, 'Fork');
+	} else {
+		return setImmediate(cb);
+	}
 };
 
 Blocks.prototype.onBind = function (scope) {
