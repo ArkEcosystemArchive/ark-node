@@ -1220,6 +1220,8 @@ Blocks.prototype.onReceiveBlock = function (block, peer) {
 
 		self.lastReceipt(new Date());
 		//let's download the fullblock transactions
+		library.logger.debug("Received block",block)
+		library.logger.debug("calling "+peer.ip+":"+peer.port+"/transactions?blockId=" + block.id);
 		modules.transport.getFromPeer(peer, {
 				method: 'GET',
 				api: '/transactions?blockId=' + block.id
