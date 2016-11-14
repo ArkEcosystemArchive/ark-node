@@ -1221,7 +1221,7 @@ Blocks.prototype.onReceiveBlock = function (block, peer) {
 		self.lastReceipt(new Date());
 		//let's download the fullblock transactions
 		library.logger.debug("Received block",block)
-		library.logger.debug("calling "+peer.ip+":"+peer.port+"/transactions?blockId=" + block.id);
+		library.logger.debug("calling "+peer.ip+":"+peer.port+"/api/transactions?blockId=" + block.id);
 		modules.transport.getFromPeer(peer, {
 				method: 'GET',
 				api: '/transactions?blockId=' + block.id
@@ -1233,8 +1233,13 @@ Blocks.prototype.onReceiveBlock = function (block, peer) {
 
 				library.logger.debug("received transactions",res.body);
 
-				block.transactions=res.body.transactions
-				self.processBlock(block, true, function(){}, true);
+				if(res.body.transactions.length==block.numberOfTransactions){
+					block.transactions=res.body.transactions
+					self.processBlock(block, true, function(){}, true);
+				}
+				else{
+					return;
+				}
 			}
 		);
 	} else if (block.previousBlock !== __private.lastBlock.id && __private.lastBlock.height + 1 === block.height) {
