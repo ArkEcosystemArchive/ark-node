@@ -1224,7 +1224,7 @@ Blocks.prototype.onReceiveBlock = function (block, peer) {
 
 		modules.transport.getFromPeer(peer, {
 				method: 'GET',
-				api: '/transactions?blockId=' + block.id
+				url: '/api/transactions?blockId=' + block.id
 			}, function (err, res) {
 				if (err || res.body.error) {
 					library.logger.debug('Cannot get transactions from last received block', block.id);
