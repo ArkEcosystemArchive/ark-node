@@ -1210,45 +1210,48 @@ Blocks.prototype.onReceiveBlock = function (block, peer) {
 	}
 
 	if (block.previousBlock === __private.lastBlock.id && __private.lastBlock.height + 1 === block.height) {
-		library.logger.info([
-			'Received new block id:', block.id,
-			'height:', block.height,
-			'round:',  modules.rounds.calc(modules.blocks.getLastBlock().height),
-			'slot:', slots.getSlotNumber(block.timestamp),
-			'reward:', modules.blocks.getLastBlock().reward
-		].join(' '));
 
-		self.lastReceipt(new Date());
+		library.sequence.add(function (cb) {
+			library.logger.info([
+				'Received new block id:', block.id,
+				'height:', block.height,
+				'round:',  modules.rounds.calc(modules.blocks.getLastBlock().height),
+				'slot:', slots.getSlotNumber(block.timestamp),
+				'reward:', modules.blocks.getLastBlock().reward
+			].join(' '));
 
-		library.logger.debug("Received block",block);
+			self.lastReceipt(new Date());
 
-		if(block.numberOfTransactions==0){
-			self.processBlock(block, true, function(){}, true);
-		}
-		else{
-			//let's download the full block transactions
-			modules.transport.getFromPeer(peer, {
-				 method: 'GET',
-				 url: '/api/transactions?blockId=' + block.id
-			 }, function (err, res) {
-				 library.logger.debug("received ->",res);
-				 if (err || res.body.error) {
-					 library.logger.debug('Cannot get transactions from last received block', block.id);
-					 return setImmediate(cb, err);
+			library.logger.debug("Received block",block);
+
+			if(block.numberOfTransactions==0){
+				self.processBlock(block, true, cb, true);
+			}
+			else{
+				//let's download the full block transactions
+				modules.transport.getFromPeer(peer, {
+					 method: 'GET',
+					 url: '/api/transactions?blockId=' + block.id
+				 }, function (err, res) {
+					 library.logger.debug("received ->",res);
+					 if (err || res.body.error) {
+						 library.logger.debug('Cannot get transactions from last received block', block.id);
+						 return setImmediate(cb, err);
+					 }
+					 library.logger.debug("calling "+peer.ip+":"+peer.port+"/api/transactions?blockId=" + block.id);
+					 library.logger.debug("received transactions",res.body);
+
+					 if(res.body.transactions.length==block.numberOfTransactions){
+						 block.transactions=res.body.transactions
+						 self.processBlock(block, true, cb true);
+					 }
+					 else{
+						 return setImmediate(cb,"Block transactions could not be downloaded.");
+					 }
 				 }
-				 library.logger.debug("calling "+peer.ip+":"+peer.port+"/api/transactions?blockId=" + block.id);
-				 library.logger.debug("received transactions",res.body);
-
-				 if(res.body.transactions.length==block.numberOfTransactions){
-					 block.transactions=res.body.transactions
-					 self.processBlock(block, true, function(){}, true);
-				 }
-				 else{
-					 return;
-				 }
-			 }
-		 );
-		}
+			 );
+			}
+		});
 	} else if (block.previousBlock !== __private.lastBlock.id && __private.lastBlock.height + 1 === block.height) {
 		// Fork: Same height but different previous block id
 		// TODO Uncle forging: check for grandfather
