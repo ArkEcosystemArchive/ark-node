@@ -1219,29 +1219,36 @@ Blocks.prototype.onReceiveBlock = function (block, peer) {
 		].join(' '));
 
 		self.lastReceipt(new Date());
-		//let's download the fullblock transactions
-		library.logger.debug("Received block",block)
 
-		modules.transport.getFromPeer(peer, {
-				method: 'GET',
-				url: '/api/transactions?blockId=' + block.id
-			}, function (err, res) {
-				if (err || res.body.error) {
-					library.logger.debug('Cannot get transactions from last received block', block.id);
-					return setImmediate(cb, err, lastValidBlock);
-				}
-				library.logger.debug("calling "+peer.ip+":"+peer.port+"/api/transactions?blockId=" + block.id);
-				library.logger.debug("received transactions",res.body);
+		library.logger.debug("Received block",block);
 
-				if(res.body.transactions.length==block.numberOfTransactions){
-					block.transactions=res.body.transactions
-					self.processBlock(block, true, function(){}, true);
-				}
-				else{
-					return;
-				}
-			}
-		);
+		if(block.numberOfTransactions==0){
+			self.processBlock(block, true, function(){}, true);
+		}
+		else{
+			//let's download the full block transactions
+			modules.transport.getFromPeer(peer, {
+				 method: 'GET',
+				 url: '/api/transactions?blockId=' + block.id
+			 }, function (err, res) {
+				 library.logger.debug("received ->",res);
+				 if (err || res.body.error) {
+					 library.logger.debug('Cannot get transactions from last received block', block.id);
+					 return setImmediate(cb, err);
+				 }
+				 library.logger.debug("calling "+peer.ip+":"+peer.port+"/api/transactions?blockId=" + block.id);
+				 library.logger.debug("received transactions",res.body);
+
+				 if(res.body.transactions.length==block.numberOfTransactions){
+					 block.transactions=res.body.transactions
+					 self.processBlock(block, true, function(){}, true);
+				 }
+				 else{
+					 return;
+				 }
+			 }
+		 );
+		}
 	} else if (block.previousBlock !== __private.lastBlock.id && __private.lastBlock.height + 1 === block.height) {
 		// Fork: Same height but different previous block id
 		// TODO Uncle forging: check for grandfather
