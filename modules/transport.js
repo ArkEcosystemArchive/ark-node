@@ -477,7 +477,7 @@ Transport.prototype.onNewBlock = function (block, broadcast) {
 			totalFee: block.totalFee,
 			reward: block.reward,
 			payloadHash: block.payloadHash,
-			timestamp: block..timestamp,
+			timestamp: block.timestamp,
 			numberOfTransactions: block.numberOfTransactions,
 			payloadLength: block.payloadLength,
 			previousBlock: block.previousBlock,
