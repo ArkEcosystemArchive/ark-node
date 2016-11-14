@@ -101,7 +101,7 @@ __private.list = function (filter, cb) {
 	}
 
 	if (!filter.limit) {
-		params.limit = 100;
+		params.limit = constants.maxTxsPerBlock;
 	} else {
 		params.limit = Math.abs(filter.limit);
 	}
@@ -112,8 +112,8 @@ __private.list = function (filter, cb) {
 		params.offset = Math.abs(filter.offset);
 	}
 
-	if (params.limit > 100) {
-		return setImmediate(cb, 'Invalid limit. Maximum is 100');
+	if (params.limit > constants.maxTxsPerBlock) {
+		return setImmediate(cb, 'Invalid limit. Maximum is '+constants.maxTxsPerBlock);
 	}
 
 	var orderBy = OrderBy(

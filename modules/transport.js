@@ -470,8 +470,21 @@ Transport.prototype.onUnconfirmedTransaction = function (transaction, broadcast)
 
 Transport.prototype.onNewBlock = function (block, broadcast) {
 	if (broadcast) {
-		//we want to propagate as fast as possible
-		self.broadcast({limit: 50}, {api: '/blocks', data: {block: block}, method: 'POST'});
+		//we want to propagate as fast as possible only the headers
+		blockheaders = {
+			version: block.version,
+			totalAmount: block.totalAmount,
+			totalFee: block.totalFee,
+			reward: block.reward,
+			payloadHash: block.payloadHash,
+			timestamp: block..timestamp,
+			numberOfTransactions: block.numberOfTransactions,
+			payloadLength: block.payloadLength,
+			previousBlock: block.previousBlock,
+			generatorPublicKey: block.generatorPublicKey,
+			transactions:[]
+		}
+		self.broadcast({limit: 50}, {api: '/blocks', data: {block: blockheaders}, method: 'POST'});
 		library.network.io.sockets.emit('blocks/change', {});
 	}
 };

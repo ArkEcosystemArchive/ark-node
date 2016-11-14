@@ -28,13 +28,13 @@ __private.attachApi = function () {
 		res.status(500).send({success: false, error: 'Blockchain is loading'});
 	});
 
-	router.get('/', function (req, res) {
-		if (__private.loaded) {
-			res.render('wallet.html', {layout: false});
-		} else {
-			res.render('loading.html');
-		}
-	});
+	// router.get('/', function (req, res) {
+	// 	if (__private.loaded) {
+	// 		res.render('wallet.html', {layout: false});
+	// 	} else {
+	// 		res.render('loading.html');
+	// 	}
+	// });
 
 	router.use(function (req, res, next) {
 		if (req.url.indexOf('/api/') === -1 && req.url.indexOf('/peer/') === -1) {
