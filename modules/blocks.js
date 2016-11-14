@@ -1225,6 +1225,7 @@ Blocks.prototype.onReceiveBlock = function (block, peer) {
 			library.logger.debug("Received block",block);
 
 			if(block.numberOfTransactions==0){
+				library.logger.debug("processing empty block",block.id);
 				self.processBlock(block, true, cb, true);
 			}
 			else{
