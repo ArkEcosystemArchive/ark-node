@@ -235,7 +235,7 @@ __private.attachApi = function () {
 
 		var transactions = req.body.transactions;
 
-		for(i in transactions){
+		for(var i=0;i<transactions.length;i++){
 			var transaction=transactions[i];
 			try {
 				transaction = library.logic.transaction.objectNormalize(transaction);
@@ -250,22 +250,18 @@ __private.attachApi = function () {
 
 				return res.status(200).json({success: false, message: 'Invalid transaction body'});
 			}
-
-			library.balancesSequence.add(function (cb) {
-				library.logger.debug('Received transaction ' + transaction.id + ' from peer ' + req.peer.string);
-				modules.transactions.receiveTransactions([transaction], cb);
-			}, function (err) {
-				if (err) {
-					library.logger.error(['Transaction', id].join(' '), err.toString());
-					if (transaction) { library.logger.error('Transaction', transaction); }
-
-					res.status(200).json({success: false, message: err.toString()});
-				} else {
-					res.status(200).json({success: true, transactionId: transaction.id});
-				}
-			});
 		}
 
+		library.balancesSequence.add(function (cb) {
+			library.logger.debug('Received '+ transactions.length +' transactions from peer ' + req.peer.string);
+			modules.transactions.receiveTransactions(transactions, cb);
+		}, function (err) {
+			if (err) {
+				res.status(200).json({success: false, message: err.toString()});
+			} else {
+				res.status(200).json({success: true, transactionId: transaction.id});
+			}
+		});
 	});
 
 	router.get('/height', function (req, res) {
@@ -464,14 +460,14 @@ Transport.prototype.onBlockchainReady = function () {
 	__private.loaded = true;
 };
 
-Transport.prototype.onSignature = function (signature, broadcast) {
-	if (broadcast) {
-		//no emergency for tx propagation
-		//TODO: anyway pending signature management will be removed!!!
-		self.broadcast({limit: 10}, {api: '/signatures', data: {signature: signature}, method: 'POST'});
-		//library.network.io.sockets.emit('signature/change', {});
-	}
-};
+// Transport.prototype.onSignature = function (signature, broadcast) {
+// 	if (broadcast) {
+// 		//no emergency for tx propagation
+// 		//TODO: anyway pending signature management will be removed!!!
+// 		self.broadcast({limit: 10}, {api: '/signatures', data: {signature: signature}, method: 'POST'});
+// 		//library.network.io.sockets.emit('signature/change', {});
+// 	}
+// };
 
 Transport.prototype.onUnconfirmedTransaction = function (transaction, broadcast) {
 	if (broadcast) {
