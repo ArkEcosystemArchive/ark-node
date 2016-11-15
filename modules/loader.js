@@ -344,11 +344,11 @@ __private.loadBlocksFromNetwork = function (cb) {
 						});
 					}
 
-					if (lastBlock.height === 1) {
+					// if (lastBlock.height === 1) {
 						loadBlocks();
-					} else {
-						getCommonBlock(loadBlocks);
-					}
+					// } else {
+					// 	getCommonBlock(loadBlocks);
+					// }
 				},
 				function (err) {
 					if (err) {
