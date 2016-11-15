@@ -472,6 +472,8 @@ Transport.prototype.onNewBlock = function (block, broadcast) {
 	if (broadcast) {
 		// we want to propagate as fast as possible only the headers unless the node generated it.
 		var blockheaders = {
+			id: block.id,
+			height: block.height,
 			version: block.version,
 			totalAmount: block.totalAmount,
 			totalFee: block.totalFee,

@@ -1209,16 +1209,17 @@ Blocks.prototype.onReceiveBlock = function (block, peer) {
 		return;
 	}
 
+	library.logger.info([
+		'Received new block id:', block.id,
+		'height:', block.height,
+		'round:',  modules.rounds.calc(block.height),
+		'slot:', slots.getSlotNumber(block.timestamp),
+		'reward:', block.reward
+	].join(' '));
+
 	if (block.previousBlock === __private.lastBlock.id && __private.lastBlock.height + 1 === block.height) {
 
 		library.sequence.add(function (cb) {
-			library.logger.info([
-				'Received new block id:', block.id,
-				'height:', block.height,
-				'round:',  modules.rounds.calc(modules.blocks.getLastBlock().height),
-				'slot:', slots.getSlotNumber(block.timestamp),
-				'reward:', modules.blocks.getLastBlock().reward
-			].join(' '));
 
 			self.lastReceipt(new Date());
 
