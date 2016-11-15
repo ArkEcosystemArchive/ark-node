@@ -237,7 +237,25 @@ Peers.prototype.list = function (options, cb) {
 	var list = Object.keys(__private.peers).map(function (key) {
     return __private.peers[key];
 	});
-	return setImmediate(cb, null, list);
+	function shuffle(array) {
+	  var currentIndex = array.length, temporaryValue, randomIndex;
+
+	  // While there remain elements to shuffle...
+	  while (0 !== currentIndex) {
+
+	    // Pick a remaining element...
+	    randomIndex = Math.floor(Math.random() * currentIndex);
+	    currentIndex -= 1;
+
+	    // And swap it with the current element.
+	    temporaryValue = array[currentIndex];
+	    array[currentIndex] = array[randomIndex];
+	    array[randomIndex] = temporaryValue;
+	  }
+
+	  return array;
+	}
+	return setImmediate(cb, null, shuffle(list));
 	// options.limit = options.limit || 100;
 	//
 	// library.db.query(sql.randomList(options), options).then(function (rows) {
