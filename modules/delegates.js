@@ -255,7 +255,7 @@ __private.forge = function (cb) {
 		}
 
 		library.sequence.add(function (cb) {
-			if (slots.getSlotNumber(currentBlockData.time) === slots.getSlotNumber() && (new Date().getTime()-__private.coldstart>60*1000)) {
+			if ((slots.getSlotNumber(currentBlockData.time) === slots.getSlotNumber()) && (new Date().getTime()-__private.coldstart>60*1000)) {
 				modules.blocks.generateBlock(currentBlockData.keypair, currentBlockData.time, function (err) {
 					if(!err){
 						library.logger.info([

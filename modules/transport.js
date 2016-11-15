@@ -18,6 +18,7 @@ var modules, library, self, __private = {}, shared = {};
 __private.headers = {};
 __private.loaded = false;
 __private.messages = {};
+__private.broadcastTransactions = [];
 
 // Constructor
 function Transport (cb, scope) {
@@ -25,6 +26,14 @@ function Transport (cb, scope) {
 	self = this;
 
 	__private.attachApi();
+
+	setInterval(function(){
+		if(__private.broadcastTransactions.length>0){
+			var transactions=__private.broadcastTransactions;
+			__private.broadcastTransactions=[];
+			self.broadcast({limit: 20}, {api: '/transactions', data: {transactions: transactions}, method: 'POST'});
+		}
+	}, 10*1000);
 
 	setImmediate(cb, null, self);
 }
@@ -178,43 +187,43 @@ __private.attachApi = function () {
 		return res.status(200).json({success: true, blockId: block.id});
 	});
 
-	router.post('/signatures', function (req, res) {
-		res.set(__private.headers);
-
-		library.schema.validate(req.body, schema.signatures, function (err) {
-			if (err) {
-				return res.status(200).json({success: false, error: 'Signature validation failed'});
-			}
-
-			modules.multisignatures.processSignature(req.body.signature, function (err) {
-				if (err) {
-					return res.status(200).json({success: false, error: 'Error processing signature'});
-				} else {
-					return res.status(200).json({success: true});
-				}
-			});
-		});
-	});
-
-	router.get('/signatures', function (req, res) {
-		res.set(__private.headers);
-
-		var unconfirmedList = modules.transactions.getUnconfirmedTransactionList();
-		var signatures = [];
-
-		async.eachSeries(unconfirmedList, function (trs, cb) {
-			if (trs.signatures && trs.signatures.length) {
-				signatures.push({
-					transaction: trs.id,
-					signatures: trs.signatures
-				});
-			}
-
-			return setImmediate(cb);
-		}, function () {
-			return res.status(200).json({success: true, signatures: signatures});
-		});
-	});
+	// router.post('/signatures', function (req, res) {
+	// 	res.set(__private.headers);
+	//
+	// 	library.schema.validate(req.body, schema.signatures, function (err) {
+	// 		if (err) {
+	// 			return res.status(200).json({success: false, error: 'Signature validation failed'});
+	// 		}
+	//
+	// 		modules.multisignatures.processSignature(req.body.signature, function (err) {
+	// 			if (err) {
+	// 				return res.status(200).json({success: false, error: 'Error processing signature'});
+	// 			} else {
+	// 				return res.status(200).json({success: true});
+	// 			}
+	// 		});
+	// 	});
+	// });
+	//
+	// router.get('/signatures', function (req, res) {
+	// 	res.set(__private.headers);
+	//
+	// 	var unconfirmedList = modules.transactions.getUnconfirmedTransactionList();
+	// 	var signatures = [];
+	//
+	// 	async.eachSeries(unconfirmedList, function (trs, cb) {
+	// 		if (trs.signatures && trs.signatures.length) {
+	// 			signatures.push({
+	// 				transaction: trs.id,
+	// 				signatures: trs.signatures
+	// 			});
+	// 		}
+	//
+	// 		return setImmediate(cb);
+	// 	}, function () {
+	// 		return res.status(200).json({success: true, signatures: signatures});
+	// 	});
+	// });
 
 	router.get('/transactions', function (req, res) {
 		res.set(__private.headers);
@@ -224,36 +233,39 @@ __private.attachApi = function () {
 	router.post('/transactions', function (req, res) {
 		res.set(__private.headers);
 
-		var transaction = req.body.transaction;
-		var id = (transaction? transaction.id : 'null');
+		var transactions = req.body.transactions;
 
-		try {
-			transaction = library.logic.transaction.objectNormalize(transaction);
-		} catch (e) {
-			library.logger.error(['Transaction', id].join(' '), e.toString());
-			if (transaction) { library.logger.error('Transaction', transaction); }
-
-			if (req.peer) {
-				// Ban peer for 60 minutes
-				__private.banPeer({peer: req.peer, code: 'ETRANSACTION', req: req, clock: 3600});
-			}
-
-			return res.status(200).json({success: false, message: 'Invalid transaction body'});
-		}
-
-		library.balancesSequence.add(function (cb) {
-			library.logger.debug('Received transaction ' + transaction.id + ' from peer ' + req.peer.string);
-			modules.transactions.receiveTransactions([transaction], cb);
-		}, function (err) {
-			if (err) {
-				library.logger.error(['Transaction', id].join(' '), err.toString());
+		for(i in transactions){
+			var transaction=transactions[i];
+			try {
+				transaction = library.logic.transaction.objectNormalize(transaction);
+			} catch (e) {
+				library.logger.error(['Transaction', id].join(' '), e.toString());
 				if (transaction) { library.logger.error('Transaction', transaction); }
 
-				res.status(200).json({success: false, message: err.toString()});
-			} else {
-				res.status(200).json({success: true, transactionId: transaction.id});
+				if (req.peer) {
+					// Ban peer for 60 minutes
+					__private.banPeer({peer: req.peer, code: 'ETRANSACTION', req: req, clock: 3600});
+				}
+
+				return res.status(200).json({success: false, message: 'Invalid transaction body'});
 			}
-		});
+
+			library.balancesSequence.add(function (cb) {
+				library.logger.debug('Received transaction ' + transaction.id + ' from peer ' + req.peer.string);
+				modules.transactions.receiveTransactions([transaction], cb);
+			}, function (err) {
+				if (err) {
+					library.logger.error(['Transaction', id].join(' '), err.toString());
+					if (transaction) { library.logger.error('Transaction', transaction); }
+
+					res.status(200).json({success: false, message: err.toString()});
+				} else {
+					res.status(200).json({success: true, transactionId: transaction.id});
+				}
+			});
+		}
+
 	});
 
 	router.get('/height', function (req, res) {
@@ -457,14 +469,14 @@ Transport.prototype.onSignature = function (signature, broadcast) {
 		//no emergency for tx propagation
 		//TODO: anyway pending signature management will be removed!!!
 		self.broadcast({limit: 10}, {api: '/signatures', data: {signature: signature}, method: 'POST'});
-		library.network.io.sockets.emit('signature/change', {});
+		//library.network.io.sockets.emit('signature/change', {});
 	}
 };
 
 Transport.prototype.onUnconfirmedTransaction = function (transaction, broadcast) {
 	if (broadcast) {
-		self.broadcast({limit: 50}, {api: '/transactions', data: {transaction: transaction}, method: 'POST'});
-		library.network.io.sockets.emit('transactions/change', {});
+		__private.broadcastTransactions.push(transaction);
+		//library.network.io.sockets.emit('transactions/change', {});
 	}
 };
 
@@ -497,7 +509,7 @@ Transport.prototype.onNewBlock = function (block, broadcast) {
 		}
 
 		self.broadcast({all: all, limit: limitbroadcast}, {api: '/blocks', data: {block: blockheaders}, method: 'POST'});
-		library.network.io.sockets.emit('blocks/change', {});
+		//library.network.io.sockets.emit('blocks/change', {});
 	}
 };
 

@@ -75,36 +75,36 @@ __private.syncTrigger = function (turnOn) {
 		});
 	}
 };
-
-__private.loadSignatures = function (cb) {
-	modules.transport.getFromRandomPeer({
-		api: '/signatures',
-		method: 'GET'
-	}, function (err, res) {
-		if (err) {
-			return setImmediate(cb);
-		}
-
-		library.schema.validate(res.body, schema.loadSignatures, function (err) {
-			if (err) {
-				return setImmediate(cb);
-			}
-
-			library.sequence.add(function (cb) {
-				async.eachSeries(res.body.signatures, function (signature, cb) {
-					async.eachSeries(signature.signatures, function (s, cb) {
-						modules.multisignatures.processSignature({
-							signature: s,
-							transaction: signature.transaction
-						}, function (err) {
-							return setImmediate(cb);
-						});
-					}, cb);
-				}, cb);
-			}, cb);
-		});
-	});
-};
+//
+// __private.loadSignatures = function (cb) {
+// 	modules.transport.getFromRandomPeer({
+// 		api: '/signatures',
+// 		method: 'GET'
+// 	}, function (err, res) {
+// 		if (err) {
+// 			return setImmediate(cb);
+// 		}
+//
+// 		library.schema.validate(res.body, schema.loadSignatures, function (err) {
+// 			if (err) {
+// 				return setImmediate(cb);
+// 			}
+//
+// 			library.sequence.add(function (cb) {
+// 				async.eachSeries(res.body.signatures, function (signature, cb) {
+// 					async.eachSeries(signature.signatures, function (s, cb) {
+// 						modules.multisignatures.processSignature({
+// 							signature: s,
+// 							transaction: signature.transaction
+// 						}, function (err) {
+// 							return setImmediate(cb);
+// 						});
+// 					}, cb);
+// 				}, cb);
+// 			}, cb);
+// 		});
+// 	});
+// };
 
 __private.loadUnconfirmedTransactions = function (cb) {
 	modules.transport.getFromRandomPeer({
@@ -548,20 +548,20 @@ Loader.prototype.onPeersReady = function () {
 		}
 	});
 
-	setImmediate(function nextLoadSignatures () {
-		if (__private.loaded && !self.syncing()) {
-			library.logger.debug('Loading signatures');
-			__private.loadSignatures(function (err) {
-				if (err) {
-					library.logger.warn('Signatures timer', err);
-				}
-
-				setTimeout(nextLoadSignatures, 14000);
-			});
-		} else {
-			setTimeout(nextLoadSignatures, 14000);
-		}
-	});
+	// setImmediate(function nextLoadSignatures () {
+	// 	if (__private.loaded && !self.syncing()) {
+	// 		library.logger.debug('Loading signatures');
+	// 		__private.loadSignatures(function (err) {
+	// 			if (err) {
+	// 				library.logger.warn('Signatures timer', err);
+	// 			}
+	//
+	// 			setTimeout(nextLoadSignatures, 14000);
+	// 		});
+	// 	} else {
+	// 		setTimeout(nextLoadSignatures, 14000);
+	// 	}
+	// });
 };
 
 Loader.prototype.onBind = function (scope) {
