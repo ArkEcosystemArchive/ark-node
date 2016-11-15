@@ -24,6 +24,7 @@ __private.loaded = false;
 __private.forging = false;
 __private.blockReward = new BlockReward();
 __private.keypairs = {};
+__private.coldstart = new Date().getTime();
 
 // Constructor
 function Delegates (cb, scope) {
@@ -254,7 +255,7 @@ __private.forge = function (cb) {
 		}
 
 		library.sequence.add(function (cb) {
-			if (slots.getSlotNumber(currentBlockData.time) === slots.getSlotNumber()) {
+			if (slots.getSlotNumber(currentBlockData.time) === slots.getSlotNumber() && (new Date().getTime()-__private.coldstart>60*1000)) {
 				modules.blocks.generateBlock(currentBlockData.keypair, currentBlockData.time, function (err) {
 					if(!err){
 						library.logger.info([
@@ -396,6 +397,7 @@ Delegates.prototype.isAForgingDelegatesPublicKey = function(publicKey) {
 	//don't leak privateKey out of the module!
 	return !!__private.keypairs[publicKey];
 }
+
 Delegates.prototype.generateDelegateList = function (height, cb) {
 	__private.getKeysSortByVote(function (err, truncDelegateList) {
 		if (err) {
