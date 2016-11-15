@@ -247,7 +247,6 @@ __private.attachApi = function () {
 					// Ban peer for 60 minutes
 					__private.banPeer({peer: req.peer, code: 'ETRANSACTION', req: req, clock: 3600});
 				}
-
 				return res.status(200).json({success: false, message: 'Invalid transaction body'});
 			}
 		}
@@ -362,7 +361,7 @@ Transport.prototype.getFromRandomPeer = function (config, options, cb) {
 Transport.prototype.getFromPeer = function (peer, options, cb) {
 	var url;
 
-	library.logger.debug("getFromPeer", peer);
+	library.logger.debug("getFromPeer", [peer, options]);
 
 	if (options.api) {
 		url = '/peer' + options.api;
