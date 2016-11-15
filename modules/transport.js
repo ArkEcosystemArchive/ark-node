@@ -307,7 +307,7 @@ Transport.prototype.broadcast = function (config, options, cb) {
 
 	config.limit = config.limit || 1;
 	modules.peers.list(config, function (err, peers) {
-		if (peers.length > config.limit) {
+		if (!config.all && peers.length > config.limit) {
 			peers = peers.slice(0,config.limit);
 		}
 		if (!err) {
@@ -455,6 +455,7 @@ Transport.prototype.onBlockchainReady = function () {
 Transport.prototype.onSignature = function (signature, broadcast) {
 	if (broadcast) {
 		//no emergency for tx propagation
+		//TODO: anyway pending signature management will be removed!!!
 		self.broadcast({limit: 10}, {api: '/signatures', data: {signature: signature}, method: 'POST'});
 		library.network.io.sockets.emit('signature/change', {});
 	}
@@ -462,16 +463,15 @@ Transport.prototype.onSignature = function (signature, broadcast) {
 
 Transport.prototype.onUnconfirmedTransaction = function (transaction, broadcast) {
 	if (broadcast) {
-		//No emergency for tx propagation
-		self.broadcast({limit: 10}, {api: '/transactions', data: {transaction: transaction}, method: 'POST'});
+		self.broadcast({limit: 50}, {api: '/transactions', data: {transaction: transaction}, method: 'POST'});
 		library.network.io.sockets.emit('transactions/change', {});
 	}
 };
 
 Transport.prototype.onNewBlock = function (block, broadcast) {
 	if (broadcast) {
-		//we want to propagate as fast as possible only the headers
-		blockheaders = {
+		// we want to propagate as fast as possible only the headers unless the node generated it.
+		var blockheaders = {
 			version: block.version,
 			totalAmount: block.totalAmount,
 			totalFee: block.totalFee,
@@ -482,9 +482,19 @@ Transport.prototype.onNewBlock = function (block, broadcast) {
 			payloadLength: block.payloadLength,
 			previousBlock: block.previousBlock,
 			generatorPublicKey: block.generatorPublicKey,
+			blockSignature: block.blockSignature,
 			transactions:[]
 		}
-		self.broadcast({limit: 100}, {api: '/blocks', data: {block: blockheaders}, method: 'POST'});
+
+		var all=false, limitbroadcast=10;
+
+		if(modules.delegates.isAForgingDelegatesPublicKey(block.generatorPublicKey)){
+			library.logger.debug("Full block broadcasted", block.id);
+			blockheaders.transactions=block.transactions;
+			all=true;
+		}
+
+		self.broadcast({all: all, limit: limitbroadcast}, {api: '/blocks', data: {block: blockheaders}, method: 'POST'});
 		library.network.io.sockets.emit('blocks/change', {});
 	}
 };

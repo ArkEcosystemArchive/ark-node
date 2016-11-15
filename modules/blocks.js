@@ -892,13 +892,13 @@ __private.applyBlock = function (block, broadcast, cb, saveBlock) {
 					}
 
 					library.logger.debug('Block applied correctly with ' + block.transactions.length + ' transactions');
-					//library.bus.message('newBlock', block, broadcast);
+					library.bus.message('newBlock', block, broadcast);
 
 					// DATABASE write. Update delegates accounts
 					modules.rounds.tick(block, seriesCb);
 				});
 			} else {
-				//library.bus.message('newBlock', block, broadcast);
+				library.bus.message('newBlock', block, broadcast);
 
 				// DATABASE write. Update delegates accounts
 				modules.rounds.tick(block, seriesCb);
@@ -1224,7 +1224,8 @@ Blocks.prototype.onReceiveBlock = function (block, peer) {
 
 			library.logger.debug("Received block",block);
 
-			if(block.numberOfTransactions==0){
+			//RECEIVED full block?
+			if(block.numberOfTransactions==0 || block.numberOfTransactions==block.transactions.length){
 				library.logger.debug("processing empty block",block.id);
 				self.processBlock(block, true, cb, true);
 			}
@@ -1234,7 +1235,6 @@ Blocks.prototype.onReceiveBlock = function (block, peer) {
 					 method: 'GET',
 					 url: '/api/transactions?blockId=' + block.id
 				 }, function (err, res) {
-					 library.logger.debug("received ->",res);
 					 if (err || res.body.error) {
 						 library.logger.debug('Cannot get transactions from last received block', block.id);
 						 return setImmediate(cb, err);

@@ -390,7 +390,12 @@ __private.loadMyDelegates = function (cb) {
 	}, cb);
 };
 
+
 // Public methods
+Delegates.prototype.isAForgingDelegatesPublicKey = function(publicKey) {
+	//don't leak privateKey out of the module!
+	return !!__private.keypairs[publicKey];
+}
 Delegates.prototype.generateDelegateList = function (height, cb) {
 	__private.getKeysSortByVote(function (err, truncDelegateList) {
 		if (err) {

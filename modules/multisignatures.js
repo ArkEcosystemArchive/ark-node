@@ -11,6 +11,7 @@ var sql = require('../sql/multisignatures.js');
 var transactionTypes = require('../helpers/transactionTypes.js');
 
 // Private fields
+// TODO: to be removed
 var modules, library, self, __private = {}, shared = {};
 
 __private.assetTypes = {};
