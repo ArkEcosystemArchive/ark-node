@@ -525,7 +525,6 @@ Loader.prototype.onPeersReady = function () {
 				if (err) {
 					library.logger.warn('Blocks timer', err);
 				}
-
 				setTimeout(nextLoadBlock, 8000);
 			});
 		} else {
