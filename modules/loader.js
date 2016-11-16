@@ -424,8 +424,8 @@ __private.findGoodPeers = function (heights) {
 	var peers = heights.filter(function (item) {
 		return item && Math.abs(height - item.height) < aggregation + 1;
 	}).map(function (item) {
-		// Add the height info to the peer. To be removed?
 		item.peer.height = item.height;
+		item.peer.block_id = item.block_id;
 		modules.peers.update(item.peer, function(err, res){});
 		return item.peer;
 	});
@@ -440,7 +440,10 @@ __private.findGoodPeers = function (heights) {
 // - With this list we try to get a peer with sensibly good blockchain height (see __private.findGoodPeers for actual strategy).
 Loader.prototype.getNetwork = function (cb) {
 	// If __private.network.height is not so far (i.e. 1 round) from current node height, just return cached __private.network.
-	if (__private.network.height > 0 && Math.abs(__private.network.height - modules.blocks.getLastBlock().height) < 101) {
+	// If node is forging, do it more often (every block?)
+	var distance = modules.delegates.isForging() ? 1 : 51
+
+	if (__private.network.height > 0 && Math.abs(__private.network.height - modules.blocks.getLastBlock().height) < distance) {
 		return setImmediate(cb, null, __private.network);
 	}
 
@@ -501,6 +504,7 @@ Loader.prototype.getNetwork = function (cb) {
 				} else if (!__private.network.peers.length) {
 					return setImmediate(cb, 'Failed to find enough good peers to sync with');
 				} else {
+					library.logger.debug('network', __private.network);
 					return setImmediate(cb, null, __private.network);
 				}
 			});
@@ -516,6 +520,7 @@ Loader.prototype.syncing = function () {
 Loader.prototype.onPeersReady = function () {
 	setImmediate(function nextLoadBlock () {
 		var lastReceipt = modules.blocks.lastReceipt();
+		var timeout = modules.delegates.isForging() ? 1000 : 10000
 
 		if (__private.loaded && !self.syncing() && (!lastReceipt || lastReceipt.stale)) {
 			library.logger.debug('Loading blocks from network');
@@ -525,10 +530,10 @@ Loader.prototype.onPeersReady = function () {
 				if (err) {
 					library.logger.warn('Blocks timer', err);
 				}
-				setTimeout(nextLoadBlock, 8000);
+				setTimeout(nextLoadBlock, timeout);
 			});
 		} else {
-			setTimeout(nextLoadBlock, 8000);
+			setTimeout(nextLoadBlock, timeout);
 		}
 	});
 
@@ -540,10 +545,10 @@ Loader.prototype.onPeersReady = function () {
 					library.logger.warn('Unconfirmed transactions timer', err);
 				}
 
-				setTimeout(nextLoadUnconfirmedTransactions, 14000);
+				setTimeout(nextLoadUnconfirmedTransactions, 30000);
 			});
 		} else {
-			setTimeout(nextLoadUnconfirmedTransactions, 14000);
+			setTimeout(nextLoadUnconfirmedTransactions, 30000);
 		}
 	});
 

@@ -202,6 +202,9 @@ __private.getKeysSortByVote = function (cb) {
 	});
 };
 
+// TODO: highly buggy
+// 1. we are not sure we have the last block height!
+// 2. corner case: height last block of the round? we get the very wrong delegate list
 __private.getBlockSlotData = function (slot, height, cb) {
 	self.generateDelegateList(height, function (err, activeDelegates) {
 		if (err) {
@@ -243,11 +246,13 @@ __private.forge = function (cb) {
 	}
 
 	var currentSlot = slots.getSlotNumber();
+	// If we are supposed to forge now, be sure we got the very last block
 	var lastBlock = modules.blocks.getLastBlock();
 	if (currentSlot === slots.getSlotNumber(lastBlock.timestamp)) {
 		library.logger.debug('Last block within same delegate slot');
 		return setImmediate(cb);
 	}
+
 	__private.getBlockSlotData(currentSlot, lastBlock.height + 1, function (err, currentBlockData) {
 		if (err || currentBlockData === null) {
 			library.logger.debug('Skipping delegate slot');
@@ -256,19 +261,58 @@ __private.forge = function (cb) {
 
 		library.sequence.add(function (cb) {
 			if ((slots.getSlotNumber(currentBlockData.time) === slots.getSlotNumber()) && (new Date().getTime()-__private.coldstart>60*1000)) {
-				modules.blocks.generateBlock(currentBlockData.keypair, currentBlockData.time, function (err) {
-					if(!err){
-						library.logger.info([
-							'Forged new block id:',
-							modules.blocks.getLastBlock().id,
-							'height:', modules.blocks.getLastBlock().height,
-							'round:', modules.rounds.calc(modules.blocks.getLastBlock().height),
-							'slot:', slots.getSlotNumber(currentBlockData.time),
-							'reward:' + modules.blocks.getLastBlock().reward
-						].join(' '));
+				// TODO: First be sure to retrieve and process the last generated block!!!
+				// Using PBFT observation: if a good quorum is at the same height with same blockid -> let's forge
+				modules.loader.getNetwork(function (err, network) {
+					if (err) {
+						return setImmediate(cb, err);
 					}
-					modules.blocks.lastReceipt(new Date());
-					return setImmediate(cb, err);
+					else {
+						var quorum=0;
+						var forkedquorum=0;
+						var maxheight=lastBlock.height;
+						var letsforge=false;
+						for(var i in network.peers){
+							var peer=network.peers[i];
+							if(peer.height==lastBlock.height){
+								if(peer.block_id==lastBlock.id){
+									quorum = quorum + 1;
+								}
+								else{
+									forkedquorum = forkedquorum + 1;
+								}
+							}
+							if(peer.height>lastBlock.height){
+								maxheight = peer.height;
+							}
+						}
+						// PBFT everybody looks like they are on same branch no other block have been forged
+						// TODO: what if maxheight > lastBlock.height
+						if(quorum/(quorum+forkedquorum) > 0.67){
+							letsforge = true;
+						}
+						else{
+							//We are forked!
+							self.fork(lastBlock,6);
+						}
+
+						if(letsforge){
+							modules.blocks.generateBlock(currentBlockData.keypair, currentBlockData.time, function (err) {
+								if(!err){
+									library.logger.info([
+										'Forged new block id:',
+										modules.blocks.getLastBlock().id,
+										'height:', modules.blocks.getLastBlock().height,
+										'round:', modules.rounds.calc(modules.blocks.getLastBlock().height),
+										'slot:', slots.getSlotNumber(currentBlockData.time),
+										'reward:' + modules.blocks.getLastBlock().reward
+									].join(' '));
+								}
+								modules.blocks.lastReceipt(new Date());
+								return setImmediate(cb, err);
+							});
+						}
+					}
 				});
 			} else {
 				library.logger.debug('Delegate slot', slots.getSlotNumber());
@@ -554,6 +598,10 @@ Delegates.prototype.cleanup = function (cb) {
 	__private.loaded = false;
 	return setImmediate(cb);
 };
+
+Delegates.prototype.isForging = function(){
+	return __private.forging;
+}
 
 Delegates.prototype.enableForging = function () {
 	if (!__private.forging) {

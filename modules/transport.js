@@ -497,10 +497,16 @@ Transport.prototype.onNewBlock = function (block, broadcast) {
 
 		var all=false, limitbroadcast=10;
 
-		if(modules.delegates.isAForgingDelegatesPublicKey(block.generatorPublicKey)){
+		if(modules.delegates.isForging()){
+			// I am a forging delegate, I broadcast it full block
+			// Rationale i don't want to be pinged back to download the block payload
 			library.logger.debug("Full block broadcasted", block.id);
 			blockheaders.transactions=block.transactions;
-			all=true;
+			// I broadcast to everybody I know if I generated this block
+			all=modules.delegates.isAForgingDelegatesPublicKey(block.generatorPublicKey);
+
+			//I increase the reach if i am a forging node;
+			limitbroadcast=10;
 		}
 
 		self.broadcast({all: all, limit: limitbroadcast}, {api: '/blocks', data: {block: blockheaders}, method: 'POST'});
