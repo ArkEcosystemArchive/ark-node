@@ -302,7 +302,7 @@ __private.loadBlocksFromNetwork = function (cb) {
 	var errorCount = 0;
 	var loaded = false;
 
-	self.getNetwork(function (err, network) {
+	self.getNetwork(false, function (err, network) {
 		if (err) {
 			return setImmediate(cb, err);
 		} else {
@@ -438,12 +438,12 @@ __private.findGoodPeers = function (heights) {
 // - We pick 100 random peers from a random peer (could be unreachable).
 // - Then for each of them we grab the height of their blockchain.
 // - With this list we try to get a peer with sensibly good blockchain height (see __private.findGoodPeers for actual strategy).
-Loader.prototype.getNetwork = function (cb) {
+Loader.prototype.getNetwork = function (force, cb) {
 	// If __private.network.height is not so far (i.e. 1 round) from current node height, just return cached __private.network.
 	// If node is forging, do it more often (every block?)
-	var distance = modules.delegates.isForging() ? 1 : 51
+	var distance = modules.delegates.isForging() ? 10 : 51
 
-	if (__private.network.height > 0 && Math.abs(__private.network.height - modules.blocks.getLastBlock().height) < distance) {
+	if (!force && __private.network.height > 0 && Math.abs(__private.network.height - modules.blocks.getLastBlock().height) < distance) {
 		return setImmediate(cb, null, __private.network);
 	}
 

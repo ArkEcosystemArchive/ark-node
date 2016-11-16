@@ -261,11 +261,19 @@ __private.forge = function (cb) {
 
 		library.sequence.add(function (cb) {
 			if ((slots.getSlotNumber(currentBlockData.time) === slots.getSlotNumber()) && (new Date().getTime()-__private.coldstart>60*1000)) {
-				// TODO: First be sure to retrieve and process the last generated block!!!
 				// Using PBFT observation: if a good quorum is at the same height with same blockid -> let's forge
-				modules.loader.getNetwork(function (err, network) {
+				// TODO: we should pre ask network quorum if i can send this forged block, sending node publicKey, a timestamp and a signature of the timestamp.
+				// This is to prevent from delegate multiple forging on several servers.
+				modules.loader.getNetwork(true, function (err, network) {
 					if (err) {
 						return setImmediate(cb, err);
+					}
+					else if(network.peers.length < 20){
+						library.logger.info("Network reach is not sufficient to get quorum",[
+							"network # of reached peers:", network.peers.length,
+							"last block id:", lastBlock.id
+						].join(' '));
+						return setImmediate(cb);
 					}
 					else {
 						var quorum=0;
@@ -284,6 +292,9 @@ __private.forge = function (cb) {
 								}
 							}
 							if(peer.height>lastBlock.height){
+								//TODO: need to check if this peer is reliable
+								//have (blockid, signed blockid (by generator), generator pubkey)
+								//and then check if the generator was legit to forge at this level
 								maxheight = peer.height;
 								overheightquorum = overheightquorum + 1;
 							}
@@ -309,7 +320,7 @@ __private.forge = function (cb) {
 						}
 
 						if(letsforge){
-							library.logger.debug("Enough quorum from network",[
+							library.logger.info("Enough quorum from network",[
 								"quorum:", quorum/(quorum+forkedquorum),
 								"last block id:", lastBlock.id
 							].join(' '));

@@ -1,7 +1,8 @@
 'use strict';
 
 var TransportSql = {
-  getCommonBlock: 'SELECT MAX("height") AS "height", "id", "previousBlock", "timestamp" FROM blocks WHERE "id" IN ($1:csv) GROUP BY "id" ORDER BY "height" DESC'
+  getCommonBlock: 'SELECT MAX("height") AS "height", "id", "previousBlock", "timestamp" FROM blocks WHERE "id" IN ($1:csv) GROUP BY "id" ORDER BY "height" DESC',
+  getBlockTransactions: 'SELECT * from trs_list WHERE "t_blockId" = ${block_id}'
 };
 
 module.exports = TransportSql;

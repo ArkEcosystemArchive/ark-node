@@ -339,7 +339,7 @@ Transport.prototype.getFromRandomPeer = function (config, options, cb) {
 	}
 	config.limit = 1;
 
-	// modules.loader.getNetwork(function (err, network) {
+	// modules.loader.getNetwork(false, function (err, network) {
 	// 	if (err) {
 	// 		return setImmediate(cb, err);
 	// 	}
@@ -505,8 +505,8 @@ Transport.prototype.onNewBlock = function (block, broadcast) {
 			// I broadcast to everybody I know if I generated this block
 			all=modules.delegates.isAForgingDelegatesPublicKey(block.generatorPublicKey);
 
-			//I increase the reach if i am a forging node;
-			limitbroadcast=10;
+			// I increase the reach if i am a forging node;
+			limitbroadcast=25;
 		}
 
 		self.broadcast({all: all, limit: limitbroadcast}, {api: '/blocks', data: {block: blockheaders}, method: 'POST'});

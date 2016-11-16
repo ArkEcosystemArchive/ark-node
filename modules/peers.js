@@ -90,7 +90,7 @@ __private.updatePeersList = function (cb) {
 			// Update only a subset of the peers to decrease the noise on the network.
 			// Default is 20 peers. To be fined tuned. Node gets checked by a peer every 3s on average.
 			// Maybe increasing schedule (every 60s right now).
-			var maxUpdatePeers = Math.floor(library.config.peers.options.maxUpdatePeers) || 20;
+			var maxUpdatePeers = Math.floor(library.config.peers.options.maxUpdatePeers) || 50;
 			if (peers.length > maxUpdatePeers) {
 				peers = peers.slice(0, maxUpdatePeers);
 			}
