@@ -271,6 +271,7 @@ __private.forge = function (cb) {
 						var quorum=0;
 						var forkedquorum=0;
 						var maxheight=lastBlock.height;
+						var overheightquorum=0;
 						var letsforge=false;
 						for(var i in network.peers){
 							var peer=network.peers[i];
@@ -284,16 +285,27 @@ __private.forge = function (cb) {
 							}
 							if(peer.height>lastBlock.height){
 								maxheight = peer.height;
+								overheightquorum = overheightquorum + 1;
 							}
 						}
+						//if "enough" nodes has a height > lastBlock.height, let's wait before forging.
+						if(overheightquorum>3){
+							return setImmediate(cb);
+						}
+
 						// PBFT everybody looks like they are on same branch no other block have been forged
-						// TODO: what if maxheight > lastBlock.height
 						if(quorum/(quorum+forkedquorum) > 0.67){
 							letsforge = true;
 						}
 						else{
 							//We are forked!
-							self.fork(lastBlock,6);
+							library.logger.debug("Forked from network",[
+								"network:", network,
+								"quorum:", quorum/(quorum+forkedquorum),
+								"last block:", lastBlock
+							].join(' '));
+							self.fork(lastBlock, 6);
+							return setImmediate(cb, "Fork 6 - Not enough quorum to forge next block: " + quorum/(quorum+forkedquorum));
 						}
 
 						if(letsforge){
