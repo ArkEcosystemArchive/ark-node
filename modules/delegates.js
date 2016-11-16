@@ -265,10 +265,15 @@ __private.forge = function (cb) {
 				// TODO: we should pre ask network quorum if i can send this forged block, sending node publicKey, a timestamp and a signature of the timestamp.
 				// This is to prevent from delegate multiple forging on several servers.
 				modules.loader.getNetwork(true, function (err, network) {
+					var minimumNetworkReach=library.config.peers.minimumNetworkReach;
+					if(!minimumNetworkReach){
+						minimumNetworkReach = 20;
+					}
+					//library.logger.debug("minimumNetworkReach",minimumNetworkReach);
 					if (err) {
 						return setImmediate(cb, err);
 					}
-					else if(network.peers.length < 20){
+					else if(network.peers.length < minimumNetworkReach){
 						library.logger.info("Network reach is not sufficient to get quorum",[
 							"network # of reached peers:", network.peers.length,
 							"last block id:", lastBlock.id
@@ -284,7 +289,7 @@ __private.forge = function (cb) {
 						for(var i in network.peers){
 							var peer=network.peers[i];
 							if(peer.height==lastBlock.height){
-								if(peer.block_id==lastBlock.id){
+								if(peer.blockheader.id==lastBlock.id){
 									quorum = quorum + 1;
 								}
 								else{
@@ -292,9 +297,6 @@ __private.forge = function (cb) {
 								}
 							}
 							if(peer.height>lastBlock.height){
-								//TODO: need to check if this peer is reliable
-								//have (blockid, signed blockid (by generator), generator pubkey)
-								//and then check if the generator was legit to forge at this level
 								maxheight = peer.height;
 								overheightquorum = overheightquorum + 1;
 							}

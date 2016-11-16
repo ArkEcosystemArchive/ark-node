@@ -425,7 +425,7 @@ __private.findGoodPeers = function (heights) {
 		return item && Math.abs(height - item.height) < aggregation + 1;
 	}).map(function (item) {
 		item.peer.height = item.height;
-		item.peer.block_id = item.block_id;
+		item.peer.blockheader = item.header;
 		modules.peers.update(item.peer, function(err, res){});
 		return item.peer;
 	});
@@ -483,10 +483,20 @@ Loader.prototype.getNetwork = function (force, cb) {
 						}
 
 						var heightIsValid = library.schema.validate(res.body, schema.getNetwork.height);
-
-						if (heightIsValid) {
-							library.logger.info(['Received height:', res.body.height, ', block_id: ', res.body.id,'from peer'].join(' '), peer.string);
-							return setImmediate(cb, null, {peer: peer, height: res.body.height, block_id:res.body.id});
+						var valid = false;
+						//library.logger.debug("received block header", res.body.header);
+						try {
+							valid = library.logic.block.verifySignature(res.body.header);
+						} catch (e) {
+							library.logger.error(e);
+						}
+						if(!valid){
+							library.logger.warn('Received invalid block header from peer. Can be a tentative to attack the network!', peer.string);
+							return setImmediate(cb);
+						}
+						if(heightIsValid) {
+							library.logger.info(['Received height:', res.body.height, ', block_id: ', res.body.header.id,'from peer'].join(' '), peer.string);
+							return setImmediate(cb, null, {peer: peer, height: res.body.height, header:res.body.header});
 						} else {
 							library.logger.warn('Received invalid height from peer', peer.string);
 							return setImmediate(cb);

@@ -265,10 +265,26 @@ __private.attachApi = function () {
 
 	router.get('/height', function (req, res) {
 		res.set(__private.headers);
+		var block = modules.blocks.getLastBlock();
+		var blockheader={
+			id: block.id,
+			height: block.height,
+			version: block.version,
+			totalAmount: block.totalAmount,
+			totalFee: block.totalFee,
+			reward: block.reward,
+			payloadHash: block.payloadHash,
+			timestamp: block.timestamp,
+			numberOfTransactions: block.numberOfTransactions,
+			payloadLength: block.payloadLength,
+			previousBlock: block.previousBlock,
+			generatorPublicKey: block.generatorPublicKey,
+			blockSignature: block.blockSignature
+		}
 		res.status(200).json({
 			success: true,
 			height: modules.blocks.getLastBlock().height,
-			id: modules.blocks.getLastBlock().id
+			header: blockheader
 		});
 	});
 
