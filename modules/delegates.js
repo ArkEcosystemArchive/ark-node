@@ -300,15 +300,19 @@ __private.forge = function (cb) {
 						else{
 							//We are forked!
 							library.logger.debug("Forked from network",[
-								"network:", network,
+								"network:", JSON.stringify(network),
 								"quorum:", quorum/(quorum+forkedquorum),
-								"last block:", lastBlock
+								"last block id:", lastBlock.id
 							].join(' '));
 							self.fork(lastBlock, 6);
 							return setImmediate(cb, "Fork 6 - Not enough quorum to forge next block: " + quorum/(quorum+forkedquorum));
 						}
 
 						if(letsforge){
+							library.logger.debug("Enough quorum from network",[
+								"quorum:", quorum/(quorum+forkedquorum),
+								"last block id:", lastBlock.id
+							].join(' '));
 							modules.blocks.generateBlock(currentBlockData.keypair, currentBlockData.time, function (err) {
 								if(!err){
 									library.logger.info([
