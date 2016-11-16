@@ -481,8 +481,8 @@ Loader.prototype.getNetwork = function (force, cb) {
 							library.logger.warn('Failed to get height from peer', peer.string);
 							return setImmediate(cb);
 						}
-
-						var heightIsValid = library.schema.validate(res.body, schema.getNetwork.height);
+						//TODO: validate block header instead
+						var heightIsValid = library.schema.validate(res.body.header, schema.getNetwork.height);
 						var valid = false;
 						//library.logger.debug("received block header", res.body.header);
 						try {
@@ -495,8 +495,8 @@ Loader.prototype.getNetwork = function (force, cb) {
 							return setImmediate(cb);
 						}
 						if(heightIsValid) {
-							library.logger.info(['Received height:', res.body.height, ', block_id: ', res.body.header.id,'from peer'].join(' '), peer.string);
-							return setImmediate(cb, null, {peer: peer, height: res.body.height, header:res.body.header});
+							library.logger.info(['Received height:', res.body.header.height, ', block_id: ', res.body.header.id,'from peer'].join(' '), peer.string);
+							return setImmediate(cb, null, {peer: peer, height: res.body.header.height, header:res.body.header});
 						} else {
 							library.logger.warn('Received invalid height from peer', peer.string);
 							return setImmediate(cb);
