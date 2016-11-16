@@ -486,7 +486,8 @@ Loader.prototype.getNetwork = function (force, cb) {
 						var valid = false;
 						//library.logger.debug("received block header", res.body.header);
 						try {
-							valid = library.logic.block.verifySignature(res.body.header);
+							//TODO: also check that the delegate was legit to forge the block.
+							valid = (res.body.header.height == 1) || library.logic.block.verifySignature(res.body.header);
 						} catch (e) {
 							library.logger.error(e);
 						}
