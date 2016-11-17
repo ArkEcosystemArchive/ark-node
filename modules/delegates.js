@@ -281,32 +281,39 @@ __private.forge = function (cb) {
 						return setImmediate(cb);
 					}
 					else {
-						var quorum=0;
-						var forkedquorum=0;
-						var maxheight=lastBlock.height;
-						var overheightquorum=0;
-						var letsforge=false;
+						var quorum = 0;
+						var forkedquorum = 0;
+						var maxheight = lastBlock.height;
+						var overheightquorum = 0;
+						var letsforge = false;
 						for(var i in network.peers){
-							var peer=network.peers[i];
-							if(peer.height==lastBlock.height){
-								if(peer.blockheader.id==lastBlock.id){
+							var peer = network.peers[i];
+							if(peer.height == lastBlock.height){
+								if(peer.blockheader.id == lastBlock.id){
 									quorum = quorum + 1;
 								}
 								else{
 									forkedquorum = forkedquorum + 1;
 								}
 							}
-							if(peer.height>lastBlock.height){
+							if(peer.height > lastBlock.height){
 								maxheight = peer.height;
 								overheightquorum = overheightquorum + 1;
 							}
 						}
 						//if "enough" nodes has a height > lastBlock.height, let's wait before forging.
-						if(overheightquorum>3){
+						if(overheightquorum > 3){
+							//TODO: we should check if the "over height" block is legit:
+							// # if delegate = myself -> legit -> letsforge = false (multiple node forging same delegate)
+							// # if delegate != myself and blockslot = my slot -> attack or forked from them.
+							// # if blockslot < my slot -> legit (otherwise uncle forging) -> letsforge = false
+							// # if blockslot > my slot
+							//   -> if delegate is legit for the blockslot -> too late -> letsforge = false (otherwise the node will fork 1)
+							//   -> if delegate is not legit -> attack -> letsforge = true
 							return setImmediate(cb);
 						}
 
-						// PBFT everybody looks like they are on same branch no other block have been forged
+						// PBFT: most nodes are on same branch, no other block have been forged
 						if(quorum/(quorum+forkedquorum) > 0.67){
 							letsforge = true;
 						}

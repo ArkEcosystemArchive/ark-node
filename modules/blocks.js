@@ -19,9 +19,23 @@ var transactionTypes = require('../helpers/transactionTypes.js');
 // Private fields
 var modules, library, self, __private = {}, shared = {};
 
+//Block on the top of the chain
+//TODO: encapsulate all changes into a blocksequence
 __private.lastBlock = {};
+
+//Last time received a block
 __private.lastReceipt = null;
+
+//Block reward calculation
 __private.blockReward = new BlockReward();
+
+//Blockchain is loaded from peers
+__private.loaded = false;
+
+//Request for shutdown, please clean/stop your job, will shutdown when isActive = false
+__private.cleanup = false;
+//To prevent from shutdown if true, that would lead to unstable database state
+__private.isActive = false;
 
 // @formatter:off
 __private.blocksDataFields = {
@@ -59,10 +73,6 @@ __private.blocksDataFields = {
 	't_signatures': String
 };
 // @formatter:on
-
-__private.loaded = false;
-__private.cleanup = false;
-__private.isActive = false;
 
 // Constructor
 function Blocks (cb, scope) {
@@ -373,10 +383,13 @@ __private.getIdSequence = function (height, cb) {
 			}
 		}
 
-		if (__private.lastBlock && !_.includes(rows, __private.lastBlock.id)) {
+		// multithread will eat you
+		var lastBlock = __private.lastBlock;
+
+		if (lastBlock && !_.includes(rows, lastBlock.id)) {
 			rows.unshift({
-				id: __private.lastBlock.id,
-				height: __private.lastBlock.height
+				id: lastBlock.id,
+				height: lastBlock.height
 			});
 		}
 
@@ -645,16 +658,19 @@ Blocks.prototype.loadLastBlock = function (cb) {
 };
 
 Blocks.prototype.getLastBlock = function () {
-	if (__private.lastBlock) {
+	// multithread will eat you
+	var lastBlock = __private.lastBlock;
+
+	if (lastBlock) {
 		var epoch = constants.epochTime / 1000;
-		var lastBlockTime = epoch + __private.lastBlock.timestamp;
+		var lastBlockTime = epoch + lastBlock.timestamp;
 		var currentTime = new Date().getTime() / 1000;
 
-		__private.lastBlock.secondsAgo = currentTime - lastBlockTime;
-		__private.lastBlock.fresh = (__private.lastBlock.secondsAgo < 120);
+		lastBlock.secondsAgo = currentTime - lastBlockTime;
+		lastBlock.fresh = (lastBlock.secondsAgo < 120);
 	}
 
-	return __private.lastBlock;
+	return lastBlock;
 };
 
 // Will return all possible errors that are intrinsic to the block.
@@ -667,15 +683,17 @@ Blocks.prototype.verifyBlock = function (block) {
 	} catch (e) {
 		result.errors.push(e.toString());
 	}
+	//TODO: This does not work well so far on multithread...
+	var lastBlock=__private.lastBlock;
 
-	block.height = __private.lastBlock.height + 1;
+	block.height = lastBlock.height + 1;
 
 	if (!block.previousBlock && block.height !== 1) {
 		result.errors.push('Invalid previous block');
-	} else if (block.previousBlock !== __private.lastBlock.id) {
+	} else if (block.previousBlock !== lastBlock.id) {
 		// Fork: Same height but different previous block id.
 		modules.delegates.fork(block, 1);
-		result.errors.push(['Invalid previous block:', block.previousBlock, 'expected:', __private.lastBlock.id].join(' '));
+		result.errors.push(['Invalid previous block:', block.previousBlock, 'expected:', lastBlock.id].join(' '));
 	}
 
 	var expectedReward = __private.blockReward.calcReward(block.height);
@@ -701,7 +719,7 @@ Blocks.prototype.verifyBlock = function (block) {
 	}
 
 	var blockSlotNumber = slots.getSlotNumber(block.timestamp);
-	var lastBlockSlotNumber = slots.getSlotNumber(__private.lastBlock.timestamp);
+	var lastBlockSlotNumber = slots.getSlotNumber(lastBlock.timestamp);
 
 	if (blockSlotNumber > slots.getSlotNumber() || blockSlotNumber <= lastBlockSlotNumber) {
 		result.errors.push('Invalid block timestamp');
@@ -958,7 +976,7 @@ __private.applyGenesisBlock = function (block, cb) {
 			return process.exit(0);
 		} else {
 			__private.lastBlock = block;
-			modules.rounds.tick(__private.lastBlock, cb);
+			modules.rounds.tick(block, cb);
 		}
 	});
 };
@@ -1131,17 +1149,23 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, cb) {
 	});
 };
 
+
+//TODO: add to a block sequence
 Blocks.prototype.deleteBlocksBefore = function (block, cb) {
 	var blocks = [];
 
+	//multithread will eat you
+	var lastBlock = __private.lastBlock;
+
 	async.whilst(
 		function () {
-			return (block.height < __private.lastBlock.height);
+			return (block.height < lastBlock.height);
 		},
 		function (next) {
-			blocks.unshift(__private.lastBlock);
-			__private.popLastBlock(__private.lastBlock, function (err, newLastBlock) {
+			blocks.unshift(lastBlock);
+			__private.popLastBlock(lastBlock, function (err, newLastBlock) {
 				__private.lastBlock = newLastBlock;
+				lastBlock = __private.lastBlock;
 				next(err);
 			});
 		},
@@ -1151,6 +1175,7 @@ Blocks.prototype.deleteBlocksBefore = function (block, cb) {
 	);
 };
 
+//TODO: add to a block sequence
 Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 	var transactions = modules.transactions.getUnconfirmedTransactionList(false, constants.maxTxsPerBlock);
 	var ready = [];
@@ -1189,6 +1214,7 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 			block = library.logic.block.create({
 				keypair: keypair,
 				timestamp: timestamp,
+				//TODO: fireworks!
 				previousBlock: __private.lastBlock,
 				transactions: ready
 			});
@@ -1202,71 +1228,71 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 
 // Events
 Blocks.prototype.onReceiveBlock = function (block, peer) {
-	// When client is not loaded, is syncing or round is ticking
-	// Do not receive new blocks as client is not ready
-	if (!__private.loaded || modules.loader.syncing() || modules.rounds.ticking()) {
-		library.logger.debug('Client not ready to receive block', block.id);
-		return;
-	}
+	//we make sure we process one block at a time
+	library.sequence.add(function (cb) {
+		// When client is not loaded, is syncing or round is ticking
+		// Do not receive new blocks as client is not ready
+		if (!__private.loaded || modules.loader.syncing() || modules.rounds.ticking()) {
+			library.logger.debug('Client not ready to receive block', block.id);
+			return setImmediate(cb);
+		}
 
-	library.logger.info([
-		'Received new block id:', block.id,
-		'height:', block.height,
-		'round:',  modules.rounds.calc(block.height),
-		'slot:', slots.getSlotNumber(block.timestamp),
-		'reward:', block.reward
-	].join(' '));
+		library.logger.info([
+			'Received new block id:', block.id,
+			'height:', block.height,
+			'round:',  modules.rounds.calc(block.height),
+			'slot:', slots.getSlotNumber(block.timestamp),
+			'reward:', block.reward
+		].join(' '));
 
-	if (block.previousBlock === __private.lastBlock.id && __private.lastBlock.height + 1 === block.height) {
+		// __private.lastBlock can change with time: multithread will eat you!
+		var lastBlock = __private.lastBlock;
 
-		library.sequence.add(function (cb) {
+		if (block.previousBlock === lastBlock.id && lastBlock.height + 1 === block.height) {
+				self.lastReceipt(new Date());
+				//library.logger.debug("Received block", block);
+				//RECEIVED full block?
+				if(block.numberOfTransactions==0 || block.numberOfTransactions==block.transactions.length){
+					library.logger.debug("processing full block",block.id);
+					self.processBlock(block, true, cb, true);
+				}
+				else{
+					//let's download the full block transactions
+					modules.transport.getFromPeer(peer, {
+						 method: 'GET',
+						 url: '/api/transactions?blockId=' + block.id
+					 }, function (err, res) {
+						 if (err || res.body.error) {
+							 library.logger.debug('Cannot get transactions from last received block', block.id);
+							 return setImmediate(cb, err);
+						 }
+						 library.logger.debug("calling "+peer.ip+":"+peer.port+"/api/transactions?blockId=" + block.id);
+						 library.logger.debug("received transactions",res.body);
 
-			self.lastReceipt(new Date());
-
-			library.logger.debug("Received block",block);
-
-			//RECEIVED full block?
-			if(block.numberOfTransactions==0 || block.numberOfTransactions==block.transactions.length){
-				library.logger.debug("processing full block",block.id);
-				self.processBlock(block, true, cb, true);
-			}
-			else{
-				//let's download the full block transactions
-				modules.transport.getFromPeer(peer, {
-					 method: 'GET',
-					 url: '/api/transactions?blockId=' + block.id
-				 }, function (err, res) {
-					 if (err || res.body.error) {
-						 library.logger.debug('Cannot get transactions from last received block', block.id);
-						 return setImmediate(cb, err);
+						 if(res.body.transactions.length==block.numberOfTransactions){
+							 block.transactions=res.body.transactions
+							 self.processBlock(block, true, cb, true);
+						 }
+						 else{
+							 return setImmediate(cb, "Block transactions could not be downloaded.");
+						 }
 					 }
-					 library.logger.debug("calling "+peer.ip+":"+peer.port+"/api/transactions?blockId=" + block.id);
-					 library.logger.debug("received transactions",res.body);
-
-					 if(res.body.transactions.length==block.numberOfTransactions){
-						 block.transactions=res.body.transactions
-						 self.processBlock(block, true, cb, true);
-					 }
-					 else{
-						 return setImmediate(cb,"Block transactions could not be downloaded.");
-					 }
-				 }
-			 );
-			}
-		});
-	} else if (block.previousBlock !== __private.lastBlock.id && __private.lastBlock.height + 1 === block.height) {
-		// Fork: Same height but different previous block id
-		// TODO Uncle forging: check for grandfather
-		modules.delegates.fork(block, 1);
-		return;
-	} else if (block.previousBlock === __private.lastBlock.previousBlock && block.height === __private.lastBlock.height && block.id !== __private.lastBlock.id) {
-		// Fork: Same height and previous block id, but different block id
-		// TODO Orphan Block: Decide winning branch
-		modules.delegates.fork(block, 5);
-		return;
-	} else {
-		return;
-	}
+				 );
+				}
+		} else if (block.previousBlock !== lastBlock.id && lastBlock.height + 1 === block.height) {
+			// Fork: Same height but different previous block id
+			// TODO Uncle forging: check for grandfather
+			modules.delegates.fork(block, 1);
+			return  setImmediate(cb);
+		} else if (block.previousBlock === lastBlock.previousBlock && block.height === lastBlock.height && block.id !== lastBlock.id) {
+			// Fork: Same height and previous block id, but different block id
+			// TODO Orphan Block: Decide winning branch
+			modules.delegates.fork(block, 5);
+			return setImmediate(cb);
+		} else {
+			return setImmediate(cb);
+		}
+	});
 };
 
 Blocks.prototype.onBind = function (scope) {
@@ -1293,7 +1319,8 @@ Blocks.prototype.cleanup = function (cb) {
 	}
 };
 
-// Shared
+// Shared public API
+// TODO: should be removed on forging node
 shared.getBlock = function (req, cb) {
 	if (!__private.loaded) {
 		return setImmediate(cb, 'Blockchain is loading');
