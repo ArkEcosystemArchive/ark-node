@@ -285,6 +285,7 @@ __private.forge = function (cb) {
 						var forkedquorum = 0;
 						var maxheight = lastBlock.height;
 						var overheightquorum = 0;
+						var overheightblock = null;
 						var letsforge = false;
 						for(var i in network.peers){
 							var peer = network.peers[i];
@@ -294,6 +295,7 @@ __private.forge = function (cb) {
 								}
 								else{
 									forkedquorum = forkedquorum + 1;
+									overheightblock = peer.blockheader;
 								}
 							}
 							if(peer.height > lastBlock.height){
@@ -301,15 +303,21 @@ __private.forge = function (cb) {
 								overheightquorum = overheightquorum + 1;
 							}
 						}
-						//if "enough" nodes has a height > lastBlock.height, let's wait before forging.
-						if(overheightquorum > 3){
+						//if a node has a height > lastBlock.height, let's wait before forging.
+						if(overheightquorum > 0){
 							//TODO: we should check if the "over height" block is legit:
 							// # if delegate = myself -> legit -> letsforge = false (multiple node forging same delegate)
+							if(overheightblock.generatorPublicKey == currentBlockData.keypair.publicKey){
+								return setImmediate(cb);
+							}
 							// # if delegate != myself and blockslot = my slot -> attack or forked from them.
+
 							// # if blockslot < my slot -> legit (otherwise uncle forging) -> letsforge = false
+
 							// # if blockslot > my slot
 							//   -> if delegate is legit for the blockslot -> too late -> letsforge = false (otherwise the node will fork 1)
 							//   -> if delegate is not legit -> attack -> letsforge = true
+							
 							return setImmediate(cb);
 						}
 

@@ -21,10 +21,10 @@ module.exports = {
 	maxAmount: 100000000,
 	maxClientConnections: 100,
 	maxConfirmations : 77 * 100,
-	maxPayloadLength: 5 * 1024 * 1024,
+	maxPayloadLength: 1 * 1024 * 1024,
 	maxRequests: 10000 * 12,
 	maxSignaturesLength: 196 * 256,
-	maxTxsPerBlock: 300,
+	maxTxsPerBlock: 50,
 	numberLength: 100000000,
 	requestLength: 104,
 	rewards: {
