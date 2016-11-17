@@ -25,6 +25,7 @@ module.exports = {
 	maxRequests: 10000 * 12,
 	maxSignaturesLength: 196 * 256,
 	maxTxsPerBlock: 50,
+	blocktime: 8,
 	numberLength: 100000000,
 	requestLength: 104,
 	rewards: {

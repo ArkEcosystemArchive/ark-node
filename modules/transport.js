@@ -33,7 +33,7 @@ function Transport (cb, scope) {
 			__private.broadcastTransactions=[];
 			self.broadcast({limit: 20}, {api: '/transactions', data: {transactions: transactions}, method: 'POST'});
 		}
-	}, 10*1000);
+	}, 5*1000);
 
 	setImmediate(cb, null, self);
 }
