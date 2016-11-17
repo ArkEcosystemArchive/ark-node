@@ -295,12 +295,12 @@ __private.forge = function (cb) {
 								}
 								else{
 									forkedquorum = forkedquorum + 1;
-									overheightblock = peer.blockheader;
 								}
 							}
-							if(peer.height > lastBlock.height){
+							else if(peer.height > lastBlock.height){
 								maxheight = peer.height;
 								overheightquorum = overheightquorum + 1;
+								overheightblock = peer.blockheader;
 							}
 						}
 						//if a node has a height > lastBlock.height, let's wait before forging.
@@ -317,12 +317,12 @@ __private.forge = function (cb) {
 							// # if blockslot > my slot
 							//   -> if delegate is legit for the blockslot -> too late -> letsforge = false (otherwise the node will fork 1)
 							//   -> if delegate is not legit -> attack -> letsforge = true
-							
+
 							return setImmediate(cb);
 						}
 
 						// PBFT: most nodes are on same branch, no other block have been forged
-						if(quorum/(quorum+forkedquorum) > 0.67){
+						if(quorum > 1 && (quorum/(quorum+forkedquorum) > 0.67)){
 							letsforge = true;
 						}
 						else{
