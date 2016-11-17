@@ -1103,6 +1103,8 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, cb) {
 			return setImmediate(cb, err, lastValidBlock);
 		}
 
+		library.logger.debug('loaded blocks:',res.body.blocks);
+
 		var report = library.schema.validate(res.body.blocks, schema.loadBlocksFromPeer);
 
 		if (!report) {

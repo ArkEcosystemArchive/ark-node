@@ -515,7 +515,7 @@ Loader.prototype.getNetwork = function (force, cb) {
 				} else if (!__private.network.peers.length) {
 					return setImmediate(cb, 'Failed to find enough good peers to sync with');
 				} else {
-					library.logger.debug('network', __private.network);
+					//library.logger.debug('network', __private.network);
 					return setImmediate(cb, null, __private.network);
 				}
 			});

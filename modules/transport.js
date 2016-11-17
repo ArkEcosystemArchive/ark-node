@@ -145,8 +145,14 @@ __private.attachApi = function () {
 			if (!report.isValid) { return res.json({success: false, error: report.issues}); }
 
 			// Get 1400+ blocks with all data (joins) from provided block id
+			var limit=1400;
+
+			//if forging send a small bunch only to prevent from being overloaded.
+			if(modules.delegates.isForging()){
+				limit=10;
+			}
 			modules.blocks.loadBlocksData({
-				limit: 1440,
+				limit: limit,
 				lastId: query.lastBlockId
 			}, function (err, data) {
 				res.status(200);

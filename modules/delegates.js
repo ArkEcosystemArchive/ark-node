@@ -282,7 +282,7 @@ __private.forge = function (cb) {
 					}
 					else {
 						var quorum = 0;
-						var forkedquorum = 0;
+						var noquorum = 0;
 						var maxheight = lastBlock.height;
 						var overheightquorum = 0;
 						var overheightblock = null;
@@ -294,13 +294,26 @@ __private.forge = function (cb) {
 									quorum = quorum + 1;
 								}
 								else{
-									forkedquorum = forkedquorum + 1;
+									noquorum = noquorum + 1;
 								}
 							}
+							else if(peer.height == lastBlock.height - 1){
+								if(peer.blockheader.id == lastBlock.previousBlock){
+									quorum = quorum + 1;
+								}
+								else{
+									noquorum = noquorum + 1;
+								}
+							}
+							// I don't have the last block out there ?
 							else if(peer.height > lastBlock.height){
 								maxheight = peer.height;
 								overheightquorum = overheightquorum + 1;
 								overheightblock = peer.blockheader;
+							}
+							// suppose the max network elasticity accross 5 blocks
+							else if(lastBlock.height - peer.height < 5){
+								noquorum = noquorum + 1;
 							}
 						}
 						//if a node has a height > lastBlock.height, let's wait before forging.
@@ -322,23 +335,23 @@ __private.forge = function (cb) {
 						}
 
 						// PBFT: most nodes are on same branch, no other block have been forged
-						if(quorum > 1 && (quorum/(quorum+forkedquorum) > 0.67)){
+						if(quorum/(quorum+noquorum) > 0.67){
 							letsforge = true;
 						}
 						else{
 							//We are forked!
 							library.logger.debug("Forked from network",[
 								"network:", JSON.stringify(network),
-								"quorum:", quorum/(quorum+forkedquorum),
+								"quorum:", quorum/(quorum+noquorum),
 								"last block id:", lastBlock.id
 							].join(' '));
 							self.fork(lastBlock, 6);
-							return setImmediate(cb, "Fork 6 - Not enough quorum to forge next block: " + quorum/(quorum+forkedquorum));
+							return setImmediate(cb, "Fork 6 - Not enough quorum to forge next block: " + quorum/(quorum+noquorum));
 						}
 
 						if(letsforge){
 							library.logger.info("Enough quorum from network",[
-								"quorum:", quorum/(quorum+forkedquorum),
+								"quorum:", quorum/(quorum+noquorum),
 								"last block id:", lastBlock.id
 							].join(' '));
 							modules.blocks.generateBlock(currentBlockData.keypair, currentBlockData.time, function (err) {
