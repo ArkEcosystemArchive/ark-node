@@ -1110,7 +1110,7 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, cb) {
 		if (!report) {
 			return setImmediate(cb, 'Received invalid blocks data', lastValidBlock);
 		}
-
+		//WTF i mean database dump over API!!!
 		var blocks = __private.readDbRows(res.body.blocks);
 
 		if (blocks.length === 0) {
