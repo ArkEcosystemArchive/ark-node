@@ -476,7 +476,7 @@ Blocks.prototype.lastReceipt = function (lastReceipt) {
 	if (__private.lastReceipt) {
 		var timeNow = new Date();
 		__private.lastReceipt.secondsAgo = Math.floor((timeNow.getTime() - __private.lastReceipt.getTime()) / 1000);
-		__private.lastReceipt.stale = (__private.lastReceipt.secondsAgo > 120);
+		__private.lastReceipt.stale = (modules.delegates.isForging() && __private.lastReceipt.secondsAgo > 8) || __private.lastReceipt.secondsAgo > 60;
 	}
 
 	return __private.lastReceipt;
@@ -677,16 +677,20 @@ Blocks.prototype.getLastBlock = function () {
 // NO DATABASE access
 Blocks.prototype.verifyBlock = function (block) {
 	var result = { verified: false, errors: [] };
-
-	try {
-		block.id = library.logic.block.getId(block);
-	} catch (e) {
-		result.errors.push(e.toString());
+	if(!block.id){
+		try {
+			block.id = library.logic.block.getId(block);
+		} catch (e) {
+			result.errors.push(e.toString());
+		}
 	}
+
 	//TODO: This does not work well so far on multithread...
 	var lastBlock=__private.lastBlock;
+	if(!block.height){
+		block.height = lastBlock.height + 1;
+	}
 
-	block.height = lastBlock.height + 1;
 
 	if (!block.previousBlock && block.height !== 1) {
 		result.errors.push('Invalid previous block');
@@ -1097,21 +1101,22 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, cb) {
 
 	modules.transport.getFromPeer(peer, {
 		method: 'GET',
-		api: '/blocks?lastBlockId=' + lastValidBlock.id
+		api: '/blocks?lastBlockHeight=' + lastValidBlock.height
 	}, function (err, res) {
 		if (err || res.body.error) {
 			return setImmediate(cb, err, lastValidBlock);
 		}
+		var blocks = res.body.blocks;
 
-		library.logger.debug('loaded blocks:',res.body.blocks);
+		//library.logger.debug('loaded blocks',blocks);
 
 		var report = library.schema.validate(res.body.blocks, schema.loadBlocksFromPeer);
 
 		if (!report) {
 			return setImmediate(cb, 'Received invalid blocks data', lastValidBlock);
 		}
-		//WTF i mean database dump over API!!!
-		var blocks = __private.readDbRows(res.body.blocks);
+
+
 
 		if (blocks.length === 0) {
 			return setImmediate(cb, null, lastValidBlock);
@@ -1120,7 +1125,9 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, cb) {
 				if (__private.cleanup) {
 					return setImmediate(cb);
 				}
-
+				block.reward=parseInt(block.reward);
+				block.totalAmount=parseInt(block.totalAmount);
+				block.totalFee=parseInt(block.totalFee);
 				self.processBlock(block, false, function (err) {
 					if (!err) {
 						lastValidBlock = block;
@@ -1262,13 +1269,13 @@ Blocks.prototype.onReceiveBlock = function (block, peer) {
 					//let's download the full block transactions
 					modules.transport.getFromPeer(peer, {
 						 method: 'GET',
-						 url: '/api/transactions?blockId=' + block.id
+						 api: '/block?id=' + block.id
 					 }, function (err, res) {
 						 if (err || res.body.error) {
-							 library.logger.debug('Cannot get transactions from last received block', block.id);
+							 library.logger.debug('Cannot get block', block.id);
 							 return setImmediate(cb, err);
 						 }
-						 library.logger.debug("calling "+peer.ip+":"+peer.port+"/api/transactions?blockId=" + block.id);
+						 library.logger.debug("calling "+peer.ip+":"+peer.port+"/peer/block?id=" + block.id);
 						 library.logger.debug("received transactions",res.body);
 
 						 if(res.body.transactions.length==block.numberOfTransactions){

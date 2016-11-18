@@ -151,19 +151,37 @@ __private.attachApi = function () {
 			if(modules.delegates.isForging()){
 				limit=10;
 			}
-			modules.blocks.loadBlocksData({
-				limit: limit,
-				lastId: query.lastBlockId
-			}, function (err, data) {
+
+			library.db.query(sql.blockList, {
+				lastBlockHeight: query.lastBlockHeight,
+				limit: limit
+			}).then(function (rows) {
 				res.status(200);
+				//library.logger.debug("data", rows);
+				res.json({blocks: rows});
+			}).catch(function (err) {
+				library.logger.error("Error getting blocks from DB", err);
+				return res.json({blocks: []});
+			});
+		});
+	});
 
-				if (err) {
-					return res.json({blocks: []});
-				}
+	router.get('/block', function (req, res, next) {
+		res.set(__private.headers);
 
-				//library.logger.info("data", data);
+		req.sanitize(req.query, schema.block, function (err, report, query) {
+			if (err) { return next(err); }
+			if (!report.isValid) { return res.json({success: false, error: report.issues}); }
 
-				res.json({blocks: data});
+			library.db.query(sql.block, {
+				id: query.id
+			}).then(function (rows) {
+				res.status(200);
+				//library.logger.debug("data", rows);
+				res.json(rows[0]);
+			}).catch(function (err) {
+				library.logger.error("Error getting block from DB", err);
+				return res.json({});
 			});
 		});
 	});
@@ -235,6 +253,8 @@ __private.attachApi = function () {
 		res.set(__private.headers);
 		res.status(200).json({success: true, transactions: modules.transactions.getUnconfirmedTransactionList()});
 	});
+
+
 
 	router.post('/transactions', function (req, res) {
 		res.set(__private.headers);

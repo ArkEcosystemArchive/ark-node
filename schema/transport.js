@@ -44,7 +44,16 @@ module.exports = {
 		id: 'transport.blocks',
 		type: 'object',
 		properties: {
-			lastBlockId: {
+			lastBlockHeight: {
+				type: 'integer'
+			}
+		},
+	},
+	block: {
+		id: 'transport.block',
+		type: 'object',
+		properties: {
+			id: {
 				type: 'string'
 			}
 		},

@@ -191,16 +191,18 @@ Block.prototype.dbFields = [
 	'payloadLength',
 	'payloadHash',
 	'generatorPublicKey',
-	'blockSignature'
+	'blockSignature',
+	'rawtxs'
 ];
 
 Block.prototype.dbSave = function (block) {
-	var payloadHash, generatorPublicKey, blockSignature;
+	var payloadHash, generatorPublicKey, blockSignature, rawtxs;
 
 	try {
 		payloadHash = new Buffer(block.payloadHash, 'hex');
 		generatorPublicKey = new Buffer(block.generatorPublicKey, 'hex');
 		blockSignature = new Buffer(block.blockSignature, 'hex');
+		rawtxs = JSON.stringify(block.transactions);
 	} catch (e) {
 		throw e;
 	}
@@ -221,7 +223,8 @@ Block.prototype.dbSave = function (block) {
 			payloadLength: block.payloadLength,
 			payloadHash: payloadHash,
 			generatorPublicKey: generatorPublicKey,
-			blockSignature: blockSignature
+			blockSignature: blockSignature,
+			rawtxs:rawtxs
 		}
 	};
 };

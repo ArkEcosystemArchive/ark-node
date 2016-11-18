@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS "blocks"(
   "payloadHash" bytea NOT NULL,
   "generatorPublicKey" bytea NOT NULL,
   "blockSignature" bytea NOT NULL,
+  "rawtxs" TEXT NOT NULL,
   FOREIGN KEY("previousBlock")
   REFERENCES "blocks"("id") ON DELETE SET NULL
 );
