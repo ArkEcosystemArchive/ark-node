@@ -477,6 +477,7 @@ Blocks.prototype.lastReceipt = function (lastReceipt) {
 		var timeNow = new Date();
 		__private.lastReceipt.secondsAgo = Math.floor((timeNow.getTime() - __private.lastReceipt.getTime()) / 1000);
 		__private.lastReceipt.stale = (modules.delegates.isForging() && __private.lastReceipt.secondsAgo > 8) || __private.lastReceipt.secondsAgo > 60;
+		__private.lastReceipt.rebuild = (__private.lastReceipt.secondsAgo > 120);
 	}
 
 	return __private.lastReceipt;
@@ -628,6 +629,17 @@ Blocks.prototype.loadBlocksOffset = function (limit, offset, verify, cb) {
 		});
 	}, cb);
 };
+
+Blocks.prototype.removeLastBlock = function(cb){
+		__private.popLastBlock(__private.lastBlock, function (err, newLastBlock) {
+			if(err){
+			 	library.logger.error('error removing block', __private.lastBlock);
+			}
+			//library.logger.debug('removing block', __private.lastBlock);
+			__private.lastBlock = newLastBlock;
+			setImmediate(cb, err, newLastBlock);
+	 });
+}
 
 Blocks.prototype.loadLastBlock = function (cb) {
 	library.dbSequence.add(function (cb) {
@@ -1130,6 +1142,7 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, cb) {
 				block.totalFee=parseInt(block.totalFee);
 				self.processBlock(block, false, function (err) {
 					if (!err) {
+						self.lastReceipt(new Date());
 						lastValidBlock = block;
 						library.logger.info(['Block', block.id, 'loaded from:', peer.string].join(' '), 'height: ' + block.height);
 					} else {
@@ -1159,7 +1172,6 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, cb) {
 };
 
 
-//TODO: add to a block sequence
 Blocks.prototype.deleteBlocksBefore = function (block, cb) {
 	var blocks = [];
 
@@ -1173,12 +1185,19 @@ Blocks.prototype.deleteBlocksBefore = function (block, cb) {
 		function (next) {
 			blocks.unshift(lastBlock);
 			__private.popLastBlock(lastBlock, function (err, newLastBlock) {
+				if(err){
+					library.logger.error('error removing block', block);
+				}
+
+				library.logger.debug('removing block', block);
 				__private.lastBlock = newLastBlock;
-				lastBlock = __private.lastBlock;
+				lastBlock = newLastBlock;
 				next(err);
 			});
 		},
 		function (err) {
+			// reset the last receipt and try to rebuild now
+			self.lastReceipt(new Date());
 			return setImmediate(cb, err, blocks);
 		}
 	);

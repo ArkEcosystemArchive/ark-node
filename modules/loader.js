@@ -221,6 +221,7 @@ __private.loadBlockChain = function () {
 	}
 
 	library.db.task(checkMemTables).then(function (results) {
+		library.logger.info('checkMemTables', results);
 		var count = results[0].count;
 		var missed = !(results[1].count);
 
@@ -260,6 +261,7 @@ __private.loadBlockChain = function () {
 		});
 
 		if (unapplied.length > 0) {
+
 			return reload(count, 'Detected unapplied rounds in mem_round');
 		}
 
@@ -323,6 +325,7 @@ __private.loadBlocksFromNetwork = function (cb) {
 								library.logger.error('Failed to load blocks from: ' + peer.string);
 								errorCount += 1;
 							}
+							__private.lastBlock = lastValidBlock;
 							loaded = lastValidBlock.id === lastBlock.id;
 							lastValidBlock = lastBlock = null;
 							next();
@@ -531,9 +534,24 @@ Loader.prototype.syncing = function () {
 Loader.prototype.onPeersReady = function () {
 	setImmediate(function nextLoadBlock () {
 		var lastReceipt = modules.blocks.lastReceipt();
+		if(!lastReceipt){
+			modules.blocks.lastReceipt(new Date());
+		}
 		var timeout = modules.delegates.isForging() ? 1000 : 10000
 
-		if (__private.loaded && !self.syncing() && (!lastReceipt || lastReceipt.stale)) {
+		library.logger.info("lastReceipt",lastReceipt);
+
+
+		if(lastReceipt && lastReceipt.rebuild){
+			library.logger.info('Unloading 1 Block to restart synchronisation');
+			modules.blocks.removeLastBlock(function(err, removedBlocks){
+				library.logger.info("blocks removed",removedBlocks);
+				modules.blocks.lastReceipt(new Date());
+				setTimeout(nextLoadBlock, 1000);
+			});
+		}
+
+		else if (__private.loaded && !self.syncing() && (!lastReceipt || lastReceipt.stale)) {
 			library.logger.debug('Loading blocks from network');
 			library.sequence.add(function (cb) {
 				__private.sync(cb);
