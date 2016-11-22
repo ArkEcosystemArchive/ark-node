@@ -308,12 +308,20 @@ __private.loadBlocksFromNetwork = function (cb) {
 		if (err) {
 			return setImmediate(cb, err);
 		} else {
+			network.peers=network.peers.sort(function(p1, p2){
+				if(p1.blockheader.height==p2.blockheader.height){
+					return p1.blockheader.id<p2.blockheader.id;
+				}
+				else{
+					return p1.blockheader.height<p2.blockheader.height;
+				}
+			});
 			async.whilst(
 				function () {
 					return !loaded && errorCount < 5;
 				},
 				function (next) {
-					var peer = network.peers[Math.floor(Math.random() * network.peers.length)];
+					var peer = network.peers[0];
 					var lastBlock = modules.blocks.getLastBlock();
 
 					function loadBlocks () {
@@ -424,8 +432,9 @@ __private.findGoodPeers = function (heights) {
 	}
 
 	// Performing histogram cut of peers too far from histogram maximum
+	// TODO: to fine tune
 	var peers = heights.filter(function (item) {
-		return item && Math.abs(height - item.height) < aggregation + 1;
+		return item && Math.abs(height - item.height) < aggregation + 3;
 	}).map(function (item) {
 		item.peer.height = item.height;
 		item.peer.blockheader = item.header;
@@ -461,12 +470,33 @@ Loader.prototype.getNetwork = function (force, cb) {
 			return setImmediate(cb, err);
 		}
 
+		function shuffle(array) {
+		  var currentIndex = array.length, temporaryValue, randomIndex;
+
+		  // While there remain elements to shuffle...
+		  while (0 !== currentIndex) {
+
+		    // Pick a remaining element...
+		    randomIndex = Math.floor(Math.random() * currentIndex);
+		    currentIndex -= 1;
+
+		    // And swap it with the current element.
+		    temporaryValue = array[currentIndex];
+		    array[currentIndex] = array[randomIndex];
+		    array[randomIndex] = temporaryValue;
+		  }
+
+		  return array;
+		}
+
 		var peers = res.body.peers;
 
 		library.schema.validate({peers:peers}, schema.getNetwork.peers, function (err) {
 			if (err) {
 				return setImmediate(cb, err);
 			}
+
+			peers = shuffle(peers);
 
 			library.logger.debug(['Received', peers.length, 'peers from'].join(' '), res.peer.string);
 
@@ -489,7 +519,9 @@ Loader.prototype.getNetwork = function (force, cb) {
 						var valid = false;
 						//library.logger.debug("received block header", res.body.header);
 						try {
-							//TODO: also check that the delegate was legit to forge the block.
+							// TODO: also check that the delegate was legit to forge the block ?
+							// likely too much work since in the end we use only a few peers of the list
+							// or maybe only the ones claiming height > current node height
 							valid = (res.body.header.height == 1) || library.logic.block.verifySignature(res.body.header);
 						} catch (e) {
 							library.logger.error(e);
@@ -537,15 +569,15 @@ Loader.prototype.onPeersReady = function () {
 		if(!lastReceipt){
 			modules.blocks.lastReceipt(new Date());
 		}
-		var timeout = modules.delegates.isForging() ? 1000 : 10000
+		var timeout = modules.delegates.isForging() ? 5000 : 10000
 
-		library.logger.info("lastReceipt",lastReceipt);
+		//library.logger.info("lastReceipt",lastReceipt);
 
 
 		if(lastReceipt && lastReceipt.rebuild){
 			library.logger.info('Unloading 1 Block to restart synchronisation');
 			modules.blocks.removeLastBlock(function(err, removedBlocks){
-				library.logger.info("blocks removed",removedBlocks);
+				library.logger.debug("blocks removed",removedBlocks);
 				modules.blocks.lastReceipt(new Date());
 				setTimeout(nextLoadBlock, 1000);
 			});

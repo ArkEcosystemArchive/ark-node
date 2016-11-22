@@ -477,7 +477,7 @@ Blocks.prototype.lastReceipt = function (lastReceipt) {
 		var timeNow = new Date();
 		__private.lastReceipt.secondsAgo = Math.floor((timeNow.getTime() - __private.lastReceipt.getTime()) / 1000);
 		__private.lastReceipt.stale = (modules.delegates.isForging() && __private.lastReceipt.secondsAgo > 8) || __private.lastReceipt.secondsAgo > 60;
-		__private.lastReceipt.rebuild = (__private.lastReceipt.secondsAgo > 120);
+		__private.lastReceipt.rebuild = (modules.delegates.isForging() && __private.lastReceipt.secondsAgo > 60) || __private.lastReceipt.secondsAgo > 120;
 	}
 
 	return __private.lastReceipt;
@@ -1054,6 +1054,7 @@ Blocks.prototype.processBlock = function (block, broadcast, cb, saveBlock) {
 						}
 						transaction.blockId = block.id;
 						// Check if transaction is already in database, otherwise fork 2.
+						// TODO: Uncle forging: Double inclusion is allowed.
 						// DATABASE: read only
 						library.db.query(sql.getTransactionId, { id: transaction.id }).then(function (rows) {
 							if (rows.length > 0) {
@@ -1319,16 +1320,15 @@ Blocks.prototype.onReceiveBlock = function (block, peer) {
 			modules.delegates.fork(block, 1);
 			// Uncle forging: decide winning chain
 			// -> winning chain is smallest block id (comparing with lexicographic order)
-
 			if(block.previousBlock < lastBlock.id){
 				// we should verify the block first:
 				// - forging delegate is legit
 				modules.delegates.validateBlockSlot(block, function (err) {
 					if (err) {
-						library.logger.warn("received blocks is not forged by a legit delegate",res.body);
+						library.logger.warn("received block is not forged by a legit delegate", err);
 						return setImmediate(cb, err);
 					}
-					self.removeLastBlock(function(err,block){
+					self.removeLastBlock(function(err, newblock){
 						if(err){
 							return setImmediate(cb,"Cannot remove block, needs to restart node.");
 						}
@@ -1338,7 +1338,10 @@ Blocks.prototype.onReceiveBlock = function (block, peer) {
 					});
 				});
 			}
-			return  setImmediate(cb);
+			else {
+				// we are on winning chain, ignoring block
+				return setImmediate(cb);
+			}
 		} else if (block.previousBlock === lastBlock.previousBlock && block.height === lastBlock.height && block.id !== lastBlock.id) {
 			// Fork: Same height and previous block id, but different block id
 			modules.delegates.fork(block, 5);
@@ -1351,47 +1354,22 @@ Blocks.prototype.onReceiveBlock = function (block, peer) {
 				// - forging delegate is legit
 				modules.delegates.validateBlockSlot(block, function (err) {
 					if (err) {
-						library.logger.warn("received blocks is not forged by a legit delegate",res.body);
+						library.logger.warn("received block is not forged by a legit delegate", err);
 						return setImmediate(cb, err);
 					}
-					self.removeLastBlock(function(err, block){
+					self.removeLastBlock(function(err, newblock){
 						if(err){
 							return setImmediate(cb,"Cannot remove block, needs to restart node.");
 						}
 						self.lastReceipt(new Date());
-						//RECEIVED full block?
-						if(block.numberOfTransactions==0 || block.numberOfTransactions==block.transactions.length){
-							library.logger.debug("processing full block",block.id);
-							self.processBlock(block, true, cb, true);
-						}
-						else{
-							//let's download the full block transactions
-							modules.transport.getFromPeer(peer, {
-								 method: 'GET',
-								 api: '/block?id=' + block.id
-							 }, function (err, res) {
-								 if (err || res.body.error) {
-									 library.logger.debug('Cannot get block', block.id);
-									 return setImmediate(cb, err);
-								 }
-								 library.logger.debug("calling "+peer.ip+":"+peer.port+"/peer/block?id=" + block.id);
-								 library.logger.debug("received transactions",res.body);
-
-								 if(res.body.transactions.length==block.numberOfTransactions){
-									 block.transactions=res.body.transactions
-									 self.processBlock(block, true, cb, true);
-								 }
-								 else{
-									 // do nothing will wait for next network polling to get the full block
-									 return setImmediate(cb, "Block transactions could not be downloaded.");
-								 }
-							 }
-						 );
-						}
+						return setImmediate(cb);
 					});
 				});
 			}
-			return setImmediate(cb);
+			else {
+				// we are on winning chain, ignoring block
+				return  setImmediate(cb);
+			}
 		} else {
 			return setImmediate(cb);
 		}
