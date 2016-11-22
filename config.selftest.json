@@ -48,6 +48,7 @@
         }
     },
     "forging": {
+        "coldstart": 6,
         "force": true,
         "secret": [
             "robust swift grocery peasant forget share enable convince deputy road keep cheap",

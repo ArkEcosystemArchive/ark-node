@@ -2,6 +2,7 @@
 
 var slots = require('../helpers/slots.js');
 var crypto = require('crypto');
+var arkjs = require('arkjs');
 var bignum = require('../helpers/bignum.js');
 var ByteBuffer = require('bytebuffer');
 var BlockReward = require('../logic/blockReward.js');
@@ -23,15 +24,7 @@ function Block (scope, cb) {
 __private.blockReward = new BlockReward();
 
 __private.getAddressByPublicKey = function (publicKey) {
-	var publicKeyHash = crypto.createHash('sha256').update(publicKey, 'hex').digest();
-	var temp = new Buffer(8);
-
-	for (var i = 0; i < 8; i++) {
-		temp[i] = publicKeyHash[7 - i];
-	}
-
-	var address = bignum.fromBuffer(temp).toString() + 'L';
-	return address;
+	return arkjs.crypto.getAddress(publicKey);
 };
 
 // Public methods

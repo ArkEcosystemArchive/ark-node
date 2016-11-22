@@ -95,7 +95,7 @@ describe('POST /peer/transactions', function () {
 		});
 
 		it('when account does not have one should fail', function (done) {
-			var transaction = node.ark.transaction.createTransaction('1L', 1, null, node.gAccount.password, account.secondPassword);
+			var transaction = node.ark.transaction.createTransaction('1A', 1, null, node.gAccount.password, account.secondPassword);
 
 			postTransaction(transaction, function (err, res) {
 				node.expect(res.body).to.have.property('success').to.be.not.ok;
@@ -104,7 +104,7 @@ describe('POST /peer/transactions', function () {
 		});
 
 		it('using blank second passphrase should fail', function (done) {
-			var transaction = node.ark.transaction.createTransaction('1L', 1, null, account.password, '');
+			var transaction = node.ark.transaction.createTransaction('1A', 1, null, account.password, '');
 
 			postTransaction(transaction, function (err, res) {
 				node.expect(res.body).to.have.property('success').to.be.not.ok;
@@ -113,7 +113,7 @@ describe('POST /peer/transactions', function () {
 		});
 
 		it('using fake second passphrase should fail', function (done) {
-			var transaction = node.ark.transaction.createTransaction('1L', 1, null, account.password, account2.secondPassword);
+			var transaction = node.ark.transaction.createTransaction('1A', 1, null, account.password, account2.secondPassword);
 			transaction.signSignature = crypto.randomBytes(64).toString('hex');
 			transaction.id = node.ark.crypto.getId(transaction);
 
@@ -124,7 +124,7 @@ describe('POST /peer/transactions', function () {
 		});
 
 		it('using valid second passphrase should be ok', function (done) {
-			var transaction = node.ark.transaction.createTransaction('1L', 1, null, account.password, account.secondPassword);
+			var transaction = node.ark.transaction.createTransaction('1A', 1, null, account.password, account.secondPassword);
 
 			postTransaction(transaction, function (err, res) {
 				node.expect(res.body).to.have.property('success').to.be.ok;

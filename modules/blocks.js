@@ -687,7 +687,8 @@ Blocks.prototype.getLastBlock = function () {
 
 // Will return all possible errors that are intrinsic to the block.
 // NO DATABASE access
-Blocks.prototype.verifyBlock = function (block) {
+// skipLastBlockCheck: to check any block, and not check if we have the next block of the internal chain
+Blocks.prototype.verifyBlock = function (block, skipLastBlockCheck) {
 	var result = { verified: false, errors: [] };
 	if(!block.id){
 		try {
@@ -706,7 +707,7 @@ Blocks.prototype.verifyBlock = function (block) {
 
 	if (!block.previousBlock && block.height !== 1) {
 		result.errors.push('Invalid previous block');
-	} else if (block.previousBlock !== lastBlock.id) {
+	} else if (!skipLastBlockCheck && block.previousBlock !== lastBlock.id) {
 		// Fork: Same height but different previous block id.
 		modules.delegates.fork(block, 1);
 		result.errors.push(['Invalid previous block:', block.previousBlock, 'expected:', lastBlock.id].join(' '));
@@ -737,7 +738,7 @@ Blocks.prototype.verifyBlock = function (block) {
 	var blockSlotNumber = slots.getSlotNumber(block.timestamp);
 	var lastBlockSlotNumber = slots.getSlotNumber(lastBlock.timestamp);
 
-	if (blockSlotNumber > slots.getSlotNumber() || blockSlotNumber <= lastBlockSlotNumber) {
+	if (blockSlotNumber > slots.getSlotNumber() || (!skipLastBlockCheck && blockSlotNumber <= lastBlockSlotNumber)) {
 		result.errors.push('Invalid block timestamp');
 	}
 
@@ -1266,8 +1267,7 @@ Blocks.prototype.onReceiveBlock = function (block, peer) {
 			return setImmediate(cb);
 		}
 
-		var check = self.verifyBlock(block);
-
+		var check = self.verifyBlock(block, true);
 		if (!check.verified) {
 			library.logger.error(['onReceiveBlock: Block ', block.id, 'verification failed'].join(' '), check.errors.join(', '));
 			return setImmediate(cb, check.errors[0]);
@@ -1285,36 +1285,37 @@ Blocks.prototype.onReceiveBlock = function (block, peer) {
 		var lastBlock = __private.lastBlock;
 
 		if (block.previousBlock === lastBlock.id && lastBlock.height + 1 === block.height) {
-				self.lastReceipt(new Date());
-				//library.logger.debug("Received block", block);
-				//RECEIVED full block?
-				if(block.numberOfTransactions==0 || block.numberOfTransactions==block.transactions.length){
-					library.logger.debug("processing full block",block.id);
-					self.processBlock(block, true, cb, true);
-				}
-				else{
-					//let's download the full block transactions
-					modules.transport.getFromPeer(peer, {
-						 method: 'GET',
-						 api: '/block?id=' + block.id
-					 }, function (err, res) {
-						 if (err || res.body.error) {
-							 library.logger.debug('Cannot get block', block.id);
-							 return setImmediate(cb, err);
-						 }
-						 library.logger.debug("calling "+peer.ip+":"+peer.port+"/peer/block?id=" + block.id);
-						 library.logger.debug("received transactions",res.body);
 
-						 if(res.body.transactions.length==block.numberOfTransactions){
-							 block.transactions=res.body.transactions
-							 self.processBlock(block, true, cb, true);
-						 }
-						 else{
-							 return setImmediate(cb, "Block transactions could not be downloaded.");
-						 }
+			self.lastReceipt(new Date());
+			//library.logger.debug("Received block", block);
+			//RECEIVED full block?
+			if(block.numberOfTransactions==0 || block.numberOfTransactions==block.transactions.length){
+				library.logger.debug("processing full block",block.id);
+				self.processBlock(block, true, cb, true);
+			}
+			else{
+				//let's download the full block transactions
+				modules.transport.getFromPeer(peer, {
+					 method: 'GET',
+					 api: '/block?id=' + block.id
+				 }, function (err, res) {
+					 if (err || res.body.error) {
+						 library.logger.debug('Cannot get block', block.id);
+						 return setImmediate(cb, err);
 					 }
-				 );
-				}
+					 library.logger.debug("calling "+peer.ip+":"+peer.port+"/peer/block?id=" + block.id);
+					 library.logger.debug("received transactions",res.body);
+
+					 if(res.body.transactions.length==block.numberOfTransactions){
+						 block.transactions=res.body.transactions
+						 self.processBlock(block, true, cb, true);
+					 }
+					 else{
+						 return setImmediate(cb, "Block transactions could not be downloaded.");
+					 }
+				 }
+			 );
+			}
 		} else if (block.previousBlock !== lastBlock.id && lastBlock.height + 1 === block.height) {
 			// Fork: consecutive height but different previous block id
 			modules.delegates.fork(block, 1);

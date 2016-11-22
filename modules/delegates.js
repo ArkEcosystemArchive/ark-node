@@ -260,7 +260,8 @@ __private.forge = function (cb) {
 		}
 
 		library.sequence.add(function (cb) {
-			if ((slots.getSlotNumber(currentBlockData.time) === slots.getSlotNumber()) && (new Date().getTime()-__private.coldstart>60*1000)) {
+			var coldstart = library.config.forging.coldstart ? library.config.forging.coldstart : 60;
+			if ((slots.getSlotNumber(currentBlockData.time) === slots.getSlotNumber()) && (new Date().getTime()-__private.coldstart > coldstart*1000)) {
 				// Using PBFT observation: if a good quorum is at the same height with same blockid -> let's forge
 				// TODO: we should pre ask network quorum if i can send this forged block, sending node publicKey, a timestamp and a signature of the timestamp.
 				// This is to prevent from delegate multiple forging on several servers.

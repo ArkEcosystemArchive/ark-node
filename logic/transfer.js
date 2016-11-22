@@ -26,7 +26,7 @@ Transfer.prototype.calculateFee = function (trs, sender) {
 };
 
 Transfer.prototype.verify = function (trs, sender, cb) {
-	var isAddress = /^[0-9]{1,21}[L|l]$/g;
+	var isAddress = /^[1-9A-Za-z]{1,52}[A]$/g;
 	if (!trs.recipientId || !isAddress.test(trs.recipientId)) {
 		return setImmediate(cb, 'Invalid recipient');
 	}

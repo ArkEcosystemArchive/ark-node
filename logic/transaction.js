@@ -1,10 +1,12 @@
 'use strict';
 
 var _ = require('lodash');
+var bs58check = require('bs58check');
 var bignum = require('../helpers/bignum.js');
 var ByteBuffer = require('bytebuffer');
 var constants = require('../helpers/constants.js');
 var crypto = require('crypto');
+var bs58check = require('bs58check');
 var exceptions = require('../helpers/exceptions.js');
 var slots = require('../helpers/slots.js');
 var sql = require('../sql/transactions.js');
@@ -119,7 +121,7 @@ Transaction.prototype.getBytes = function (trs, skipSignature, skipSecondSignatu
 		var assetSize = assetBytes ? assetBytes.length : 0;
 		var i;
 
-		bb = new ByteBuffer(1 + 4 + 32 + 32 + 8 + 8 + 64 + 64 + 64 + assetSize, true);
+		bb = new ByteBuffer(1 + 4 + 32 + 32 + 8 + 32 + 64 + 64 + 64 + assetSize, true);
 		bb.writeByte(trs.type);
 		bb.writeInt(trs.timestamp);
 
@@ -137,13 +139,13 @@ Transaction.prototype.getBytes = function (trs, skipSignature, skipSecondSignatu
 
 		if (trs.recipientId) {
 			var recipient = trs.recipientId.slice(0, -1);
-			recipient = bignum(recipient).toBuffer({size: 8});
+			recipient = bs58check.decode(recipient);
 
-			for (i = 0; i < 8; i++) {
+			for (i = 0; i < recipient.length; i++) {
 				bb.writeByte(recipient[i] || 0);
 			}
 		} else {
-			for (i = 0; i < 8; i++) {
+			for (i = 0; i < 32; i++) {
 				bb.writeByte(0);
 			}
 		}
@@ -307,10 +309,10 @@ Transaction.prototype.verify = function (trs, sender, requester, cb) {
 	}
 
 	// Check sender address
-	if (String(trs.senderId).toUpperCase() !== String(sender.address).toUpperCase()) {
+	if (sender.senderId && bs58check.decode(trs.senderId.slice(0,-1)) != sender.publicKey) {
 		return setImmediate(cb, 'Invalid sender address');
 	}
-
+	
 	// Check requester public key
 	if (trs.requesterPublicKey) {
 		if (sender.multisignatures.indexOf(trs.requesterPublicKey) < 0) {

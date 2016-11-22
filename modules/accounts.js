@@ -4,6 +4,7 @@ var bignum = require('../helpers/bignum.js');
 var BlockReward = require('../logic/blockReward.js');
 var constants = require('../helpers/constants.js');
 var crypto = require('crypto');
+var arkjs = require('arkjs');
 var extend = require('extend');
 var Router = require('../helpers/router.js');
 var schema = require('../schema/accounts.js');
@@ -104,20 +105,7 @@ __private.attachApi = function () {
 
 // Public methods
 Accounts.prototype.generateAddressByPublicKey = function (publicKey) {
-	var publicKeyHash = crypto.createHash('sha256').update(publicKey, 'hex').digest();
-	var temp = new Buffer(8);
-
-	for (var i = 0; i < 8; i++) {
-		temp[i] = publicKeyHash[7 - i];
-	}
-
-	var address = bignum.fromBuffer(temp).toString() + 'L';
-
-	if (!address) {
-		throw 'Invalid public key: ' + publicKey;
-	}
-
-	return address;
+	return arkjs.crypto.getAddress(publicKey);
 };
 
 Accounts.prototype.getAccount = function (filter, fields, cb) {
@@ -189,7 +177,7 @@ shared.getBalance = function (req, cb) {
 			return setImmediate(cb, err[0].message);
 		}
 
-		var isAddress = /^[0-9]{1,21}[L|l]$/g;
+		var isAddress = /^[1-9A-Za-z]{1,52}[A]$/g;
 		if (!isAddress.test(req.body.address)) {
 			return setImmediate(cb, 'Invalid address');
 		}
@@ -213,7 +201,7 @@ shared.getPublickey = function (req, cb) {
 			return setImmediate(cb, err[0].message);
 		}
 
-		var isAddress = /^[0-9]{1,21}[L|l]$/g;
+		var isAddress = /^[1-9A-Za-z]{1,52}[A]$/g;
 		if (!isAddress.test(req.body.address)) {
 			return setImmediate(cb, 'Invalid address');
 		}
@@ -396,7 +384,7 @@ shared.getAccount = function (req, cb) {
 			return setImmediate(cb, err[0].message);
 		}
 
-		var isAddress = /^[0-9]{1,21}[L|l]$/g;
+		var isAddress = /^[1-9A-Za-z]{1,52}[A]$/g;
 		if (!isAddress.test(req.body.address)) {
 			return setImmediate(cb, 'Invalid address');
 		}

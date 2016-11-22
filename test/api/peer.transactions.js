@@ -18,7 +18,7 @@ function getAddress (address, done) {
 describe('GET /peer/transactions', function () {
 
 	it('using vendorField should be ok', function (done) {
-		var transaction = node.ark.transaction.createTransaction('12L', 1, "this is a test vendorfield", node.gAccount.password);
+		var transaction = node.ark.transaction.createTransaction('12A', 1, "this is a test vendorfield", node.gAccount.password);
 		console.log(transaction);
 		postTransaction(transaction, function (err, res) {
 			node.expect(res.body).to.have.property('success').to.be.ok;
@@ -62,7 +62,7 @@ describe('POST /peer/transactions', function () {
 	});
 
 	it('using valid headers should be ok', function (done) {
-		var transaction = node.ark.transaction.createTransaction('1L', 1, null, node.gAccount.password);
+		var transaction = node.ark.transaction.createTransaction('1A', 1, null, node.gAccount.password);
 
 		postTransaction(transaction, function (err, res) {
 			node.expect(res.body).to.have.property('success').to.be.ok;
@@ -72,7 +72,7 @@ describe('POST /peer/transactions', function () {
 	});
 
 	it('using already processed transaction should be not ok (preventing spam)', function (done) {
-		var transaction = node.ark.transaction.createTransaction('2L', 1, null, node.gAccount.password);
+		var transaction = node.ark.transaction.createTransaction('2A', 1, null, node.gAccount.password);
 
 		postTransaction(transaction, function (err, res) {
 			node.expect(res.body).to.have.property('success').to.be.ok;
@@ -86,7 +86,7 @@ describe('POST /peer/transactions', function () {
 	});
 
 	it('using already confirmed transaction should be not ok', function (done) {
-		var transaction = node.ark.transaction.createTransaction('3L', 1, null, node.gAccount.password);
+		var transaction = node.ark.transaction.createTransaction('3A', 1, null, node.gAccount.password);
 
 		postTransaction(transaction, function (err, res) {
 			node.expect(res.body).to.have.property('success').to.be.ok;
@@ -139,7 +139,7 @@ describe('POST /peer/transactions', function () {
 	});
 
 	it('using transaction with negative amount should fail', function (done) {
-		var transaction = node.ark.transaction.createTransaction('1L', -1, null, node.gAccount.password);
+		var transaction = node.ark.transaction.createTransaction('1A', -1, null, node.gAccount.password);
 
 		postTransaction(transaction, function (err, res) {
 			node.expect(res.body).to.have.property('success').to.be.not.ok;
@@ -149,8 +149,8 @@ describe('POST /peer/transactions', function () {
 	});
 
 	it('using invalid passphrase should fail', function (done) {
-		var transaction = node.ark.transaction.createTransaction('12L', 1, null, node.gAccount.password);
-		transaction.recipientId = '1L';
+		var transaction = node.ark.transaction.createTransaction('12A', 1, null, node.gAccount.password);
+		transaction.recipientId = '1A';
 		transaction.id = node.ark.crypto.getId(transaction);
 
 		postTransaction(transaction, function (err, res) {
@@ -161,7 +161,7 @@ describe('POST /peer/transactions', function () {
 	});
 
 	it('when sender has no funds should fail', function (done) {
-		var transaction = node.ark.transaction.createTransaction('1L', 1, null, 'randomstring');
+		var transaction = node.ark.transaction.createTransaction('1A', 1, null, 'randomstring');
 
 		postTransaction(transaction, function (err, res) {
 			node.expect(res.body).to.have.property('success').to.be.not.ok;
@@ -199,7 +199,7 @@ describe('POST /peer/transactions', function () {
 	});
 
 	it('using fake signature should fail', function (done) {
-		var transaction = node.ark.transaction.createTransaction('12L', 1, null, node.gAccount.password);
+		var transaction = node.ark.transaction.createTransaction('12A', 1, null, node.gAccount.password);
 		transaction.signature = crypto.randomBytes(64).toString('hex');
 		transaction.id = node.ark.crypto.getId(transaction);
 
@@ -211,7 +211,7 @@ describe('POST /peer/transactions', function () {
 	});
 
 	it('using invalid publicKey should fail', function (done) {
-		var transaction = node.ark.transaction.createTransaction('12L', 1, null, node.gAccount.password);
+		var transaction = node.ark.transaction.createTransaction('12A', 1, null, node.gAccount.password);
 		transaction.senderPublicKey = node.randomPassword();
 
 		postTransaction(transaction, function (err, res) {
@@ -222,7 +222,7 @@ describe('POST /peer/transactions', function () {
 	});
 
 	it('using invalid signature should fail', function (done) {
-		var transaction = node.ark.transaction.createTransaction('12L', 1, null, node.gAccount.password);
+		var transaction = node.ark.transaction.createTransaction('12A', 1, null, node.gAccount.password);
 		transaction.signature = node.randomPassword();
 
 		postTransaction(transaction, function (err, res) {
@@ -233,7 +233,7 @@ describe('POST /peer/transactions', function () {
 	});
 
 	it('using very large amount and genesis block id should fail', function (done) {
-		var transaction = node.ark.transaction.createTransaction('12L', 100000000000000000, null, node.gAccount.password);
+		var transaction = node.ark.transaction.createTransaction('12A', 100000000000000000, null, node.gAccount.password);
 		transaction.blockId = genesisblock.id;
 
 		postTransaction(transaction, function (err, res) {
@@ -244,7 +244,7 @@ describe('POST /peer/transactions', function () {
 	});
 
 	it('using overflown amount should fail', function (done) {
-		var transaction = node.ark.transaction.createTransaction('12L', 184819291270000000012910218291201281920128129, null,
+		var transaction = node.ark.transaction.createTransaction('12A', 184819291270000000012910218291201281920128129, null,
 		node.gAccount.password);
 
 		postTransaction(transaction, function (err, res) {
@@ -255,7 +255,7 @@ describe('POST /peer/transactions', function () {
 	});
 
 	it('using float amount should fail', function (done) {
-		var transaction = node.ark.transaction.createTransaction('12L', 1.3, null, node.gAccount.password);
+		var transaction = node.ark.transaction.createTransaction('12A', 1.3, null, node.gAccount.password);
 
 		postTransaction(transaction, function (err, res) {
 			node.expect(res.body).to.have.property('success').to.be.not.ok;
@@ -267,7 +267,7 @@ describe('POST /peer/transactions', function () {
 	describe('when two passphrases collide into the same address', function () {
 
 		var collision = {
-			address: '13555181540209512417L',
+			address: '13555181540209512417A',
 			passphrases: [
 				'merry field slogan sibling convince gold coffee town fold glad mix page',
 				'annual youth lift quote off olive uncle town chief poverty extend series'

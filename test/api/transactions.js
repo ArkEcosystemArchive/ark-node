@@ -398,7 +398,7 @@ describe('PUT /api/transactions', function () {
 	});
 
 	describe('to a cold address', function (done) {
-		var recipientId = '13896491535841206186L';
+		var recipientId = '13896491535841206186A';
 
 		it('should be ok', function (done) {
 			var amountToSend = 110000000;

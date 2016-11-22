@@ -15,8 +15,8 @@
       "amount": 12500000000000000,
       "fee": 0,
       "timestamp": 0,
-      "recipientId": "16313739661670634666L",
-      "senderId": "1085993630748340485L",
+      "recipientId": "2TpF24P4ef4tS39KtwynYCFZdm2JuLFEVZ3ZRty19s2wzBkuv6A",
+      "senderId": "1085993630748340485A",
       "senderPublicKey": "c96dec3595ff6041c3bd28b76b8cf75dce8225173d1bd00241624ee89b50f2a8",
       "signature": "d8103d0ea2004c3dea8076a6a22c6db8bae95bc0db819240c77fc5335f32920e91b9f41f58b01fc86dfda11019c9fd1c6c3dcbab0a4e478e3c9186ff6090dc05",
       "id": "1465651642158264047"
@@ -27,7 +27,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "2581762640681118072L",
+      "senderId": "2581762640681118072A",
       "senderPublicKey": "01389197bbaf1afb0acd47bbfeabb34aca80fb372a8f694a1c0716b3398db746",
       "asset": {
         "delegate": {
@@ -43,7 +43,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "12254605294831056546L",
+      "senderId": "12254605294831056546A",
       "senderPublicKey": "141b16ac8d5bd150f16b1caa08f689057ca4c4434445e56661831f4e671b7c0a",
       "asset": {
         "delegate": {
@@ -59,7 +59,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "14018336151296112016L",
+      "senderId": "14018336151296112016A",
       "senderPublicKey": "3ff32442bb6da7d60c1b7752b24e6467813c9b698e0f278d48c43580da972135",
       "asset": {
         "delegate": {
@@ -75,7 +75,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "2003981962043442425L",
+      "senderId": "2003981962043442425A",
       "senderPublicKey": "5d28e992b80172f38d3a2f9592cad740fd18d3c2e187745cd5f7badf285ed819",
       "asset": {
         "delegate": {
@@ -91,7 +91,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "15685993315437640088L",
+      "senderId": "15685993315437640088A",
       "senderPublicKey": "4fe5cd087a319956ddc05725651e56486961b7d5733ecd23e26e463bf9253bb5",
       "asset": {
         "delegate": {
@@ -107,7 +107,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "13796903232533379929L",
+      "senderId": "13796903232533379929A",
       "senderPublicKey": "a796e9c0516a40ccd0eee7a32fdc2dc297fee40a9c76fef9c1bb0cf41ae69750",
       "asset": {
         "delegate": {
@@ -123,7 +123,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "10395427086746342233L",
+      "senderId": "10395427086746342233A",
       "senderPublicKey": "67651d29dc8d94bcb1174d5bd602762850a89850503b01a5ffde3b726b43d3d2",
       "asset": {
         "delegate": {
@@ -139,7 +139,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "10555862272344793163L",
+      "senderId": "10555862272344793163A",
       "senderPublicKey": "c3d1bc76dea367512df3832c437c7b2c95508e140f655425a733090da86fb82d",
       "asset": {
         "delegate": {
@@ -155,7 +155,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "9090572627256317041L",
+      "senderId": "9090572627256317041A",
       "senderPublicKey": "640dfec4541daed209a455577d7ba519ad92b18692edd9ae71d1a02958f47b1b",
       "asset": {
         "delegate": {
@@ -171,7 +171,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "6147291942291731858L",
+      "senderId": "6147291942291731858A",
       "senderPublicKey": "3ea481498521e9fb1201b2295d0e9afa826ac6a3ef51de2f00365f915ac7ac06",
       "asset": {
         "delegate": {
@@ -187,7 +187,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "1478505779553195737L",
+      "senderId": "1478505779553195737A",
       "senderPublicKey": "5c4af5cb0c1c92df2ed4feeb9751e54e951f9d3f77196511f13e636cf6064e74",
       "asset": {
         "delegate": {
@@ -203,7 +203,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "3485190523478756562L",
+      "senderId": "3485190523478756562A",
       "senderPublicKey": "399a7d14610c4da8800ed929fc6a05133deb8fbac8403dec93226e96fa7590ee",
       "asset": {
         "delegate": {
@@ -219,7 +219,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "7749538982696555450L",
+      "senderId": "7749538982696555450A",
       "senderPublicKey": "6e904b2f678eb3b6c3042acb188a607d903d441d61508d047fe36b3c982995c8",
       "asset": {
         "delegate": {
@@ -235,7 +235,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "11858068254874463650L",
+      "senderId": "11858068254874463650A",
       "senderPublicKey": "1af35b29ca515ff5b805a5e3a0ab8c518915b780d5988e76b0672a71b5a3be02",
       "asset": {
         "delegate": {
@@ -251,7 +251,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "11959294293312794939L",
+      "senderId": "11959294293312794939A",
       "senderPublicKey": "d8daea40fd098d4d546aa76b8e006ce4368c052ffe2c26b6eb843e925d54a408",
       "asset": {
         "delegate": {
@@ -267,7 +267,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "6572481065061292413L",
+      "senderId": "6572481065061292413A",
       "senderPublicKey": "386217d98eee87268a54d2d76ce9e801ac86271284d793154989e37cb31bcd0e",
       "asset": {
         "delegate": {
@@ -283,7 +283,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "537318935439898807L",
+      "senderId": "537318935439898807A",
       "senderPublicKey": "86499879448d1b0215d59cbf078836e3d7d9d2782d56a2274a568761bff36f19",
       "asset": {
         "delegate": {
@@ -299,7 +299,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "11194005483892021001L",
+      "senderId": "11194005483892021001A",
       "senderPublicKey": "948b8b509579306694c00833ec1c0f81e964487db2206ddb1517bfeca2b0dc1b",
       "asset": {
         "delegate": {
@@ -315,7 +315,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "12689367895996075612L",
+      "senderId": "12689367895996075612A",
       "senderPublicKey": "b00269bd169f0f89bd2f278788616521dd1539868ced5a63b652208a04ee1556",
       "asset": {
         "delegate": {
@@ -331,7 +331,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "12937672077630275226L",
+      "senderId": "12937672077630275226A",
       "senderPublicKey": "e13a0267444e026fe755ec128858bf3c519864631e0e4c474ba33f2470a18b83",
       "asset": {
         "delegate": {
@@ -347,7 +347,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "6719024567117648644L",
+      "senderId": "6719024567117648644A",
       "senderPublicKey": "1cc68fa0b12521158e09779fd5978ccc0ac26bf99320e00a9549b542dd9ada16",
       "asset": {
         "delegate": {
@@ -363,7 +363,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "2185933284430885504L",
+      "senderId": "2185933284430885504A",
       "senderPublicKey": "a10f963752b3a44702dfa48b429ac742bea94d97849b1180a36750df3a783621",
       "asset": {
         "delegate": {
@@ -379,7 +379,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "263761216888896549L",
+      "senderId": "263761216888896549A",
       "senderPublicKey": "f33f93aa1f3ddcfd4e42d3206ddaab966f7f1b6672e5096d6da6adefd38edc67",
       "asset": {
         "delegate": {
@@ -395,7 +395,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "6996737717246838071L",
+      "senderId": "6996737717246838071A",
       "senderPublicKey": "b5341e839b25c4cc2aaf421704c0fb6ba987d537678e23e45d3ca32454a2908c",
       "asset": {
         "delegate": {
@@ -411,7 +411,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "17769700073017685523L",
+      "senderId": "17769700073017685523A",
       "senderPublicKey": "da673805f349faf9ca1db167cb941b27f4517a36d23b3c21da4159cff0045fbe",
       "asset": {
         "delegate": {
@@ -427,7 +427,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "18101328368221611426L",
+      "senderId": "18101328368221611426A",
       "senderPublicKey": "55405aed8c3a1eabe678be3ad4d36043d6ef8e637d213b84ee703d87f6b250ed",
       "asset": {
         "delegate": {
@@ -443,7 +443,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "3654804916322462690L",
+      "senderId": "3654804916322462690A",
       "senderPublicKey": "19ffdf99dee16e4be2db4b0e000b56ab3a4e10bee9f457d8988f75ff7a79fc00",
       "asset": {
         "delegate": {
@@ -459,7 +459,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "6214967903930344618L",
+      "senderId": "6214967903930344618A",
       "senderPublicKey": "85b07e51ffe528f272b7eb734d0496158f2b0f890155ebe59ba2989a8ccc9a49",
       "asset": {
         "delegate": {
@@ -475,7 +475,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "6700417780469657062L",
+      "senderId": "6700417780469657062A",
       "senderPublicKey": "8a0bcba8e909036b7a0fdb244f049d847b117d871d203ef7cc4c3917c94fd5fd",
       "asset": {
         "delegate": {
@@ -491,7 +491,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "17416795040643460696L",
+      "senderId": "17416795040643460696A",
       "senderPublicKey": "95ea7eb026e250741be85e3593166ef0c4cb3a6eb9114dba8f0974987f10403f",
       "asset": {
         "delegate": {
@@ -507,7 +507,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "7806545753492919148L",
+      "senderId": "7806545753492919148A",
       "senderPublicKey": "cf8a3bf23d1936a34facc4ff63d86d21cc2e1ac17e0010035dc3ef7ae85010dc",
       "asset": {
         "delegate": {
@@ -523,7 +523,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "16807489144327319524L",
+      "senderId": "16807489144327319524A",
       "senderPublicKey": "82174ee408161186e650427032f4cfb2496f429b4157da78888cbcea39c387fc",
       "asset": {
         "delegate": {
@@ -539,7 +539,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "11009807324631489084L",
+      "senderId": "11009807324631489084A",
       "senderPublicKey": "4bde949c19a0803631768148019473929b5f8661e9e48efb8d895efa9dd24aef",
       "asset": {
         "delegate": {
@@ -555,7 +555,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "5380829552614149409L",
+      "senderId": "5380829552614149409A",
       "senderPublicKey": "2f9b9a43b915bb8dcea45ea3b8552ebec202eb196a7889c2495d948e15f4a724",
       "asset": {
         "delegate": {
@@ -571,7 +571,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "18181157191600196376L",
+      "senderId": "18181157191600196376A",
       "senderPublicKey": "9503d36c0810f9ac1a9d7d45bf778387a2baab151a45d77ac1289fbe29abb18f",
       "asset": {
         "delegate": {
@@ -587,7 +587,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "15279149762694772854L",
+      "senderId": "15279149762694772854A",
       "senderPublicKey": "a50a55d4476bb118ba5121a07b51c185a8fe0a92b65840143b006b9820124df4",
       "asset": {
         "delegate": {
@@ -603,7 +603,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "15867701141673224975L",
+      "senderId": "15867701141673224975A",
       "senderPublicKey": "fc8672466cc16688b5e239a784cd0e4c0acf214af039d9b2bf7a006da4043883",
       "asset": {
         "delegate": {
@@ -619,7 +619,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "13787002016364430124L",
+      "senderId": "13787002016364430124A",
       "senderPublicKey": "db821a4f828db977c6a8d186cc4a44280a6ef6f54ac18ec9eb32f78735f38683",
       "asset": {
         "delegate": {
@@ -635,7 +635,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "5312766513260345125L",
+      "senderId": "5312766513260345125A",
       "senderPublicKey": "ba7acc3bcbd47dbf13d744e57f696341c260ce2ea8f332919f18cb543b1f3fc7",
       "asset": {
         "delegate": {
@@ -651,7 +651,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "11613981515632820140L",
+      "senderId": "11613981515632820140A",
       "senderPublicKey": "47c8b3d6a9e418f0920ef58383260bcd04799db150612d4ff6eb399bcd07f216",
       "asset": {
         "delegate": {
@@ -667,7 +667,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "4351572711388220555L",
+      "senderId": "4351572711388220555A",
       "senderPublicKey": "d1c3a2cb254554971db289b917a665b5c547617d6fd20c2d6051bc5dfc805b34",
       "asset": {
         "delegate": {
@@ -683,7 +683,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "11595026565287740051L",
+      "senderId": "11595026565287740051A",
       "senderPublicKey": "47b9b07df72d38c19867c6a8c12429e6b8e4d2be48b27cd407da590c7a2af0dc",
       "asset": {
         "delegate": {
@@ -699,7 +699,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "3466073897179860882L",
+      "senderId": "3466073897179860882A",
       "senderPublicKey": "9a7452495138cf7cf5a1564c3ef16b186dd8ab4f96423f160e22a3aec6eb614f",
       "asset": {
         "delegate": {
@@ -715,7 +715,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "4331258378288911563L",
+      "senderId": "4331258378288911563A",
       "senderPublicKey": "c4dfedeb4f639f749e498a2307f1545ddd6bda62e5503ac1832b122c4a5aedf9",
       "asset": {
         "delegate": {
@@ -731,7 +731,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "9928719876370886655L",
+      "senderId": "9928719876370886655A",
       "senderPublicKey": "96c16a6251e1b9a8c918d5821a5aa8dfb9385607258338297221c5a226eca5c6",
       "asset": {
         "delegate": {
@@ -747,7 +747,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "11805364634236927749L",
+      "senderId": "11805364634236927749A",
       "senderPublicKey": "910da2a8e20f25ccbcb029fdcafd369b43d75e5bc4dc6d92352c29404acc350f",
       "asset": {
         "delegate": {
@@ -763,7 +763,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "9703017731198160198L",
+      "senderId": "9703017731198160198A",
       "senderPublicKey": "eabfe7093ef2394deb1b84287f2ceb1b55fe638edc3358a28fc74f64b3498094",
       "asset": {
         "delegate": {
@@ -779,7 +779,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "162664226572374905L",
+      "senderId": "162664226572374905A",
       "senderPublicKey": "94b163c5a5ad346db1c84edaff51604164476cf78b8834b6b610dd03bd6b65d9",
       "asset": {
         "delegate": {
@@ -795,7 +795,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "14754807200586084685L",
+      "senderId": "14754807200586084685A",
       "senderPublicKey": "6164b0cc68f8de44cde90c78e838b9ee1d6041fa61cf0cfbd834d76bb369a10e",
       "asset": {
         "delegate": {
@@ -811,7 +811,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "6596445655213033387L",
+      "senderId": "6596445655213033387A",
       "senderPublicKey": "3476bba16437ee0e04a29daa34d753139fbcfc14152372d7be5b7c75d51bac6c",
       "asset": {
         "delegate": {
@@ -827,7 +827,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "8273455169423958419L",
+      "senderId": "8273455169423958419A",
       "senderPublicKey": "9d3058175acab969f41ad9b86f7a2926c74258670fe56b37c429c01fca9f2f0f",
       "asset": {
         "delegate": {
@@ -843,7 +843,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "15064680481049926459L",
+      "senderId": "15064680481049926459A",
       "senderPublicKey": "aa33af13b440746b4f24312cba5fa910eb077ce6b16b84ebb482cb7720b5c686",
       "asset": {
         "delegate": {
@@ -859,7 +859,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "6253486079725348800L",
+      "senderId": "6253486079725348800A",
       "senderPublicKey": "6f04988de7e63537c8f14e84b0eb51e0ea9c5da8b4b9256243b3e40b1aeccb76",
       "asset": {
         "delegate": {
@@ -875,7 +875,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "7838076639178338424L",
+      "senderId": "7838076639178338424A",
       "senderPublicKey": "07935c642c7409c365258c8488760e96a851cee618aec72eeeb135c9c827f0f9",
       "asset": {
         "delegate": {
@@ -891,7 +891,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "9824483707960713406L",
+      "senderId": "9824483707960713406A",
       "senderPublicKey": "526931663cbee883ff22369172cba091a5dd5fa1200284fa790d7aeca53d37af",
       "asset": {
         "delegate": {
@@ -907,7 +907,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "12144255005482188703L",
+      "senderId": "12144255005482188703A",
       "senderPublicKey": "f7b9751d59dd6be6029aa36a81a3f6436e2970cf4348845ab6254678fb946c18",
       "asset": {
         "delegate": {
@@ -923,7 +923,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "2037513790649430470L",
+      "senderId": "2037513790649430470A",
       "senderPublicKey": "5f6cc5a8aac752d37c676b0d46a798f7625e37dfa1e96091983274e04ab7ffe2",
       "asset": {
         "delegate": {
@@ -939,7 +939,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "2371768942272884594L",
+      "senderId": "2371768942272884594A",
       "senderPublicKey": "9c16751dbe57f4dff7b3fb8911a62c0cb2bdee6240e3f3fefe76832788cb14c6",
       "asset": {
         "delegate": {
@@ -955,7 +955,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "309766985700168161L",
+      "senderId": "309766985700168161A",
       "senderPublicKey": "ba2ea5e324eeb42fa6f4d1132a1d79911721e8507033bb0abd49715f531877b4",
       "asset": {
         "delegate": {
@@ -971,7 +971,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "17110047919889272525L",
+      "senderId": "17110047919889272525A",
       "senderPublicKey": "0186d6cbee0c9b1a9783e7202f57fc234b1d98197ada1cc29cfbdf697a636ef1",
       "asset": {
         "delegate": {
@@ -987,7 +987,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "17271297386479765505L",
+      "senderId": "17271297386479765505A",
       "senderPublicKey": "edbb9828fbe62da2a59afbc8623e8ebc5ed2f9b7f77a0cd1cdcf55edea30521c",
       "asset": {
         "delegate": {
@@ -1003,7 +1003,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "11229203525038722103L",
+      "senderId": "11229203525038722103A",
       "senderPublicKey": "b6ac700bf890b887e218dbd55b8f6b091dfc5a684d0fd7a6f69db7dc0313b51b",
       "asset": {
         "delegate": {
@@ -1019,7 +1019,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "1998811414849260567L",
+      "senderId": "1998811414849260567A",
       "senderPublicKey": "62bbb3c41e43df73de2c3f87e6577d095b84cf6deb1b2d6e87612a9156b980f8",
       "asset": {
         "delegate": {
@@ -1035,7 +1035,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "1039287838469525702L",
+      "senderId": "1039287838469525702A",
       "senderPublicKey": "6fb2e0882cd9d895e1e441b9f9be7f98e877aa0a16ae230ee5caceb7a1b896ae",
       "asset": {
         "delegate": {
@@ -1051,7 +1051,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "9829702676947904862L",
+      "senderId": "9829702676947904862A",
       "senderPublicKey": "9a0f19e60581003b70291cf4a874e8217b04871e676b2c53c85a18ab95c2683b",
       "asset": {
         "delegate": {
@@ -1067,7 +1067,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "11776976371460504977L",
+      "senderId": "11776976371460504977A",
       "senderPublicKey": "1e6ce18addd973ad432f05f16a4c86372eaca054cbdbcaf1169ad6df033f6b85",
       "asset": {
         "delegate": {
@@ -1083,7 +1083,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "10718602563400390049L",
+      "senderId": "10718602563400390049A",
       "senderPublicKey": "27f43391cca75cbc82d1750307649508d1d318cd015f1f172b97318f17ab954e",
       "asset": {
         "delegate": {
@@ -1099,7 +1099,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "3978875557882351502L",
+      "senderId": "3978875557882351502A",
       "senderPublicKey": "644a971f2c0d0d4b657d050fca27e5f9265e3dfa02a71f7fbf834cc2f2a6a4c8",
       "asset": {
         "delegate": {
@@ -1115,7 +1115,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "15196907279410793719L",
+      "senderId": "15196907279410793719A",
       "senderPublicKey": "cdd68a321ea737e82bce23d2208040f79471d36f2e6f84c74ea36ab26245e522",
       "asset": {
         "delegate": {
@@ -1131,7 +1131,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "14846615469478045551L",
+      "senderId": "14846615469478045551A",
       "senderPublicKey": "f9f6ff873c10c24eba834be28a56415a49c9c67b7c0ee9f106da827847168986",
       "asset": {
         "delegate": {
@@ -1147,7 +1147,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "9528507096611161860L",
+      "senderId": "9528507096611161860A",
       "senderPublicKey": "fab7b58be4c1e9542c342023b52e9d359ea89a3af34440bdb97318273e8555f0",
       "asset": {
         "delegate": {
@@ -1163,7 +1163,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "5225235021585670513L",
+      "senderId": "5225235021585670513A",
       "senderPublicKey": "1b5a93c7622c666b0228236a70ee1a31407828b71bfb6daaa29a1509e87d4d3c",
       "asset": {
         "delegate": {
@@ -1179,7 +1179,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "8579664070066716758L",
+      "senderId": "8579664070066716758A",
       "senderPublicKey": "74583aba9c0b92e4f08c8c75e6df341c255ca007971195ff64d6f909dc4b7177",
       "asset": {
         "delegate": {
@@ -1195,7 +1195,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "13607583239938732846L",
+      "senderId": "13607583239938732846A",
       "senderPublicKey": "2b6f49383af36fd9f1a72d5d2708c8c354add89aaea7edc702c420e2d5fdf22e",
       "asset": {
         "delegate": {
@@ -1211,7 +1211,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "2460251951231579923L",
+      "senderId": "2460251951231579923A",
       "senderPublicKey": "a10ed9c59dac2c4b8264dc34f2d318719fb5f20ecdd8d6be2d7abfe32294f20d",
       "asset": {
         "delegate": {
@@ -1227,7 +1227,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "1081724521551096934L",
+      "senderId": "1081724521551096934A",
       "senderPublicKey": "c61d0822bbdbfe2a0b5503daff0ce8441c623115c94c0cfcf047a51f8b7160d3",
       "asset": {
         "delegate": {
@@ -1243,7 +1243,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "11004588490103196952L",
+      "senderId": "11004588490103196952A",
       "senderPublicKey": "031e27beab583e2c94cb3167d128fc1a356c1ae88adfcfaa2334abffa3ae0b4c",
       "asset": {
         "delegate": {
@@ -1259,7 +1259,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "3038510178697972178L",
+      "senderId": "3038510178697972178A",
       "senderPublicKey": "9986cedd4b5a28e4c81d9b4bff0461dddaa25099df00b8632fe99e88df28ce73",
       "asset": {
         "delegate": {
@@ -1275,7 +1275,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "11506830473925742632L",
+      "senderId": "11506830473925742632A",
       "senderPublicKey": "03e811dda4f51323ac712cd12299410830d655ddffb104f2c9974d90bf8c583a",
       "asset": {
         "delegate": {
@@ -1291,7 +1291,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "1156554003019098747L",
+      "senderId": "1156554003019098747A",
       "senderPublicKey": "64db2bce729e302f6021047dfd39b6c53caf83b42da4b5b881cb153a3fb31613",
       "asset": {
         "delegate": {
@@ -1307,7 +1307,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "15675505605575781355L",
+      "senderId": "15675505605575781355A",
       "senderPublicKey": "f827f60366fae9f9ed65384979de780f4a18c6dbfbefb1c7d100957dde51a06d",
       "asset": {
         "delegate": {
@@ -1323,7 +1323,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "1330932780504881464L",
+      "senderId": "1330932780504881464A",
       "senderPublicKey": "68680ca0bcd4676489976837edeac305c34f652e970386013ef26e67589a2516",
       "asset": {
         "delegate": {
@@ -1339,7 +1339,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "2393437289429474816L",
+      "senderId": "2393437289429474816A",
       "senderPublicKey": "f25af3c59ac7f5155c7a9f36762bd941b9dc9c5c051a1bc2d4e34ed773dd04a3",
       "asset": {
         "delegate": {
@@ -1355,7 +1355,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "9373453086736696113L",
+      "senderId": "9373453086736696113A",
       "senderPublicKey": "d3e3c8348bca51461eabfc382f8a01e8e284db54104ad37ec0695d48ae5531ac",
       "asset": {
         "delegate": {
@@ -1371,7 +1371,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "13996264772258038665L",
+      "senderId": "13996264772258038665A",
       "senderPublicKey": "3be2eb47134d5158e5f7d52076b624b76744b3fba8aa50791b46ba21408524c9",
       "asset": {
         "delegate": {
@@ -1387,7 +1387,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "15441829200899900957L",
+      "senderId": "15441829200899900957A",
       "senderPublicKey": "9f2fcc688518324273da230afff9756312bf23592174896fab669c2d78b1533c",
       "asset": {
         "delegate": {
@@ -1403,7 +1403,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "9617151563281131501L",
+      "senderId": "9617151563281131501A",
       "senderPublicKey": "e818ac2e8e9ffacd2d49f0f2f6739e16711644194d10bb1a8e9e434603125fa1",
       "asset": {
         "delegate": {
@@ -1419,7 +1419,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "11231201826468807624L",
+      "senderId": "11231201826468807624A",
       "senderPublicKey": "19d55c023d85d6061d1e196fa440a50907878e2d425bcd893366fa04bc23b4de",
       "asset": {
         "delegate": {
@@ -1435,7 +1435,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "8696372244926065755L",
+      "senderId": "8696372244926065755A",
       "senderPublicKey": "6d462852d410e84ca199a34d7ccad443784471f22cf3de37c531ce3b87ebbc41",
       "asset": {
         "delegate": {
@@ -1451,7 +1451,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "13227119536266737242L",
+      "senderId": "13227119536266737242A",
       "senderPublicKey": "e6d075e3e396673c853210f74f8fe6db5e814c304bb9cd7f362018881a21f76c",
       "asset": {
         "delegate": {
@@ -1467,7 +1467,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "5179180534922237219L",
+      "senderId": "5179180534922237219A",
       "senderPublicKey": "0779ca873bbda77f2850965c8a3a3d40a6ee4ec56af55f0a3f16c7c34c0f298b",
       "asset": {
         "delegate": {
@@ -1483,7 +1483,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "15357346183081898956L",
+      "senderId": "15357346183081898956A",
       "senderPublicKey": "73fec19d4bfe361c0680a7cfd24b3f744a1c1b29d932c4d89ce6157679f8af7d",
       "asset": {
         "delegate": {
@@ -1499,7 +1499,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "5728878764625100394L",
+      "senderId": "5728878764625100394A",
       "senderPublicKey": "1e82c7db09da2010e7f5fef24d83bc46238a20ef7ecdf12d9f32e4318a818777",
       "asset": {
         "delegate": {
@@ -1515,7 +1515,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "15692920659979620367L",
+      "senderId": "15692920659979620367A",
       "senderPublicKey": "e42bfabc4a61f02131760af5f2fa0311007932a819a508da25f2ce6af2468156",
       "asset": {
         "delegate": {
@@ -1531,7 +1531,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "9950029393097476480L",
+      "senderId": "9950029393097476480A",
       "senderPublicKey": "bf9f5cfc548d29983cc0dfa5c4ec47c66c31df0f87aa669869678996902ab47f",
       "asset": {
         "delegate": {
@@ -1547,7 +1547,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "13047943150548380336L",
+      "senderId": "13047943150548380336A",
       "senderPublicKey": "b137de324fcc79dd1a21ae39a2ee8eed05e76b86d8e89d378f8bb766afb8719f",
       "asset": {
         "delegate": {
@@ -1563,7 +1563,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "677098303101863197L",
+      "senderId": "677098303101863197A",
       "senderPublicKey": "31402977c7eaf9e38d18d0689a45d719d615de941f7e80f6db388453b46f4df5",
       "asset": {
         "delegate": {
@@ -1579,7 +1579,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "68059329122227204L",
+      "senderId": "68059329122227204A",
       "senderPublicKey": "f62062b7590d46f382fb8c37a26ab0a1bd512951777aedcaa96822230727d3a1",
       "asset": {
         "delegate": {
@@ -1595,7 +1595,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "15300035861842713585L",
+      "senderId": "15300035861842713585A",
       "senderPublicKey": "76c9494237e608d43fd6fb0114106a7517f5503cf79d7482db58a02304339b6c",
       "asset": {
         "delegate": {
@@ -1611,7 +1611,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "10881167371402274308L",
+      "senderId": "10881167371402274308A",
       "senderPublicKey": "addb0e15a44b0fdc6ff291be28d8c98f5551d0cd9218d749e30ddb87c6e31ca9",
       "asset": {
         "delegate": {
@@ -1627,7 +1627,7 @@
       "fee": 0,
       "timestamp": 0,
       "recipientId": null,
-      "senderId": "6726252519465624456L",
+      "senderId": "6726252519465624456A",
       "senderPublicKey": "904c294899819cce0283d8d351cb10febfa0e9f0acd90a820ec8eb90a7084c37",
       "asset": {
         "delegate": {
@@ -1642,8 +1642,8 @@
       "amount": 0,
       "fee": 0,
       "timestamp": 0,
-      "recipientId": "16313739661670634666L",
-      "senderId": "16313739661670634666L",
+      "recipientId": "16313739661670634666A",
+      "senderId": "16313739661670634666A",
       "senderPublicKey": "c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f",
       "asset": {
         "votes": [
