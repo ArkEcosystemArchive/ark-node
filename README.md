@@ -40,7 +40,7 @@ sudo apt-get install -y curl build-essential python git
 
 Clone this repository
 ```
-git clone https://bitbucket.com/arkio/ark-node.git
+git clone https://github.com/arkecosytem/ark-node.git
 cd ark-node
 ```
 
