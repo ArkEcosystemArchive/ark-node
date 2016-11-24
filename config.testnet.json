@@ -33,13 +33,13 @@
         }
     },
     "peers": {
-        "minimumNetworkReach":20,
+        "minimumNetworkReach":5,
         "list": [
-          {"ip":"node1.arknet.cloud", "port":4000},
-          {"ip":"node2.arknet.cloud", "port":4000},
-          {"ip":"node3.arknet.cloud", "port":4000},
-          {"ip":"node4.arknet.cloud", "port":4000},
-          {"ip":"node5.arknet.cloud", "port":4000}
+          {"ip":"5.135.102.92", "port":4000},
+          {"ip":"5.135.102.88", "port":4000},
+          {"ip":"5.135.102.89", "port":4000},
+          {"ip":"5.135.102.90", "port":4000},
+          {"ip":"5.135.102.91", "port":4000}
         ],
         "blackList": [],
         "options": {

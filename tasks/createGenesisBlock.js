@@ -161,7 +161,7 @@ premine.address = arkjs.crypto.getAddress(premine.publicKey);
 genesis.publicKey = arkjs.crypto.getKeys(genesis.passphrase).publicKey;
 genesis.address = arkjs.crypto.getAddress(genesis.publicKey);
 
-var premineTx = arkjs.transaction.createTransaction(premine.address,genesis.balance,null, premine.passphrase)
+var premineTx = arkjs.transaction.createTransaction(genesis.address,genesis.balance,null, premine.passphrase)
 
 premineTx.fee = 0;
 premineTx.timestamp = 0;
