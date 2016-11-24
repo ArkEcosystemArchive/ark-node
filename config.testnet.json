@@ -9,7 +9,7 @@
     "db": {
         "host": "localhost",
         "port": 5432,
-        "database": "ark_test",
+        "database": "ark_testnet",
         "user": null,
         "password": "password",
         "poolSize": 20,
@@ -34,7 +34,13 @@
     },
     "peers": {
         "minimumNetworkReach":20,
-        "list": [{"ip":"127.0.0.1", "port":4000}],
+        "list": [
+          {"ip":"node1.arknet.cloud", "port":4000},
+          {"ip":"node2.arknet.cloud", "port":4000},
+          {"ip":"node3.arknet.cloud", "port":4000},
+          {"ip":"node4.arknet.cloud", "port":4000},
+          {"ip":"node5.arknet.cloud", "port":4000}
+        ],
         "blackList": [],
         "options": {
             "limits": {
@@ -49,7 +55,7 @@
     },
     "forging": {
         "force": true,
-        "coldstart": 60,
+        "coldstart": 6,
         "secret": [],
         "access": {
             "whiteList": [
@@ -70,5 +76,5 @@
             "cert": "./ssl/ark.crt"
         }
     },
-    "nethash":"198f2b61a8eb95fbeed58b8216780b68f697f26b849acf00c8c93bb9b24f783d"
+    "nethash":"3e7aded8f2179bc5230d3bf583582b5f741ce0068813909c185f279673fb32d8"
 }

@@ -312,7 +312,7 @@ Transaction.prototype.verify = function (trs, sender, requester, cb) {
 	if (sender.senderId && bs58check.decode(trs.senderId.slice(0,-1)) != sender.publicKey) {
 		return setImmediate(cb, 'Invalid sender address');
 	}
-	
+
 	// Check requester public key
 	if (trs.requesterPublicKey) {
 		if (sender.multisignatures.indexOf(trs.requesterPublicKey) < 0) {

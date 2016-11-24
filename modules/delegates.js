@@ -204,7 +204,7 @@ __private.getKeysSortByVote = function (cb) {
 
 // TODO: highly buggy
 // 1. we are not sure we have the last block height!
-// 2. corner case: height last block of the round? we get the very wrong delegate list
+// 2. corner case: height last block of the round? we may get the very wrong delegate list
 __private.getBlockSlotData = function (slot, height, cb) {
 	self.generateDelegateList(height, function (err, activeDelegates) {
 		if (err) {

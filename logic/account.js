@@ -525,6 +525,8 @@ Account.prototype.set = function (address, fields, cb) {
 	});
 };
 
+
+//TODO: to simplify with the new delegate listing algo
 Account.prototype.merge = function (address, diff, cb) {
 	var update = {}, remove = {}, insert = {}, insert_object = {}, remove_object = {}, round = [];
 

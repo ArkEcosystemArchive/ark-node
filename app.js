@@ -28,6 +28,7 @@ if (typeof gc !== 'undefined') {
 program
 	.version(packageJson.version)
 	.option('-c, --config <path>', 'config file path')
+	.option('-g, --genesis <path>', 'genesis block')
 	.option('-p, --port <port>', 'listening port number')
 	.option('-a, --address <ip>', 'listening host name or ip')
 	.option('-x, --peers [peers...]', 'peers list')
@@ -37,6 +38,10 @@ program
 
 if (program.config) {
 	appConfig = require(path.resolve(process.cwd(), program.config));
+}
+
+if (program.genesis) {
+	genesisblock = require(path.resolve(process.cwd(), program.genesis));
 }
 
 if (program.port) {
