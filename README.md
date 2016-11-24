@@ -13,15 +13,16 @@ This is a fork from Lisk with the following features:
 - Removed custom node version
 - Removed UI for stability and security reasons
 - Changed some constants (block rewards, blocktime etc...)
+- Added simple PBFT before forging new block
+- Ditch addresses from the protocol in favor of publicKeys to prevent from collisions, using base58 check (similar to bitcoin)
 - Added vendorField as first iteration of smart bridge
 - Made peers management entirely in-memory for efficiency
 - Strengthened the transaction management and broadcast (reject often, reject soon)
+- Rearchitect with relay nodes and forging nodes, relay nodes broadcasting only block headers (still ongoing).
 
 Planned features:
-- add IPFS as first class citizen (using smartbridge addressing)
-- Ditch addresses from the protocol in favor of publicKeys to prevent from collisions
-- Various protocol improvements (uncle forging, voting weights).
-- Rearchitect with relay nodes and forging nodes, relay nodes broadcasting only block headers.
+- Add IPFS as first class citizen (using smartbridge addressing)
+- Protocol improvements (uncle forging, voting weights).
 - Remove unsecured API
 - Routing tables
 
