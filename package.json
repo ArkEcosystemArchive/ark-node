@@ -4,11 +4,11 @@
   "private": true,
   "scripts": {
     "start": "node app.js",
-    "start:testnet": "node app.js --genesis genesisBlock.testnet.json --config config.testnet.json"
+    "start:testnet": "node app.js --genesis genesisBlock.testnet.json --config config.testnet.json",
     "test": "./node_modules/.bin/mocha",
     "cov": "./node_modules/.bin/mocha --require blanket -R html-cov test/helpers test/logic > tmp/coverage.html"
   },
-  "author": "Boris Povod <boris@crypti.me>, Pavel Nekrasov <landgraf.paul@gmail.com>, Oliver Beddows <oliver@lisk.io>",
+  "author": "Boris Povod <boris@crypti.me>, Pavel Nekrasov <landgraf.paul@gmail.com>, Oliver Beddows <oliver@lisk.io>, FX Thoorens <fx.thoorens@ark.io>",
   "dependencies": {
     "arkjs": "https://github.com/arkecosystem/ark-js#master",
     "async": "=2.0.1",
