@@ -404,7 +404,7 @@ __private.checkDelegates = function (publicKey, votes, state, cb) {
 
 			if (math === '+') {
 				additions += 1;
-			} else if (math === '+') {
+			} else if (math === '-') {
 				removals += 1;
 			}
 
