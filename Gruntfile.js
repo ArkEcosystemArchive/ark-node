@@ -19,7 +19,7 @@ module.exports = function (grunt) {
 	var config = require('./config.json');
 
 	var release_dir = __dirname + '/release/',
-	    version_dir = release_dir + config.version;
+	    version_dir = release_dir + 'ark-' + config.version;
 
 	grunt.initConfig({
 		obfuscator: {
