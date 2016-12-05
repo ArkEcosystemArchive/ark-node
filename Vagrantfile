@@ -12,7 +12,81 @@ Vagrant.configure("2") do |config|
 
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://atlas.hashicorp.com/search.
-  config.vm.box = "hashicorp/precise64"
+  config.vm.box = "ubuntu/trusty64"
+  config.vm.network "forwarded_port", guest: 4000, host: 4000
+  config.vm.provision :shell, privileged: false, inline: <<-SHELL
+
+    ##########################################
+    #                                        #
+    # Checking and installing prerequisites  #
+    #                                        #
+    ##########################################
+
+    # Variables and arrays declarations
+    log="ark-install.log"
+
+    sudo apt-get update
+    echo -e "Installing tools... "
+    sudo apt-get install -yyq build-essential wget python git curl jq htop nmon iftop
+
+    if [ $(dpkg-query -W -f='${Status}' postgresql 2>/dev/null | grep -c "ok installed") -eq 0 ];
+    then
+      echo -e "Installing postgresql... "
+      sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" >> /etc/apt/sources.list.d/pgdg.list'
+      wget -q https://www.postgresql.org/media/keys/ACCC4CF8.asc -O - | sudo apt-key add -
+      sudo apt-get update
+      sudo apt-get install -yyq postgresql postgresql-contrib libpq-dev
+    else
+      echo -e "Postgresql is already installed."
+    fi
+
+    if ! sudo pgrep -x "ntpd" > /dev/null; then
+        echo -e "No NTP found. Installing... "
+        sudo apt-get install ntp -yyq &>> $log
+        sudo service ntp stop &>> $log
+        sudo ntpd -gq &>> $log
+        sudo service ntp start &>> $log
+        if ! sudo pgrep -x "ntpd" > /dev/null; then
+          echo -e "NTP failed to start! It should be installed and running for ARK.\n Check /etc/ntp.conf for any issues and correct them first! \n Exiting."
+          exit 1
+        fi
+        echo -e "NTP was successfuly installed and started with PID:" `grep -x "ntpd"`
+    else echo "NTP is up and running with PID:" `pgrep -x "ntpd"`
+
+    fi # if sudo pgrep
+
+    echo "-------------------------------------------------------------------"
+
+    # Installing node
+    curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
+    sudo apt-get install nodejs
+    sudo npm install -g n
+
+    sudo n 6.9.1
+    sudo npm install forever -g
+
+    echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
+
+    # Creating DB and user
+    sudo -u postgres psql -c "CREATE USER $USER WITH PASSWORD 'password';"
+    #sudo -u postgres createuser --createdb --password $USER
+    sudo -u postgres createdb -O $USER ark_testnet
+    sudo service postgresql start
+
+    git clone https://github.com/arkecosystem/ark-node.git
+
+    cd /home/vagrant/ark-node
+    #rm -fr node_modules
+    npm install grunt-cli
+    npm install
+    forever app.js --genesis genesisBlock.testnet.json --config config.testnet.json
+  SHELL
+
+  config.vm.provider "virtualbox" do |v|
+    v.memory = 1024
+    v.customize ["modifyvm", :id, "--cpuexecutioncap", "50"]
+    v.name = "ark_node_vm"
+  end
 
   # Disable automatic box update checking. If you disable this, then
   # boxes will only be checked for updates when the user runs
