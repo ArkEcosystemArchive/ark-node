@@ -352,11 +352,7 @@ __private.popLastBlock = function (oldLastBlock, cb) {
 			}, function (err) {
 				modules.rounds.backwardTick(oldLastBlock, previousBlock, function () {
 					__private.deleteBlock(oldLastBlock.id, function (err) {
-						if (err) {
-							return setImmediate(cb, err);
-						}
-
-						return setImmediate(cb, null, previousBlock);
+						return setImmediate(cb, err, previousBlock);
 					});
 				});
 			});
@@ -631,14 +627,56 @@ Blocks.prototype.loadBlocksOffset = function (limit, offset, verify, cb) {
 };
 
 Blocks.prototype.removeLastBlock = function(cb){
-		__private.popLastBlock(__private.lastBlock, function (err, newLastBlock) {
-			if(err){
-			 	library.logger.error('error removing block', __private.lastBlock);
-			}
-			//library.logger.debug('removing block', __private.lastBlock);
-			__private.lastBlock = newLastBlock;
-			setImmediate(cb, err, newLastBlock);
-	 });
+	if (__private.lastBlock.height === 1) {
+		return setImmediate(cb);
+	}
+
+	// List of currrently unconfirmed transactions.
+	var unconfirmedTransactions;
+	// Don't shutdown now
+	__private.isActive = true;
+
+	async.series({
+		// Rewind any unconfirmed transactions before removing block.
+		// undoUnconfirmedList: function (seriesCb) {
+		// 	modules.transactions.undoUnconfirmedList(function (err, transactions) {
+		// 		if (err) {
+		// 			// TODO: Send a numbered signal to be caught by forever to trigger a rebuild.
+		// 			return process.exit(0);
+		// 		} else {
+		// 			unconfirmedTransactions = transactions;
+		// 			return setImmediate(seriesCb);
+		// 		}
+		// 	});
+		// },
+		backwardSwap: function (seriesCb) {
+			modules.rounds.directionSwap('backward', null, seriesCb);
+		},
+   	popLastBlock: function (seriesCb) {
+   		__private.popLastBlock(__private.lastBlock, function (err, newLastBlock) {
+   			if (err) {
+   				library.logger.error('Error deleting last block', __private.lastBlock);
+   			}
+
+   			__private.lastBlock = newLastBlock;
+   			return setImmediate(seriesCb);
+   		});
+   	},
+		forwardSwap: function (seriesCb) {
+		 	modules.rounds.directionSwap('forward', __private.lastBlock, seriesCb);
+		}
+		// Push back unconfirmed transactions list.
+		// applyUnconfirmedList: function (seriesCb) {
+		// 	// DATABASE write
+		// 	modules.transactions.applyUnconfirmedList(unconfirmedTransactions, function (err) {
+		// 		return setImmediate(seriesCb, err);
+		// 	});
+		// }
+	}, function (err) {
+		// Allow shutdown, database writes are finished.
+		__private.isActive = false;
+		return setImmediate(cb, err);
+	});
 }
 
 Blocks.prototype.loadLastBlock = function (cb) {

@@ -149,7 +149,7 @@ __private.attachApi = function () {
 
 			//if forging send a small bunch only to prevent from being overloaded.
 			if(modules.delegates.isForging()){
-				limit=10;
+				limit=100;
 			}
 
 			library.db.query(sql.blockList, {
@@ -205,6 +205,8 @@ __private.attachApi = function () {
 
 			return res.status(200).json({success: false, error: e.toString()});
 		}
+
+		modules.peers.update(req.peer, function(){});
 
 		library.bus.message('receiveBlock', block, req.peer);
 
@@ -284,6 +286,7 @@ __private.attachApi = function () {
 			if (err) {
 				res.status(200).json({success: false, message: err.toString()});
 			} else {
+				modules.peers.update(req.peer, function(){});
 				res.status(200).json({success: true, transactionId: transaction.id});
 			}
 		});
@@ -454,17 +457,13 @@ Transport.prototype.getFromPeer = function (peer, options, cb) {
 				return setImmediate(cb, ['Peer is not on the same network', headers.nethash, req.method, req.url].join(' '));
 			}
 
-			if (headers.version === library.config.version) {
-				library.dbSequence.add(function (cb) {
-					modules.peers.update({
-						ip: peer.ip,
-						port: headers.port,
-						state: 2,
-						os: headers.os,
-						version: headers.version
-					}, cb);
-				});
-			}
+			modules.peers.update({
+				ip: peer.ip,
+				port: headers.port,
+				state: 2,
+				os: headers.os,
+				version: headers.version
+			}, function(){});
 
 			return setImmediate(cb, null, {body: res.body, peer: peer});
 		}

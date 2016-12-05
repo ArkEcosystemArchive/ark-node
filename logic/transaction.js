@@ -417,9 +417,11 @@ Transaction.prototype.verify = function (trs, sender, requester, cb) {
 	}
 
 	// Check timestamp
-	if (slots.getSlotNumber(trs.timestamp) > slots.getSlotNumber()) {
-		return setImmediate(cb, 'Invalid transaction timestamp');
-	}
+	// TODO: do we really care?
+	// we allow a unsync of client clock of ~80s
+	if (slots.getSlotNumber(trs.timestamp) > slots.getSlotNumber() + 10) {
+	 	return setImmediate(cb, 'Invalid transaction timestamp');
+	 }
 
 	// Call verify on transaction type
 	__private.types[trs.type].verify.call(this, trs, sender, function (err) {
@@ -538,7 +540,7 @@ Transaction.prototype.undo = function (trs, block, sender, cb) {
 		return setImmediate(cb, 'Unknown transaction type ' + trs.type);
 	}
 
-	var amount = trs.amount + trs.fee;
+	var amount = bignum(trs.amount.toString()).plus(trs.fee.toString()).toNumber();
 
 	this.scope.account.merge(sender.address, {
 		balance: amount,
@@ -552,7 +554,7 @@ Transaction.prototype.undo = function (trs, block, sender, cb) {
 		__private.types[trs.type].undo.call(this, trs, block, sender, function (err) {
 			if (err) {
 				this.scope.account.merge(sender.address, {
-					balance: amount,
+					balance: -amount,
 					blockId: block.id,
 					round: calc(block.height)
 				}, function (err) {
@@ -624,7 +626,7 @@ Transaction.prototype.undoUnconfirmed = function (trs, sender, cb) {
 		return setImmediate(cb, 'Unknown transaction type ' + trs.type);
 	}
 
-	var amount = trs.amount + trs.fee;
+	var amount = bignum(trs.amount.toString()).plus(trs.fee.toString()).toNumber();
 
 	this.scope.account.merge(sender.address, {u_balance: amount}, function (err, sender) {
 		if (err) {

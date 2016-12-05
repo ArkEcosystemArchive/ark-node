@@ -319,23 +319,32 @@ Peers.prototype.remove = function (pip, port, cb) {
 };
 
 Peers.prototype.update = function (peer, cb) {
-	var params = {
-		ip: peer.ip,
-		port: peer.port,
-		os: peer.os || null,
-		version: peer.version || null,
-		state: 1
-	};
+	// var params = {
+	// 	ip: peer.ip,
+	// 	port: peer.port,
+	// 	os: peer.os || null,
+	// 	version: peer.version || null,
+	// 	state: 1
+	// };
 
-	var query;
-	if (peer.state !== undefined) {
-		params.state = peer.state;
-		query = sql.upsertWithState;
-	} else {
-		query = sql.upsertWithoutState;
+	// var query;
+	// if (peer.state !== undefined) {
+	// 	params.state = peer.state;
+	// 	query = sql.upsertWithState;
+	// } else {
+	// 	query = sql.upsertWithoutState;
+	// }
+
+	if(__private.peers[(peer.ip+":"+peer.port)]){
+		if(peer.blockheader){
+			__private.peers[(peer.ip+":"+peer.port)] = peer
+		}
+	}
+	else{
+		__private.peers[(peer.ip+":"+peer.port)] = peer;
+		library.logger.debug("New peer added", peer);
 	}
 
-	__private.peers[(peer.ip+":"+peer.port)] = peer;
 
 	return setImmediate(cb);
 
