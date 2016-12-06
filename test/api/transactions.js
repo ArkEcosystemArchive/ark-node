@@ -398,7 +398,7 @@ describe('PUT /api/transactions', function () {
 	});
 
 	describe('to a cold address', function (done) {
-		var recipientId = '13896491535841206186A';
+		var recipientId = 'C2uLD1g2wddJVasKZkHrRu53YztWRYQzyeeSduzGWWteh8y8zA';
 
 		it('should be ok', function (done) {
 			var amountToSend = 110000000;
@@ -415,7 +415,7 @@ describe('PUT /api/transactions', function () {
 	});
 
 	describe('from a cold address', function (done) {
-		var passphrase = 'fiber diet blind uncover crunch breeze bicycle globe attack chalk cousin divert';
+		var passphrase = 'unable stick canoe alcohol proud tonight fluid fork fresh raw marine dwarf';
 
 		before(function (done) {
 			node.onNewBlock(done);

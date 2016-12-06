@@ -28,7 +28,6 @@ describe('GET /peer/list', function () {
 				res.body.peers.forEach(function (peer) {
 					node.expect(peer).to.have.property('ip').that.is.a('string');
 					node.expect(peer).to.have.property('port').that.is.a('number');
-					node.expect(peer).to.have.property('state').that.is.a('number');
 					node.expect(peer).to.have.property('os');
 					node.expect(peer).to.have.property('version');
 				});

@@ -61,7 +61,7 @@ __private.attachApi = function () {
 	library.network.app.use(function (err, req, res, next) {
 		if (!err) { return next(); }
 		library.logger.error('API error ' + req.url, err);
-		res.status(500).send({success: false, error: 'API error: ' + err.message});
+		res.status(500).send({success: false, error: 'API error', message: err.message});
 	});
 };
 
@@ -244,7 +244,7 @@ Transactions.prototype.processUnconfirmedTransaction = function (transaction, br
 	__private.getById(transaction.id, function (err, tbc) {
 		if (tbc) {
 			library.logger.debug('Transaction ID is already in blockchain', transaction.id);
-			return setImmediate(cb);
+			return setImmediate(cb, 'Transaction ID is already in blockchain: ' + transaction.id);
 		}
 		modules.accounts.setAccountAndGet({publicKey: transaction.senderPublicKey}, function (err, sender) {
 			function done (err, ignore) {

@@ -8,7 +8,7 @@ var account2 = node.randomAccount();
 
 function postTransaction (transaction, done) {
 	node.post('/peer/transactions', {
-		transaction: transaction
+		transactions: [transaction]
 	}, function (err, res) {
 		done(err, res);
 	});
@@ -32,7 +32,7 @@ describe('POST /peer/transactions', function () {
 		it('using undefined transaction', function (done) {
 			postTransaction(undefined, function (err, res) {
 				node.expect(res.body).to.have.property('success').to.be.not.ok;
-				node.expect(res.body).to.have.property('message').to.equal('Invalid transaction body');
+				node.expect(res.body).to.have.property('error').to.equal("API error: id is not defined");
 				done();
 			});
 		});
@@ -45,7 +45,7 @@ describe('POST /peer/transactions', function () {
 
 			postTransaction(transaction, function (err, res) {
 				node.expect(res.body).to.have.property('success').to.be.not.ok;
-				node.expect(res.body).to.have.property('message').to.equal('Invalid transaction body');
+				node.expect(res.body).to.have.property('error').to.equal("API error: id is not defined");
 				done();
 			});
 		});
@@ -58,7 +58,7 @@ describe('POST /peer/transactions', function () {
 
 				postTransaction(transaction, function (err, res) {
 					node.expect(res.body).to.have.property('success').to.be.not.ok;
-					node.expect(res.body).to.have.property('message').to.match(/Account does not have enough ARK: [0-9]+L balance: 0/);
+					node.expect(res.body).to.have.property('message').to.match(/Account does not have enough ARK: [a-zA-Z0-9]+A balance: 0/);
 					done();
 				});
 			});

@@ -33,7 +33,8 @@
         }
     },
     "peers": {
-        "list": [],
+        "minimumNetworkReach":1,
+        "list": [{"ip":"127.0.0.1","port":4000}],
         "blackList": [],
         "options": {
             "limits": {
@@ -47,6 +48,7 @@
         }
     },
     "forging": {
+        "coldstart": 6,
         "force": true,
         "secret": [
             "robust swift grocery peasant forget share enable convince deputy road keep cheap",

@@ -109,19 +109,9 @@ describe('GET /accounts?address=', function () {
 		});
 	});
 
-	it('using known lowercase address should be ok', function (done) {
+	it('using known lowercase address should not be ok', function (done) {
 		getAccounts(node.gAccount.address.toLowerCase(), function (err, res) {
-			node.expect(res.body).to.have.property('success').to.be.ok;
-			node.expect(res.body).to.have.property('account').that.is.an('object');
-			node.expect(res.body.account).to.have.property('address').to.equal(node.gAccount.address);
-			node.expect(res.body.account).to.have.property('unconfirmedBalance').that.is.a('string');
-			node.expect(res.body.account).to.have.property('balance').that.is.a('string');
-			node.expect(res.body.account).to.have.property('publicKey').to.equal(node.gAccount.publicKey);
-			node.expect(res.body.account).to.have.property('unconfirmedSignature').to.equal(0);
-			node.expect(res.body.account).to.have.property('secondSignature').to.equal(0);
-			node.expect(res.body.account).to.have.property('secondPublicKey').to.equal(null);
-			node.expect(res.body.account).to.have.property('multisignatures').to.a('array');
-			node.expect(res.body.account).to.have.property('u_multisignatures').to.a('array');
+			node.expect(res.body).to.have.property('success').to.be.not.ok;
 			done();
 		});
 	});

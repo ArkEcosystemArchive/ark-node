@@ -27,11 +27,11 @@ function getVotes (address, done) {
 
 function postVotes (params, done) {
 	var count = 0;
-	var limit = Math.ceil(params.delegates.length / 25);
+	var limit = 1;
 
 	async.whilst(
 		function () {
-			return count <= limit;
+			return count < limit;
 		}, function (untilCb) {
 			node.onNewBlock(function (err) {
 				count++;
@@ -55,7 +55,7 @@ function postVotes (params, done) {
 }
 
 function postVote (transaction, done) {
-	node.post('/peer/transactions', { transaction: transaction }, function (err, res) {
+	node.post('/peer/transactions', { transactions: [transaction] }, function (err, res) {
 		return done(err, res);
 	});
 }
@@ -73,7 +73,7 @@ function registerDelegate (account, done) {
 	account.username = node.randomDelegateName().toLowerCase();
 	var transaction = node.ark.delegate.createDelegate(account.password, account.username);
 
-	node.post('/peer/transactions', { transaction: transaction }, function (err, res) {
+	node.post('/peer/transactions', { transactions: [transaction] }, function (err, res) {
 		node.expect(res.body).to.have.property('success').to.be.ok;
 		node.onNewBlock(function (err) {
 			return done(err, res);
@@ -127,7 +127,7 @@ describe('POST /peer/transactions', function () {
 	it('using undefined transaction', function (done) {
 		postVote(undefined, function (err, res) {
 			node.expect(res.body).to.have.property('success').to.be.not.ok;
-			node.expect(res.body).to.have.property('message').to.equal('Invalid transaction body');
+			node.expect(res.body).to.have.property('error').to.equal("API error: id is not defined");
 			done();
 		});
 	});
@@ -139,7 +139,7 @@ describe('POST /peer/transactions', function () {
 
 		postVote(transaction, function (err, res) {
 			node.expect(res.body).to.have.property('success').to.be.not.ok;
-			node.expect(res.body).to.have.property('message').to.equal('Invalid transaction body');
+			node.expect(res.body).to.have.property('error').to.equal("API error: id is not defined");
 			done();
 		});
 	});

@@ -1,11 +1,11 @@
 'use strict';
-process.env.SILENT='true';
+//process.env.SILENT='true';
 // Root object
 var node = {};
 
 // Requires
 node.bignum = require('../helpers/bignum.js');
-node.config = require('../config.json');
+node.config = require('./config.json');
 node.constants = require('../helpers/constants.js');
 node.txTypes = require('../helpers/transactionTypes.js');
 
@@ -42,7 +42,7 @@ node.fees = {
 
 // Existing delegate account
 node.eAccount = {
-	address: '10881167371402274308A',
+	address: '2KZunaTsmbxbBh6cDbktARXeEi8DJxr1tucgReTYmLE8LToux4A',
 	publicKey: 'addb0e15a44b0fdc6ff291be28d8c98f5551d0cd9218d749e30ddb87c6e31ca9',
 	password: 'actress route auction pudding shiver crater forum liquid blouse imitate seven front',
 	balance: '0',
@@ -51,7 +51,7 @@ node.eAccount = {
 
 // Genesis account, initially holding 125M total supply
 node.gAccount = {
-	address: '16313739661670634666A',
+	address: '2TpF24P4ef4tS39KtwynYCFZdm2JuLFEVZ3ZRty19s2wzBkuv6A',
 	publicKey: 'c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f',
 	password: 'wagon stock borrow episode laundry kitten salute link globe zero feed marble',
 	balance: '12500000000000000'
@@ -146,7 +146,7 @@ node.waitForNewBlock = function (height, cb) {
 					height = res.body.height;
 				}
 
-				node.debug('	Waiting for block:'.grey, 'Height:'.grey, height, 'Second:'.grey, counter++);
+				node.debug('	Waiting for block:'.grey, 'Height:'.grey, res.body.height, 'Second:'.grey, counter++);
 				setTimeout(cb, 1000);
 			});
 

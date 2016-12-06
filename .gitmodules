@@ -1,0 +1,3 @@
+[submodule "test/ark-js"]
+	path = test/ark-js
+	url = https://github.com/arkecosystem/ark-js.git
