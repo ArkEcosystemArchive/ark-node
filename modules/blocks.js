@@ -1311,19 +1311,17 @@ Blocks.prototype.onReceiveBlock = function (block, peer) {
 			return setImmediate(cb, check.errors[0]);
 		}
 
-		library.logger.info([
-			'Received new block id:', block.id,
-			'height:', block.height,
-			'round:',  modules.rounds.calc(block.height),
-			'slot:', slots.getSlotNumber(block.timestamp),
-			'reward:', block.reward
-		].join(' '));
-
 		// __private.lastBlock can change with time: multithread will eat you!
 		var lastBlock = __private.lastBlock;
 
 		if (block.previousBlock === lastBlock.id && lastBlock.height + 1 === block.height) {
-
+			library.logger.info([
+				'Received new block id:', block.id,
+				'height:', block.height,
+				'round:',  modules.rounds.calc(block.height),
+				'slot:', slots.getSlotNumber(block.timestamp),
+				'reward:', block.reward
+			].join(' '));
 			self.lastReceipt(new Date());
 			//library.logger.debug("Received block", block);
 			//RECEIVED full block?
