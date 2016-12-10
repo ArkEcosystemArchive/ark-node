@@ -86,7 +86,7 @@ function Account (scope, cb) {
 				required: true,
 				type: 'string',
 				minLength: 1,
-				maxLength: 36
+				maxLength: 52
 			},
 			conv: String,
 			immutable: true
