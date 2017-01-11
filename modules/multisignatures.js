@@ -311,8 +311,7 @@ shared.sign = function (req, cb) {
 			return setImmediate(cb, 'Transaction not found');
 		}
 
-		var hash = crypto.createHash('sha256').update(req.body.secret, 'utf8').digest();
-		var keypair = library.ed.makeKeypair(hash);
+		var keypair = library.ed.makeKeypair(req.body.secret);
 
 		if (req.body.publicKey) {
 			if (keypair.publicKey.toString('hex') !== req.body.publicKey) {
@@ -367,6 +366,10 @@ shared.sign = function (req, cb) {
 					return setImmediate(cb, 'Sender not found');
 				}
 
+				if (!account.multisignatures) {
+					return setImmediate(cb, 'Not a multisignatures account');
+				}
+
 				if (!transaction.requesterPublicKey) {
 					if (account.multisignatures.indexOf(keypair.publicKey.toString('hex')) < 0) {
 						return setImmediate(cb, 'Permission to sign transaction denied');
@@ -394,8 +397,7 @@ shared.addMultisignature = function (req, cb) {
 			return setImmediate(cb, err[0].message);
 		}
 
-		var hash = crypto.createHash('sha256').update(req.body.secret, 'utf8').digest();
-		var keypair = library.ed.makeKeypair(hash);
+		var keypair = library.ed.makeKeypair(req.body.secret);
 
 		if (req.body.publicKey) {
 			if (keypair.publicKey.toString('hex') !== req.body.publicKey) {
@@ -420,8 +422,7 @@ shared.addMultisignature = function (req, cb) {
 				var secondKeypair = null;
 
 				if (account.secondSignature) {
-					var secondHash = crypto.createHash('sha256').update(req.body.secondSecret, 'utf8').digest();
-					secondKeypair = library.ed.makeKeypair(secondHash);
+					secondKeypair = library.ed.makeKeypair(req.body.secondSecret);
 				}
 
 				var transaction;

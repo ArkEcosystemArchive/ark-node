@@ -99,7 +99,7 @@ Multisignature.prototype.verify = function (trs, sender, cb) {
 
 		try {
 			var b = new Buffer(publicKey, 'hex');
-			if (b.length !== 32) {
+			if (b.length !== 33) {
 				return setImmediate(cb, 'Invalid public key in multisignature keysgroup');
 			}
 		} catch (e) {

@@ -121,7 +121,7 @@ Transaction.prototype.getBytes = function (trs, skipSignature, skipSecondSignatu
 		var assetSize = assetBytes ? assetBytes.length : 0;
 		var i;
 
-		bb = new ByteBuffer(1 + 4 + 32 + 32 + 8 + 32 + 64 + 64 + 64 + assetSize, true);
+		bb = new ByteBuffer(1 + 4 + 32 + 8 + 21 + 64 + 64 + 64 + assetSize, true);
 		bb.writeByte(trs.type);
 		bb.writeInt(trs.timestamp);
 
@@ -138,14 +138,13 @@ Transaction.prototype.getBytes = function (trs, skipSignature, skipSecondSignatu
 		}
 
 		if (trs.recipientId) {
-			var recipient = trs.recipientId.slice(0, -1);
-			recipient = bs58check.decode(recipient);
+			var recipient = bs58check.decode(trs.recipientId);
 
 			for (i = 0; i < recipient.length; i++) {
-				bb.writeByte(recipient[i] || 0);
+				bb.writeByte(recipient[i]);
 			}
 		} else {
-			for (i = 0; i < 32; i++) {
+			for (i = 0; i < 21; i++) {
 				bb.writeByte(0);
 			}
 		}

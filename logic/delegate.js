@@ -58,7 +58,7 @@ Delegate.prototype.verify = function (trs, sender, cb) {
 		return setImmediate(cb, 'Username must be lowercase');
 	}
 
-	var isAddress = /^[1-9A-Za-z]{1,52}[A]$/g;
+	var isAddress = /^[1-9A-Za-z]{1,35}$/g;
 	var allowSymbols = /^[a-z0-9!@$&_.]+$/g;
 
 	var username = String(trs.asset.delegate.username).toLowerCase().trim();
@@ -71,9 +71,10 @@ Delegate.prototype.verify = function (trs, sender, cb) {
 		return setImmediate(cb, 'Username is too long. Maximum is 20 characters');
 	}
 
-	if (isAddress.test(username)) {
-		return setImmediate(cb, 'Username can not be a potential address');
-	}
+	// Not relevant anymore
+	// if (isAddress.test(username)) {
+	// 	return setImmediate(cb, 'Username can not be a potential address');
+	// }
 
 	if (!allowSymbols.test(username)) {
 		return setImmediate(cb, 'Username can only contain alphanumeric characters with the exception of !@$&_.');

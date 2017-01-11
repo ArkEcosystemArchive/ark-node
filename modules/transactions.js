@@ -570,8 +570,7 @@ shared.addTransactions = function (req, cb) {
 			return setImmediate(cb, err[0].message);
 		}
 
-		var hash = crypto.createHash('sha256').update(req.body.secret, 'utf8').digest();
-		var keypair = library.ed.makeKeypair(hash);
+		var keypair = library.ed.makeKeypair(req.body.secret);
 
 		if (req.body.publicKey) {
 			if (keypair.publicKey.toString('hex') !== req.body.publicKey) {
@@ -631,8 +630,7 @@ shared.addTransactions = function (req, cb) {
 							var secondKeypair = null;
 
 							if (requester.secondSignature) {
-								var secondHash = crypto.createHash('sha256').update(req.body.secondSecret, 'utf8').digest();
-								secondKeypair = library.ed.makeKeypair(secondHash);
+								secondKeypair = library.ed.makeKeypair(req.body.secondSecret);
 							}
 
 							var transaction;
@@ -674,8 +672,7 @@ shared.addTransactions = function (req, cb) {
 						var secondKeypair = null;
 
 						if (account.secondSignature) {
-							var secondHash = crypto.createHash('sha256').update(req.body.secondSecret, 'utf8').digest();
-							secondKeypair = library.ed.makeKeypair(secondHash);
+							secondKeypair = library.ed.makeKeypair(req.body.secondSecret);
 						}
 
 						var transaction;

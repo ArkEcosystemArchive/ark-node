@@ -20,8 +20,7 @@ z_schema.registerFormat('publicKey', function (str) {
 
   try {
     var publicKey = new Buffer(str, 'hex');
-
-    return publicKey.length === 32;
+    return publicKey.length === 33;
   } catch (e) {
     return false;
   }
@@ -61,7 +60,7 @@ z_schema.registerFormat('signature', function (str) {
 
   try {
     var signature = new Buffer(str, 'hex');
-    return signature.length === 64;
+    return signature.length < 73;
   } catch (e) {
     return false;
   }
@@ -73,7 +72,7 @@ z_schema.registerFormat('queryList', function (obj) {
 });
 
 z_schema.registerFormat('delegatesList', function (obj) {
-  obj.limit = 101;
+  obj.limit = 51;
   return true;
 });
 

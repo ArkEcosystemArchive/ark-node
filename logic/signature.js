@@ -18,7 +18,7 @@ Signature.prototype.create = function (data, trs) {
 	trs.recipientId = null;
 	trs.amount = 0;
 	trs.asset.signature = {
-		publicKey: data.secondKeypair.publicKey.toString('hex')
+		publicKey: data.secondKeypair.publicKey
 	};
 
 	return trs;
@@ -38,7 +38,7 @@ Signature.prototype.verify = function (trs, sender, cb) {
 	}
 
 	try {
-		if (!trs.asset.signature.publicKey || new Buffer(trs.asset.signature.publicKey, 'hex').length !== 32) {
+		if (!trs.asset.signature.publicKey || new Buffer(trs.asset.signature.publicKey, 'hex').length !== 33) {
 			return setImmediate(cb, 'Invalid public key');
 		}
 	} catch (e) {
@@ -57,7 +57,7 @@ Signature.prototype.getBytes = function (trs) {
 	var bb;
 
 	try {
-		bb = new ByteBuffer(32, true);
+		bb = new ByteBuffer(33, true);
 		var publicKeyBuffer = new Buffer(trs.asset.signature.publicKey, 'hex');
 
 		for (var i = 0; i < publicKeyBuffer.length; i++) {

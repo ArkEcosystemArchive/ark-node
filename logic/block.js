@@ -93,8 +93,17 @@ Block.prototype.sign = function (block, keypair) {
 	return this.scope.ed.sign(hash, keypair).toString('hex');
 };
 
-Block.prototype.getBytes = function (block) {
-	var size = 4 + 4 + 8 + 4 + 4 + 8 + 8 + 4 + 4 + 4 + 32 + 32 + 64;
+Block.prototype.getBytes = function (block, includeSignature) {
+	if(includeSignature == undefined){
+		includeSignature = block.blockSignature != undefined;
+	}
+	var size = 4 + 4 + 8 + 4 + 4 + 8 + 8 + 4 + 4 + 4 + 32 + 33;
+	var blockSignatureBuffer = null;
+
+	if(includeSignature){
+		blockSignatureBuffer = new Buffer(block.blockSignature, 'hex');
+		size+=blockSignatureBuffer.length;
+	}
 	var b, i;
 
 	try {
@@ -131,8 +140,9 @@ Block.prototype.getBytes = function (block) {
 			bb.writeByte(generatorPublicKeyBuffer[i]);
 		}
 
-		if (block.blockSignature) {
-			var blockSignatureBuffer = new Buffer(block.blockSignature, 'hex');
+		if (includeSignature) {
+
+			console.log(blockSignatureBuffer.length);
 			for (i = 0; i < blockSignatureBuffer.length; i++) {
 				bb.writeByte(blockSignatureBuffer[i]);
 			}
@@ -148,17 +158,11 @@ Block.prototype.getBytes = function (block) {
 };
 
 Block.prototype.verifySignature = function (block) {
-	var remove = 64;
 	var res;
 
 	try {
-		var data = this.getBytes(block);
-		var data2 = new Buffer(data.length - remove);
-
-		for (var i = 0; i < data2.length; i++) {
-			data2[i] = data[i];
-		}
-		var hash = crypto.createHash('sha256').update(data2).digest();
+		var data = this.getBytes(block, false);
+		var hash = crypto.createHash('sha256').update(data).digest();
 		var blockSignatureBuffer = new Buffer(block.blockSignature, 'hex');
 		var generatorPublicKeyBuffer = new Buffer(block.generatorPublicKey, 'hex');
 		res = this.scope.ed.verify(hash, blockSignatureBuffer || ' ', generatorPublicKeyBuffer || ' ');
@@ -289,7 +293,11 @@ Block.prototype.objectNormalize = function (block) {
 		}
 	}
 
+
+
 	var report = this.scope.schema.validate(block, Block.prototype.schema);
+
+	console.log(this.scope.schema.getLastErrors());
 
   if (!report) {
 		throw 'Failed to validate block schema: ' + this.scope.schema.getLastErrors().map(function (err) {

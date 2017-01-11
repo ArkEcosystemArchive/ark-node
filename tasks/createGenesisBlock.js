@@ -8,7 +8,79 @@ var ByteBuffer = require('bytebuffer');
 var bignum = require('../helpers/bignum.js');
 var ed = require('../helpers/ed.js');
 
-
+var config = {
+    "port": 4000,
+    "address": "0.0.0.0",
+    "version": "0.2.0",
+    "fileLogLevel": "info",
+    "logFileName": "logs/ark.log",
+    "consoleLogLevel": "debug",
+    "trustProxy": false,
+    "db": {
+        "host": "localhost",
+        "port": 5432,
+        "database": "ark_newtest",
+        "user": null,
+        "password": "password",
+        "poolSize": 20,
+        "poolIdleTimeout": 30000,
+        "reapIntervalMillis": 1000,
+        "logEvents": [
+            "error"
+        ]
+    },
+    "api": {
+        "access": {
+            "whiteList": []
+        },
+        "options": {
+            "limits": {
+                "max": 0,
+                "delayMs": 0,
+                "delayAfter": 0,
+                "windowMs": 60000
+            }
+        }
+    },
+    "peers": {
+        "minimumNetworkReach":1,
+        "list": [{"ip":"127.0.0.1", "port":4000}],
+        "blackList": [],
+        "options": {
+            "limits": {
+                "max": 0,
+                "delayMs": 0,
+                "delayAfter": 0,
+                "windowMs": 60000
+            },
+            "maxUpdatePeers": 20,
+            "timeout": 5000
+        }
+    },
+    "forging": {
+        "coldstart": 6,
+        "force": true,
+        "secret": [],
+        "access": {
+            "whiteList": [
+                "127.0.0.1"
+            ]
+        }
+    },
+    "loading": {
+        "verifyOnLoading": false,
+        "loadPerIteration": 5000
+    },
+    "ssl": {
+        "enabled": false,
+        "options": {
+            "port": 443,
+            "address": "0.0.0.0",
+            "key": "./ssl/ark.key",
+            "cert": "./ssl/ark.crt"
+        }
+    }
+};
 
 sign = function (block, keypair) {
 	var hash = getHash(block);
@@ -33,7 +105,7 @@ getHash = function (block) {
 
 
 getBytes = function (block) {
-	var size = 4 + 4 + 8 + 4 + 4 + 8 + 8 + 4 + 4 + 4 + 32 + 32 + 64;
+	var size = 4 + 4 + 8 + 4 + 4 + 8 + 8 + 4 + 4 + 4 + 32 + 32 + 66;
 	var b, i;
 
 	try {
@@ -133,6 +205,7 @@ create = function (data) {
 
   block.id=getId(block);
 
+
 	try {
 		block.blockSignature = sign(block, data.keypair);
 	} catch (e) {
@@ -160,6 +233,7 @@ premine.address = arkjs.crypto.getAddress(premine.publicKey);
 
 genesis.publicKey = arkjs.crypto.getKeys(genesis.passphrase).publicKey;
 genesis.address = arkjs.crypto.getAddress(genesis.publicKey);
+genesis.wif = arkjs.crypto.getKeys(genesis.passphrase).toWIF();
 
 var premineTx = arkjs.transaction.createTransaction(genesis.address,genesis.balance,null, premine.passphrase)
 
@@ -211,7 +285,14 @@ var genesisBlock = create({
   timestamp:0
 });
 
+for(var i=0;i<51;i++){
+	config.forging.secret.push(delegates[i].passphrase);
+}
+
+config.nethash = genesisBlock.payloadHash;
+
 
 fs.writeFile("tasks/genesisBlock.json",JSON.stringify(genesisBlock, null, 2));
+fs.writeFile("tasks/config.json",JSON.stringify(config, null, 2));
 fs.writeFile("tasks/delegatesPassphrases.json", JSON.stringify(delegates, null, 2));
 fs.writeFile("tasks/genesisPassphrase.json", JSON.stringify(genesis, null, 2));

@@ -40,7 +40,7 @@ describe('PUT /api/accounts/delegates without funds', function () {
 			delegates: ['+' + node.eAccount.publicKey]
 		}, function (err, res) {
 			node.expect(res.body).to.have.property('success').to.be.not.ok;
-			node.expect(res.body).to.have.property('error').to.match(/Account does not have enough ARK: [a-zA-Z0-9]+A balance: 0/);
+			node.expect(res.body).to.have.property('error').to.match(/Account does not have enough ARK: [a-zA-Z0-9]+ balance: 0/);
 			done();
 		});
 	});
@@ -71,7 +71,7 @@ describe('PUT /api/delegates without funds', function () {
 			username: account.username
 		}, function (err, res) {
 			node.expect(res.body).to.have.property('success').to.be.not.ok;
-			node.expect(res.body).to.have.property('error').to.match(/Account does not have enough ARK: [a-zA-Z0-9]+A balance: 0/);
+			node.expect(res.body).to.have.property('error').to.match(/Account does not have enough ARK: [a-zA-Z0-9]+ balance: 0/);
 			done();
 		});
 	});
@@ -95,11 +95,11 @@ describe('PUT /api/accounts/delegates with funds', function () {
 		});
 	});
 
-	beforeEach(function (done) {
-		node.onNewBlock(function (err) {
-			done();
-		});
-	});
+	// beforeEach(function (done) {
+	// 	node.onNewBlock(function (err) {
+	// 		done();
+	// 	});
+	// });
 
 	it('when upvoting same delegate multiple times should fail', function (done) {
 		var votedDelegate = '"+' + node.eAccount.publicKey + '","+' + node.eAccount.publicKey + '"';

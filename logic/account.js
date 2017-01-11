@@ -86,7 +86,7 @@ function Account (scope, cb) {
 				required: true,
 				type: 'string',
 				minLength: 1,
-				maxLength: 52
+				maxLength: 35
 			},
 			conv: String,
 			immutable: true
@@ -413,8 +413,8 @@ Account.prototype.verifyPublicKey = function (publicKey) {
 			throw 'Invalid public key, must be a string';
 		}
 		// Check length
-		if (publicKey.length < 64) {
-			throw 'Invalid public key, must be 64 characters long';
+		if (publicKey.length < 66) {
+			throw 'Invalid public key, must be 65 characters long';
 		}
 		// Check format
 		try {

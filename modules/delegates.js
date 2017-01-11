@@ -462,10 +462,10 @@ __private.loadMyDelegates = function (cb) {
 	}
 
 	async.eachSeries(secrets, function (secret, cb) {
-		var keypair = library.ed.makeKeypair(crypto.createHash('sha256').update(secret, 'utf8').digest());
+		var keypair = library.ed.makeKeypair(secret);
 
 		modules.accounts.getAccount({
-			publicKey: keypair.publicKey.toString('hex')
+			publicKey: new Buffer(keypair.publicKey, "hex")
 		}, function (err, account) {
 			if (err) {
 				return setImmediate(cb, err);
@@ -886,8 +886,7 @@ shared.addDelegate = function (req, cb) {
 			return setImmediate(cb, err[0].message);
 		}
 
-		var hash = crypto.createHash('sha256').update(req.body.secret, 'utf8').digest();
-		var keypair = library.ed.makeKeypair(hash);
+		var keypair = library.ed.makeKeypair(req.body.secret);
 
 		if (req.body.publicKey) {
 			if (keypair.publicKey.toString('hex') !== req.body.publicKey) {
@@ -934,8 +933,7 @@ shared.addDelegate = function (req, cb) {
 						var secondKeypair = null;
 
 						if (requester.secondSignature) {
-							var secondHash = crypto.createHash('sha256').update(req.body.secondSecret, 'utf8').digest();
-							secondKeypair = library.ed.makeKeypair(secondHash);
+							secondKeypair = library.ed.makeKeypair(req.body.secondSecret);
 						}
 
 						var transaction;
@@ -972,8 +970,7 @@ shared.addDelegate = function (req, cb) {
 					var secondKeypair = null;
 
 					if (account.secondSignature) {
-						var secondHash = crypto.createHash('sha256').update(req.body.secondSecret, 'utf8').digest();
-						secondKeypair = library.ed.makeKeypair(secondHash);
+						secondKeypair = library.ed.makeKeypair(req.body.secondSecret);
 					}
 
 					var transaction;

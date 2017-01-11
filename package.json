@@ -6,6 +6,7 @@
     "start": "node app.js",
     "start:testnet": "node app.js --genesis genesisBlock.testnet.json --config config.testnet.json",
     "start:test": "node app.js --genesis test/genesisBlock.json --config test/config.json",
+    "start:newtest": "node app.js --genesis tasks/genesisBlock.json --config tasks/config.json",
     "snapshot": "node app.js --genesis genesisBlock.testnet.json --config config.testnet.json -s 2295",
     "test": "./node_modules/.bin/mocha",
 
@@ -23,7 +24,6 @@
     "commander": "=2.9.0",
     "compression": "=1.6.2",
     "cors": "=2.8.1",
-    "decompress-zip": "LiskHQ/decompress-zip#f46b0a3",
     "ejs": "=2.5.2",
     "express": "=4.14.0",
     "express-domain-middleware": "=0.1.0",
@@ -42,7 +42,6 @@
     "randomstring": "=1.1.5",
     "rimraf": "=2.5.4",
     "socket.io": "=1.4.8",
-    "sodium": "=1.2.3",
     "strftime": "=0.9.2",
     "valid-url": "=1.0.9",
     "validator": "=5.7.0",

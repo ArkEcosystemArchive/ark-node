@@ -13,7 +13,7 @@ var accounts = require('./accounts.js').accounts;
 var config = {
     "port": 4000,
     "address": "0.0.0.0",
-    "version": "0.1.1",
+    "version": "0.2.0",
     "fileLogLevel": "info",
     "logFileName": "logs/ark.log",
     "consoleLogLevel": "debug",
@@ -21,7 +21,7 @@ var config = {
     "db": {
         "host": "localhost",
         "port": 5432,
-        "database": "ark_test",
+        "database": "ark_newtest",
         "user": null,
         "password": "password",
         "poolSize": 20,

@@ -1,24 +1,26 @@
 'use strict';
 
-var sodium = require('sodium').api;
+var arkjs = require('arkjs');
+var network = arkjs.networks.ark;
 var ed = {};
 
-	ed.makeKeypair = function (hash) {
-		var keypair = sodium.crypto_sign_seed_keypair(hash);
+ed.makeKeypair = function (seed) {
+	//console.log(arkjs.ecpair);
+	return arkjs.crypto.getKeys(seed);
+};
 
-		return {
-			publicKey: keypair.publicKey,
-			privateKey: keypair.secretKey
-		};
-	};
+ed.sign = function (hash, keypair) {
+	return keypair.sign(hash).toDER().toString("hex");
+};
 
-	ed.sign = function (hash, keypair) {
-		return sodium.crypto_sign_detached(hash, new Buffer(keypair.privateKey, 'hex'));
-	};
-
-	ed.verify = function (hash, signatureBuffer, publicKeyBuffer) {
-		return sodium.crypto_sign_verify_detached(signatureBuffer, hash, publicKeyBuffer);
-	};
-
+ed.verify = function (hash, signatureBuffer, publicKeyBuffer) {
+	try {
+		var ecsignature = arkjs.ecsignature.fromDER(signatureBuffer);
+		var ecpair = arkjs.ecpair.fromPublicKeyBuffer(publicKeyBuffer, network);
+		return ecpair.verify(hash, ecsignature);
+	} catch (error){
+		return false;
+	}
+};
 
 module.exports = ed;

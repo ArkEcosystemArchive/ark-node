@@ -42,18 +42,18 @@ node.fees = {
 
 // Existing delegate account
 node.eAccount = {
-	address: '2KZunaTsmbxbBh6cDbktARXeEi8DJxr1tucgReTYmLE8LToux4A',
-	publicKey: 'addb0e15a44b0fdc6ff291be28d8c98f5551d0cd9218d749e30ddb87c6e31ca9',
-	password: 'actress route auction pudding shiver crater forum liquid blouse imitate seven front',
+	address: 'Ab5zZfCC7ig3kS83VhsQscEeZLj12qLfGW',
+	publicKey: '026534ccddb67163e631c7667ffa2f999755281313ee396874df3cbf569e831e62',
+	password: 'upgrade lady coach symptom minor toe upper furnace master glue cement advance',
 	balance: '0',
-	delegateName: 'genesis_100'
+	delegateName: 'genesis_1'
 };
 
 // Genesis account, initially holding 125M total supply
 node.gAccount = {
-	address: '2TpF24P4ef4tS39KtwynYCFZdm2JuLFEVZ3ZRty19s2wzBkuv6A',
-	publicKey: 'c094ebee7ec0c50ebee32918655e089f6e1a604b83bcaa760293c61e0f18ab6f',
-	password: 'wagon stock borrow episode laundry kitten salute link globe zero feed marble',
+	address: 'AYv4BfHZc5RRkCT6xz3iCw9BbTcK2Xo57m',
+	publicKey: '03f0726b59f56ac009a8bd3f9623f681cdd5318dc4f5042b4938716c46b1b05e93',
+	password: 'peace vanish bleak box tuna woman rally manage undo royal lucky since',
 	balance: '12500000000000000'
 };
 
@@ -312,6 +312,7 @@ function abstractRequest (options, done) {
 	}
 
 	node.debug(['> Path:'.grey, options.verb.toUpperCase(), options.path].join(' '));
+	node.debug('> data:'.grey, JSON.stringify(options.params));
 
 	if (done) {
 		request.end(function (err, res) {

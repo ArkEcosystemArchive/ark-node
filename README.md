@@ -14,8 +14,8 @@ This is a fork from Lisk with the following features:
 - Removed UI for stability and security reasons
 - Changed some constants (block rewards, blocktime etc...)
 - Added simple PBFT before forging new block
-- Ditch addresses from the protocol in favor of publicKeys to prevent from collisions, using base58 check (similar to bitcoin)
-- Added vendorField as first iteration of smart bridge
+- Ditch addresses from the protocol in favor of bitcoin like system, enabling HD Wallet
+- Added 64 bytes vendorField as first iteration of smart bridge
 - Made peers management entirely in-memory for efficiency
 - Strengthened the transaction management and broadcast (reject often, reject soon)
 - Rearchitect with relay nodes and forging nodes, relay nodes broadcasting only block headers (still ongoing).
@@ -38,13 +38,7 @@ sudo apt-get update
 sudo apt-get install -y curl build-essential python git
 ```
 
-Clone this repository
-```
-git clone https://github.com/arkecosytem/ark-node.git
-cd ark-node
-```
-
-Install PostgreSQL (version 9.5.2)
+Install PostgreSQL (min version: 9.5.2)
 
 ```
 sudo apt-get install -y postgresql postgresql-contrib
@@ -52,11 +46,12 @@ sudo -u postgres createuser --createdb --password $USER
 createdb ark_test
 ```
 
-Install Node.js (version 0.12.x) + npm:
+Install Node.js (tested with version 6.9.2, but any recent should do):
 
 ```
-curl -sL https://deb.nodesource.com/setup_0.12 | sudo -E bash -
 sudo apt-get install -y nodejs
+sudo npm install -g n
+sudo n 6.9.2
 ```
 
 Install grunt-cli (globally):
@@ -65,53 +60,69 @@ Install grunt-cli (globally):
 sudo npm install grunt-cli -g
 ```
 
-Install node modules:
+Clone this repository
+```
+git clone https://github.com/arkecosytem/ark-node.git
+cd ark-node
+```
 
+Install node modules:
 ```
 npm install
 ```
 
-Load git submodule [ark-js](PLACEHOLDER):
-
+Optionally if you want to perform tests, load git submodule [ark-js](https://github.com/arkecosystem/ark-js):
 ```
 git submodule init
 git submodule update
 ```
 
 ## Launch
-
-To launch Ark:
-
+To launch Ark on official testnet:
 ```
-node app.js
+createdb ark_testnet
+node run start:testnet
+```
+To launch Ark on official mainnet (when launched):
+```
+createdb ark_mainnet
+node run start:mainnet
 ```
 
-**NOTE:** The **port**, **address** and **config-path** can be overridden by providing the relevant command switch:
+**NOTE:** The **port**, **address**, **genesis block** and **config-path** can be overridden by providing the relevant command switch:
+```
+node app.js -p [port] -a [address] -c [config-path] -g [genesisBlock-path]
+```
+This allow you to run several different networks, or your own private chain
 
+
+## Launch your own private or public chain
+Generate a genesisBlock.json + a default config.json containing all passphrases of genesis delegates
 ```
-node app.js -p [port] -a [address] -c [config-path]
+node tasks/createGenesisBlock.js
 ```
+You can find generated files in tasks/
+- genesisBlock.json
+- config.json
+- delegatesPassphrases.json (containing details about the genesis delegates)
+- genesisPassphrase.json (containing the details of account having all premined arks)
+
+Obviously you can hack away tasks/createGenesisBlock.js for your own custom use.
+
+You can the start with your own chain on a single node (all delegates will forge on your single node) using:
+```
+createdb ark_newtest
+npm run start:newtest
+```
+
+Then you can distribute the config.json (without the delegates secrets inside, and with custom peers settings) to peers to let them join your chain
+
 
 ## Tests
-
-Before running any tests, please ensure Ark is configured to run on the same testnet as used by the test-suite.
-
-Replace **config.json** and **genesisBlock.json** with the corresponding files under the **test** directory:
+You should run using test configurations
 
 ```
-cp test/config.json test/genesisBlock.json .
-```
-
-**NOTE:** The master passphrase for this genesis block is as follows:
-
-```
-wagon stock borrow episode laundry kitten salute link globe zero feed marble
-```
-
-Launch ark (runs on port 4000):
-
-```
-node app.js
+npm run start:test
 ```
 
 Run the test suite:
@@ -127,8 +138,15 @@ npm test -- test/api/accounts.js
 npm test -- test/api/transactions.js
 ```
 
+**NOTE:** The master passphrase for this test genesis block is as follows:
+
+```
+peace vanish bleak box tuna woman rally manage undo royal lucky since
+```
+
+
 ## Authors
-- FX Thoorens <fx@ark.io>
+- FX Thoorens <fx.thoorens@ark.io>
 - Boris Povod <boris@crypti.me>
 - Pavel Nekrasov <landgraf.paul@gmail.com>
 - Sebastian Stupurac <stupurac.sebastian@gmail.com>

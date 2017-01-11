@@ -81,8 +81,7 @@ shared.addSignature = function (req, cb) {
 			return setImmediate(cb, err[0].message);
 		}
 
-		var hash = crypto.createHash('sha256').update(req.body.secret, 'utf8').digest();
-		var keypair = library.ed.makeKeypair(hash);
+		var keypair = library.ed.makeKeypair(req.body.secret);
 
 		if (req.body.publicKey) {
 			if (keypair.publicKey.toString('hex') !== req.body.publicKey) {
@@ -130,8 +129,7 @@ shared.addSignature = function (req, cb) {
 							return setImmediate(cb, 'Invalid requester public key');
 						}
 
-						var secondHash = crypto.createHash('sha256').update(req.body.secondSecret, 'utf8').digest();
-						var secondKeypair = library.ed.makeKeypair(secondHash);
+						var secondKeypair = library.ed.makeKeypair(req.body.secondSecret);
 						var transaction;
 
 						try {
@@ -164,8 +162,7 @@ shared.addSignature = function (req, cb) {
 						return setImmediate(cb, 'Account already has a second passphrase');
 					}
 
-					var secondHash = crypto.createHash('sha256').update(req.body.secondSecret, 'utf8').digest();
-					var secondKeypair = library.ed.makeKeypair(secondHash);
+					var secondKeypair = library.ed.makeKeypair(req.body.secondSecret);
 					var transaction;
 
 					try {
