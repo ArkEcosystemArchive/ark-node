@@ -9,7 +9,7 @@
   "db": {
     "host": "localhost",
     "port": 5432,
-    "database": "ark_newtest",
+    "database": "ark_testnet",
     "user": null,
     "password": "password",
     "poolSize": 20,
