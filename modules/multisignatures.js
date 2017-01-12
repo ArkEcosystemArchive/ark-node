@@ -8,6 +8,7 @@ var Router = require('../helpers/router.js');
 var schema = require('../schema/multisignatures.js');
 var slots = require('../helpers/slots.js');
 var sql = require('../sql/multisignatures.js');
+var Multisignature = require('../logic/multisignature.js');
 var transactionTypes = require('../helpers/transactionTypes.js');
 
 // Private fields
@@ -23,8 +24,7 @@ function Multisignatures (cb, scope) {
 	self = this;
 
 	__private.attachApi();
-
-	var Multisignature = require('../logic/multisignature.js');
+	
 	__private.assetTypes[transactionTypes.MULTI] = library.logic.transaction.attachAssetType(
 		transactionTypes.MULTI, new Multisignature()
 	);
@@ -319,7 +319,7 @@ shared.sign = function (req, cb) {
 
 			transaction.signatures = transaction.signatures || [];
 			transaction.signatures.push(scope.signature);
-			transaction.ready = Multisignatures.prototype.ready(transaction, scope.sender);
+			transaction.ready = Multisignature.prototype.ready(transaction, scope.sender);
 
 			library.bus.message('signature', {transaction: transaction.id, signature: scope.signature}, true);
 			library.network.io.sockets.emit('multisignatures/signature/change', transaction);
