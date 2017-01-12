@@ -545,7 +545,6 @@ Account.prototype.merge = function (address, diff, cb) {
 					break;
 				case Number:
 					if (isNaN(trueValue) || trueValue === Infinity) {
-						console.log(diff);
 						return setImmediate(cb, 'Encountered unsane number: ' + trueValue);
 					}
 					else if (Math.abs(trueValue) === trueValue && trueValue !== 0) {

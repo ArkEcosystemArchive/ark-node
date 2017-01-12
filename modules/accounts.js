@@ -260,7 +260,7 @@ shared.addDelegates = function (req, cb) {
 			return setImmediate(cb, err[0].message);
 		}
 
-		var keypair = library.ed.makeKeypair(eq.body.secret);
+		var keypair = library.ed.makeKeypair(req.body.secret);
 
 		if (req.body.publicKey) {
 			if (keypair.publicKey.toString('hex') !== req.body.publicKey) {

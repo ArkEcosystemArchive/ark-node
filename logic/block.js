@@ -141,8 +141,6 @@ Block.prototype.getBytes = function (block, includeSignature) {
 		}
 
 		if (includeSignature) {
-
-			console.log(blockSignatureBuffer.length);
 			for (i = 0; i < blockSignatureBuffer.length; i++) {
 				bb.writeByte(blockSignatureBuffer[i]);
 			}
@@ -297,7 +295,6 @@ Block.prototype.objectNormalize = function (block) {
 
 	var report = this.scope.schema.validate(block, Block.prototype.schema);
 
-	console.log(this.scope.schema.getLastErrors());
 
   if (!report) {
 		throw 'Failed to validate block schema: ' + this.scope.schema.getLastErrors().map(function (err) {

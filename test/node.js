@@ -1,5 +1,5 @@
 'use strict';
-//process.env.SILENT='true';
+// process.env.SILENT='true';
 // Root object
 var node = {};
 
@@ -142,7 +142,7 @@ node.waitForNewBlock = function (height, cb) {
 					return cb(['Received bad response code', res.status, res.url].join(' '));
 				}
 
-				if (height + 2 === res.body.height) {
+				if (height + 1 === res.body.height) {
 					height = res.body.height;
 				}
 
@@ -312,7 +312,7 @@ function abstractRequest (options, done) {
 	}
 
 	node.debug(['> Path:'.grey, options.verb.toUpperCase(), options.path].join(' '));
-	node.debug('> data:'.grey, JSON.stringify(options.params));
+	node.debug('> Data:'.grey, JSON.stringify(options.params));
 
 	if (done) {
 		request.end(function (err, res) {

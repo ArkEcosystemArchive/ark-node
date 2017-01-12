@@ -639,11 +639,34 @@ Delegates.prototype.onBlockchainReady = function () {
 		} catch(error){
 			library.logger.error('Failed to toggle Forging On Receipt', error);
 		}
-		__private.forge(function () {
-			setTimeout(nextForge, 1000);
+
+		async.series([
+			__private.forge,
+			modules.transactions.fillPool
+		], function (err) {
+			return setTimeout(nextForge, 1000);
 		});
 	});
 };
+//
+// Delegates.prototype.onBlockchainReady = function () {
+// 	__private.loaded = true;
+//
+// 	__private.loadMyDelegates(function nextForge (err) {
+// 		if (err) {
+// 			library.logger.error('Failed to load delegates', err);
+// 		}
+//
+// 		// try {
+// 		// 	__private.toggleForgingOnReceipt();
+// 		// } catch(error){
+// 		// 	library.logger.error('Failed to toggle Forging On Receipt', error);
+// 		// }
+// 		__private.forge(function () {
+// 			setTimeout(nextForge, 1000);
+// 		});
+// 	});
+// };
 
 Delegates.prototype.cleanup = function (cb) {
 	__private.loaded = false;

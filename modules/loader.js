@@ -126,6 +126,9 @@ __private.loadUnconfirmedTransactions = function (cb) {
 
 		for (var i = 0; i < transactions.length; i++) {
 			var transaction = transactions[i];
+			if(transaction){
+				transaction.bundled = true;
+			}
 			var id = (transaction ? transactions.id : 'null');
 
 			try {
@@ -375,28 +378,29 @@ __private.loadBlocksFromNetwork = function (cb) {
 };
 
 __private.sync = function (cb) {
-	var transactions = modules.transactions.getUnconfirmedTransactionList(true);
+	library.logger.info('Starting sync');
 
 	__private.isActive = true;
 	__private.syncTrigger(true);
 
 	async.series({
-		undoUnconfirmedList: function (cb) {
+		undoUnconfirmedList: function (seriesCb) {
 			library.logger.debug('Undoing unconfirmed transactions before sync');
-			return modules.transactions.undoUnconfirmedList(cb);
+			return modules.transactions.undoUnconfirmedList(seriesCb);
 		},
-		loadBlocksFromNetwork: function (cb) {
-			return __private.loadBlocksFromNetwork(cb);
+		loadBlocksFromNetwork: function (seriesCb) {
+			return __private.loadBlocksFromNetwork(seriesCb);
 		},
-		receiveTransactions: function (cb) {
-			library.logger.debug('Receiving unconfirmed transactions after sync');
-			return modules.transactions.receiveTransactions(transactions, cb);
+		applyUnconfirmedList: function (seriesCb) {
+			library.logger.debug('Applying unconfirmed transactions after sync');
+			return modules.transactions.applyUnconfirmedList(seriesCb);
 		}
 	}, function (err) {
 		__private.isActive = false;
 		__private.syncTrigger(false);
 		__private.blocksToSync = 0;
 
+		library.logger.info('Finished sync');
 		return setImmediate(cb, err);
 	});
 };
@@ -571,9 +575,6 @@ Loader.prototype.onPeersReady = function () {
 		}
 		var timeout = modules.delegates.isForging() ? 5000 : 10000
 
-		//library.logger.info("lastReceipt",lastReceipt);
-
-
 		if(lastReceipt && lastReceipt.rebuild){
 			library.logger.info('Unloading 1 Block to restart synchronisation');
 			modules.blocks.removeLastBlock(function(err, removedBlocks){
@@ -582,7 +583,6 @@ Loader.prototype.onPeersReady = function () {
 				setTimeout(nextLoadBlock, 1000);
 			});
 		}
-
 		else if (__private.loaded && !self.syncing() && (!lastReceipt || lastReceipt.stale)) {
 			library.logger.debug('Loading blocks from network');
 			library.sequence.add(function (cb) {

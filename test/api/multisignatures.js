@@ -10,7 +10,6 @@ var multisigAccount = node.randomAccount();
 var accounts = [];
 for (var i = 0; i < totalMembers; i++) {
 	accounts[i] = node.randomAccount();
-	console.log(accounts[i]);
 }
 
 var multiSigTx = {

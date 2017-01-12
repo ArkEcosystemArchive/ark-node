@@ -265,6 +265,7 @@ __private.attachApi = function () {
 
 		for(var i=0;i<transactions.length;i++){
 			var transaction=transactions[i];
+			transaction.bundled = true;
 			try {
 				transaction = library.logic.transaction.objectNormalize(transaction);
 			} catch (e) {
