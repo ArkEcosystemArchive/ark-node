@@ -319,7 +319,7 @@ shared.sign = function (req, cb) {
 
 			transaction.signatures = transaction.signatures || [];
 			transaction.signatures.push(scope.signature);
-			transaction.ready = Multisignature.prototype.ready(transaction, scope.sender);
+			transaction.ready = Multisignatures.prototype.ready(transaction, scope.sender);
 
 			library.bus.message('signature', {transaction: transaction.id, signature: scope.signature}, true);
 			library.network.io.sockets.emit('multisignatures/signature/change', transaction);
