@@ -213,13 +213,15 @@ __private.getByFilter = function (filter, cb) {
 
 // Public methods
 Peers.prototype.inspect = function (peer) {
-	peer = peer || {};
-
+	if(peer == -1){
+		return {};
+	}
 	if (/^[0-9]+$/.test(peer.ip)) {
 		peer.ip = ip.fromLong(peer.ip);
 	}
-
-	peer.port = parseInt(peer.port);
+	if(peer.port){
+		peer.port = parseInt(peer.port);
+	}
 
 	if (peer.ip) {
 		peer.string = (peer.ip + ':' + peer.port || 'unknown');

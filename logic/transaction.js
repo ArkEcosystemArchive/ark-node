@@ -247,51 +247,51 @@ Transaction.prototype.process = function (trs, sender, requester, cb) {
 		cb = requester;
 	}
 
-	// Check transaction type
-	if (!__private.types[trs.type]) {
-		return setImmediate(cb, 'Unknown transaction type ' + trs.type);
-	}
-
-	// if (!this.ready(trs, sender)) {
-	// 	return setImmediate(cb, 'Transaction is not ready: ' + trs.id);
+	// // Check transaction type
+	// if (!__private.types[trs.type]) {
+	// 	return setImmediate(cb, 'Unknown transaction type ' + trs.type);
 	// }
-
-	// Get transaction id
-	var txId;
-
-	try {
-		txId = this.getId(trs);
-	} catch (e) {
-		this.scope.logger.error(e.stack);
-		return setImmediate(cb, 'Failed to get transaction id');
-	}
-
-	// Check transaction id
-	if (trs.id && trs.id !== txId) {
-		return setImmediate(cb, 'Invalid transaction id');
-	} else {
-		trs.id = txId;
-	}
-
-	// Check sender
-	if (!sender) {
-		return setImmediate(cb, 'Missing sender');
-	}
-
-	// Equalize sender address
-	trs.senderId = sender.address;
-
-	// Check requester public key
-	if (trs.requesterPublicKey) {
-		if (sender.multisignatures.indexOf(trs.requesterPublicKey) < 0) {
-			return setImmediate(cb, 'Invalid requester public key');
-		}
-	}
-
-	// Verify signature
-	if (!this.verifySignature(trs, (trs.requesterPublicKey || trs.senderPublicKey), trs.signature)) {
-		return setImmediate(cb, 'Failed to verify signature');
-	}
+	//
+	// // if (!this.ready(trs, sender)) {
+	// // 	return setImmediate(cb, 'Transaction is not ready: ' + trs.id);
+	// // }
+	//
+	// // Get transaction id
+	// var txId;
+	//
+	// try {
+	// 	txId = this.getId(trs);
+	// } catch (e) {
+	// 	this.scope.logger.error(e.stack);
+	// 	return setImmediate(cb, 'Failed to get transaction id');
+	// }
+	//
+	// // Check transaction id
+	// if (trs.id && trs.id !== txId) {
+	// 	return setImmediate(cb, 'Invalid transaction id');
+	// } else {
+	// 	trs.id = txId;
+	// }
+	//
+	// // Check sender
+	// if (!sender) {
+	// 	return setImmediate(cb, 'Missing sender');
+	// }
+	//
+	// // Equalize sender address
+	// trs.senderId = sender.address;
+	//
+	// // Check requester public key
+	// if (trs.requesterPublicKey) {
+	// 	if (sender.multisignatures.indexOf(trs.requesterPublicKey) < 0) {
+	// 		return setImmediate(cb, 'Invalid requester public key');
+	// 	}
+	// }
+	//
+	// // Verify signature
+	// if (!this.verifySignature(trs, (trs.requesterPublicKey || trs.senderPublicKey), trs.signature)) {
+	// 	return setImmediate(cb, 'Failed to verify signature');
+	// }
 
 	// Call process on transaction type
 	__private.types[trs.type].process.call(this, trs, sender, function (err, trs) {
@@ -319,6 +319,21 @@ Transaction.prototype.verify = function (trs, sender, requester, cb) {
 
 	if (typeof requester === 'function') {
 		cb = requester;
+	}
+
+	// Get transaction id
+	var txId;
+
+	try {
+		txId = this.getId(trs);
+	} catch (e) {
+		this.scope.logger.error(e.stack);
+		return setImmediate(cb, 'Failed to get transaction id');
+	}
+
+	// Check transaction id
+	if (trs.id !== txId) {
+		return setImmediate(cb, 'Invalid transaction id');
 	}
 
 	// Check sender
@@ -364,7 +379,11 @@ Transaction.prototype.verify = function (trs, sender, requester, cb) {
 	}
 
 	// Check sender address
-	if (String(trs.senderId).toUpperCase() !== String(sender.address).toUpperCase()) {
+	// Equalize sender address
+	if(!trs.senderId){
+		trs.senderId = sender.address;
+	}
+	if (trs.senderId !== sender.address) {
 		return setImmediate(cb, 'Invalid sender address');
 	}
 

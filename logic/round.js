@@ -54,6 +54,7 @@ Round.prototype.updateVotes = function () {
 };
 
 Round.prototype.markBlockId = function () {
+	//console.log(this);
 	if (this.scope.backwards) {
 		return this.t.none(sql.updateBlockId, { oldId: this.scope.block.id, newId: '0' });
 	} else {

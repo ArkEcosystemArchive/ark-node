@@ -211,7 +211,6 @@ TransactionPool.prototype.addMultisignatureTransaction = function (transaction) 
 		self.multisignature.transactions.push(transaction);
 		var index = self.multisignature.transactions.indexOf(transaction);
 		self.multisignature.index[transaction.id] = index;
-		console.log(" MULTI Transaction pool size: "+self.multisignature.transactions.length);
 	}
 };
 
@@ -433,6 +432,15 @@ __private.processVerifyTransaction = function (transaction, broadcast, cb) {
 		function setAccountAndGet (waterCb) {
 			modules.accounts.setAccountAndGet({publicKey: transaction.senderPublicKey}, waterCb);
 		},
+		function verifyTransaction (sender, waterCb) {
+			library.logic.transaction.verify(transaction, sender, function (err) {
+				if (err) {
+					return setImmediate(waterCb, err);
+				} else {
+					return setImmediate(waterCb, null, sender);
+				}
+			});
+		},
 		function getRequester (sender, waterCb) {
 			var multisignatures = Array.isArray(sender.multisignatures) && sender.multisignatures.length;
 
@@ -454,15 +462,6 @@ __private.processVerifyTransaction = function (transaction, broadcast, cb) {
 		},
 		function processTransaction (sender, requester, waterCb) {
 			library.logic.transaction.process(transaction, sender, requester, function (err) {
-				if (err) {
-					return setImmediate(waterCb, err);
-				} else {
-					return setImmediate(waterCb, null, sender);
-				}
-			});
-		},
-		function verifyTransaction (sender, waterCb) {
-			library.logic.transaction.verify(transaction, sender, function (err) {
 				if (err) {
 					return setImmediate(waterCb, err);
 				} else {

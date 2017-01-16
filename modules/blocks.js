@@ -632,46 +632,59 @@ Blocks.prototype.removeLastBlock = function(cb){
 	}
 
 	// List of currrently unconfirmed transactions.
-	var unconfirmedTransactions;
+	var unconfirmedTransactionsIds;
 	// Don't shutdown now
 	__private.isActive = true;
 
 	async.series({
 		// Rewind any unconfirmed transactions before removing block.
-		// undoUnconfirmedList: function (seriesCb) {
-		// 	modules.transactions.undoUnconfirmedList(function (err, transactions) {
-		// 		if (err) {
-		// 			// TODO: Send a numbered signal to be caught by forever to trigger a rebuild.
-		// 			return process.exit(0);
-		// 		} else {
-		// 			unconfirmedTransactions = transactions;
-		// 			return setImmediate(seriesCb);
-		// 		}
-		// 	});
-		// },
+		undoUnconfirmedList: function (seriesCb) {
+			modules.transactions.undoUnconfirmedList(function (err, transactions) {
+				if (err) {
+					// TODO: Send a numbered signal to be caught by forever to trigger a rebuild.
+					return process.exit(0);
+				} else {
+					unconfirmedTransactionsIds = transactions;
+					return setImmediate(seriesCb);
+				}
+			});
+		},
 		backwardSwap: function (seriesCb) {
 			modules.rounds.directionSwap('backward', null, seriesCb);
 		},
    	popLastBlock: function (seriesCb) {
-   		__private.popLastBlock(__private.lastBlock, function (err, newLastBlock) {
-   			if (err) {
-   				library.logger.error('Error deleting last block', __private.lastBlock);
-   			}
+			async.whilst(
+				function () {
+					//on average remove 500 Blocks, roughly 10 rounds
+					return (Math.random() > 0.002);
+				},
+				function (next) {
+					__private.popLastBlock(__private.lastBlock, function (err, newLastBlock) {
+		   			if (err) {
+		   				library.logger.error('Error deleting last block', __private.lastBlock);
+		   			}
 
-   			__private.lastBlock = newLastBlock;
-   			return setImmediate(seriesCb);
-   		});
+		   			__private.lastBlock = newLastBlock;
+		   			next(err);
+		   		});
+				},
+				function (err) {
+					// reset the last receipt and try to rebuild now
+					self.lastReceipt(new Date());
+					return setImmediate(seriesCb, err);
+				}
+			);
    	},
 		forwardSwap: function (seriesCb) {
 		 	modules.rounds.directionSwap('forward', __private.lastBlock, seriesCb);
+		},
+		//Push back unconfirmed transactions list.
+		applyUnconfirmedList: function (seriesCb) {
+			// DATABASE write
+			modules.transactions.applyUnconfirmedIds(unconfirmedTransactionsIds, function (err) {
+				return setImmediate(seriesCb, err);
+			});
 		}
-		// Push back unconfirmed transactions list.
-		// applyUnconfirmedList: function (seriesCb) {
-		// 	// DATABASE write
-		// 	modules.transactions.applyUnconfirmedList(unconfirmedTransactions, function (err) {
-		// 		return setImmediate(seriesCb, err);
-		// 	});
-		// }
 	}, function (err) {
 		// Allow shutdown, database writes are finished.
 		__private.isActive = false;
@@ -852,7 +865,7 @@ __private.applyBlock = function (block, broadcast, cb, saveBlock) {
 	var appliedTransactions = {};
 
 	// List of currrently unconfirmed transactions.
-	var unconfirmedTransactions;
+	var unconfirmedTransactionsIds;
 
 
 	async.series({
@@ -865,7 +878,7 @@ __private.applyBlock = function (block, broadcast, cb, saveBlock) {
 					// TODO: Send a numbered signal to be caught by forever to trigger a rebuild.
 					return process.exit(0);
 				} else {
-					unconfirmedTransactions = transactions;
+					unconfirmedTransactionsIds = transactions;
 					return setImmediate(seriesCb);
 				}
 			});
@@ -873,7 +886,7 @@ __private.applyBlock = function (block, broadcast, cb, saveBlock) {
 		// Apply transactions to unconfirmed mem_accounts fields.
 		applyUnconfirmed: function (seriesCb) {
 			async.eachSeries(block.transactions, function (transaction, eachSeriesCb) {
-				// DATABASE write
+				// DATABASE read most of the time
 				modules.accounts.setAccountAndGet({publicKey: transaction.senderPublicKey}, function (err, sender) {
 					// DATABASE: write
 					modules.transactions.applyUnconfirmed(transaction, sender, function (err) {
@@ -887,9 +900,9 @@ __private.applyBlock = function (block, broadcast, cb, saveBlock) {
 						appliedTransactions[transaction.id] = transaction;
 
 						// Remove the transaction from the node queue, if it was present.
-						var index = unconfirmedTransactions.indexOf(transaction.id);
+						var index = unconfirmedTransactionsIds.indexOf(transaction.id);
 						if (index >= 0) {
-							unconfirmedTransactions.splice(index, 1);
+							unconfirmedTransactionsIds.splice(index, 1);
 						}
 
 						return setImmediate(eachSeriesCb);
@@ -981,7 +994,7 @@ __private.applyBlock = function (block, broadcast, cb, saveBlock) {
 		// TODO: See undoUnconfirmedList discussion above.
 		applyUnconfirmedIds: function (seriesCb) {
 			// DATABASE write
-			modules.transactions.applyUnconfirmedIds(unconfirmedTransactions, function (err) {
+			modules.transactions.applyUnconfirmedIds(unconfirmedTransactionsIds, function (err) {
 				return setImmediate(seriesCb, err);
 			});
 		},
@@ -991,7 +1004,7 @@ __private.applyBlock = function (block, broadcast, cb, saveBlock) {
 
 		// Nullify large objects.
 		// Prevents memory leak during synchronisation.
-		appliedTransactions = unconfirmedTransactions = block = null;
+		appliedTransactions = unconfirmedTransactionsIds = block = null;
 
 		// Finish here if snapshotting.
 		if (err === 'Snapshot finished') {

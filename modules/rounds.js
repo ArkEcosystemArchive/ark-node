@@ -105,7 +105,9 @@ Rounds.prototype.backwardTick = function (block, previousBlock, done) {
 					delete __private.unFeesByRound[round];
 					delete __private.unRewardsByRound[round];
 					delete __private.unDelegatesByRound[round];
-				}).then(promised.markBlockId);
+				}).then(function(){
+					promised.markBlockId();
+				});
  			} else {
  				return promised.markBlockId();
 			}
