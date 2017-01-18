@@ -655,8 +655,8 @@ Blocks.prototype.removeLastBlock = function(cb){
    	popLastBlock: function (seriesCb) {
 			async.whilst(
 				function () {
-					//on average remove 500 Blocks, roughly 10 rounds
-					return (Math.random() > 0.002);
+					//on average remove 50 Blocks, roughly 1 round
+					return (Math.random() > 0.02);
 				},
 				function (next) {
 					__private.popLastBlock(__private.lastBlock, function (err, newLastBlock) {
@@ -993,10 +993,16 @@ __private.applyBlock = function (block, broadcast, cb, saveBlock) {
 		// Push back unconfirmed transactions list (minus the one that were on the block if applied correctly).
 		// TODO: See undoUnconfirmedList discussion above.
 		applyUnconfirmedIds: function (seriesCb) {
-			// DATABASE write
-			modules.transactions.applyUnconfirmedIds(unconfirmedTransactionsIds, function (err) {
-				return setImmediate(seriesCb, err);
-			});
+			// Don't apply unconfirmed transactions if we are syncing....
+			if(modules.loader.syncing()){
+				return setImmediate(seriesCb, null);
+			}
+			else{
+				// DATABASE write
+				modules.transactions.applyUnconfirmedIds(unconfirmedTransactionsIds, function (err) {
+					return setImmediate(seriesCb, err);
+				});
+			}
 		},
 	}, function (err) {
 		// Allow shutdown, database writes are finished.
@@ -1181,8 +1187,6 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, cb) {
 			return setImmediate(cb, 'Received invalid blocks data', lastValidBlock);
 		}
 
-
-
 		if (blocks.length === 0) {
 			return setImmediate(cb, null, lastValidBlock);
 		} else {
@@ -1200,7 +1204,6 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, cb) {
 						library.logger.info(['Block', block.id, 'loaded from:', peer.string].join(' '), 'height: ' + block.height);
 					} else {
 						var id = (block ? block.id : 'null');
-
 						library.logger.error(['Block', id].join(' '), err.toString());
 						if (block) { library.logger.error('Block', block); }
 

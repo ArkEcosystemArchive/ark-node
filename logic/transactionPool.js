@@ -149,6 +149,7 @@ TransactionPool.prototype.removeUnconfirmedTransaction = function (id) {
 		delete self.unconfirmed.index[id];
 	}
 
+	self.removeBundledTransaction(id);
 	self.removeQueuedTransaction(id);
 	self.removeMultisignatureTransaction(id);
 };

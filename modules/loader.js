@@ -576,7 +576,7 @@ Loader.prototype.onPeersReady = function () {
 		var timeout = modules.delegates.isForging() ? 5000 : 10000
 
 		if(lastReceipt && lastReceipt.rebuild){
-			library.logger.info('Unloading 1 Block to restart synchronisation');
+			library.logger.info('Unloading several blocks to restart synchronisation');
 			modules.blocks.removeLastBlock(function(err, removedBlocks){
 				library.logger.debug("blocks removed",removedBlocks);
 				modules.blocks.lastReceipt(new Date());
