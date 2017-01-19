@@ -64,6 +64,7 @@ Block.prototype.create = function (data) {
 
 	var block = {
 		version: 0,
+		height: nextHeight,
 		totalAmount: totalAmount,
 		totalFee: totalFee,
 		reward: reward,
@@ -97,7 +98,7 @@ Block.prototype.getBytes = function (block, includeSignature) {
 	if(includeSignature == undefined){
 		includeSignature = block.blockSignature != undefined;
 	}
-	var size = 4 + 4 + 8 + 4 + 4 + 8 + 8 + 4 + 4 + 4 + 32 + 33;
+	var size = 4 + 4 + 4 + 8 + 4 + 4 + 8 + 8 + 4 + 4 + 4 + 32 + 33;
 	var blockSignatureBuffer = null;
 
 	if(includeSignature){
@@ -110,6 +111,7 @@ Block.prototype.getBytes = function (block, includeSignature) {
 		var bb = new ByteBuffer(size, true);
 		bb.writeInt(block.version);
 		bb.writeInt(block.timestamp);
+		bb.writeInt(block.height);
 
 		if (block.previousBlock) {
 			var pb = bignum(block.previousBlock).toBuffer({size: '8'});

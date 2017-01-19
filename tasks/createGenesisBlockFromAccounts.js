@@ -10,10 +10,12 @@ var ed = require('../helpers/ed.js');
 
 var accounts = require('./accounts.js').accounts;
 
+var genesisVote = JSON.parse(fs.readFileSync('tasks/genesisPassphrase.json'));
+
 var config = {
     "port": 4000,
     "address": "0.0.0.0",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "fileLogLevel": "info",
     "logFileName": "logs/ark.log",
     "consoleLogLevel": "debug",
@@ -21,7 +23,7 @@ var config = {
     "db": {
         "host": "localhost",
         "port": 5432,
-        "database": "ark_newtest",
+        "database": "ark_testnet",
         "user": null,
         "password": "password",
         "poolSize": 20,
@@ -84,12 +86,11 @@ var config = {
     }
 };
 
-
-
 sign = function (block, keypair) {
 	var hash = getHash(block);
 	return ed.sign(hash, keypair).toString('hex');
 };
+
 
 getId = function (block) {
 	var hash = crypto.createHash('sha256').update(getBytes(block)).digest();
@@ -108,13 +109,14 @@ getHash = function (block) {
 
 
 getBytes = function (block) {
-	var size = 4 + 4 + 8 + 4 + 4 + 8 + 8 + 4 + 4 + 4 + 32 + 32 + 64;
+	var size = 4 + 4 + 4 + 8 + 4 + 4 + 8 + 8 + 4 + 4 + 4 + 32 + 32 + 66;
 	var b, i;
 
 	try {
 		var bb = new ByteBuffer(size, true);
 		bb.writeInt(block.version);
 		bb.writeInt(block.timestamp);
+    bb.writeInt(block.height);
 
 		if (block.previousBlock) {
 			var pb = bignum(block.previousBlock).toBuffer({size: '8'});
@@ -208,6 +210,7 @@ create = function (data) {
 
   block.id=getId(block);
 
+
 	try {
 		block.blockSignature = sign(block, data.keypair);
 	} catch (e) {
@@ -234,9 +237,10 @@ premine.address = arkjs.crypto.getAddress(premine.publicKey);
 
 genesis.publicKey = arkjs.crypto.getKeys(genesis.passphrase).publicKey;
 genesis.address = arkjs.crypto.getAddress(genesis.publicKey);
-
+genesis.wif = arkjs.crypto.getKeys(genesis.passphrase).toWIF();
 
 var totalbalance = genesis.balance;
+var numvote = 0;
 
 for(var i in accounts){
   var account = accounts[i];
@@ -251,67 +255,39 @@ for(var i in accounts){
 	premineTx.signature = arkjs.crypto.sign(premineTx,arkjs.crypto.getKeys(premine.passphrase));
 	premineTx.id = arkjs.crypto.getId(premineTx);
 	transactions.push(premineTx);
-
   totalbalance = totalbalance - account.balance;
+
+  if(account.username){
+    // create delegate
+    var createDelegateTx = arkjs.delegate.createDelegate("dummy", account.username);
+    createDelegateTx.fee = 0;
+    createDelegateTx.timestamp = 0;
+    createDelegateTx.senderId = account.address;
+    createDelegateTx.senderPublicKey = account.publicKey;
+    createDelegateTx.asset.delegate.publicKey = account.publicKey;
+    createDelegateTx.id = arkjs.crypto.getId(createDelegateTx);
+    //don't have passphrase so no verify
+    createDelegateTx.signature="";
+    transactions.push(createDelegateTx);
+
+    if(numvote<51 && account.username.startsWith("genesis_")){
+      numvote++
+      console.log("Voting for " + account.username);
+    	//vote for genesis_ accounts
+    	var voteTransaction = arkjs.vote.createVote(genesisVote.passphrase,["+"+account.publicKey]);
+    	voteTransaction.fee = 0;
+    	voteTransaction.timestamp = 0;
+      voteTransaction.senderId = genesis.address;
+    	voteTransaction.signature = arkjs.crypto.sign(voteTransaction,arkjs.crypto.getKeys(genesis.passphrase));
+    	voteTransaction.id = arkjs.crypto.getId(voteTransaction);
+
+    	transactions.push(voteTransaction);
+    }
+  }
+
 }
 
-var genesisbalance = parseInt((totalbalance/51).toFixed(0));
-
-// special case so all amounts add up to 12500000000000000
-var extrabalance = totalbalance - (genesisbalance*50);
-
-// We create vote transactions
-// Each delegate vote for themselves with 1/51th of the total premined
-for(var i=1; i<52; i++){
-  var delegate = {
-    'passphrase': bip39.generateMnemonic(),
-    'username': "genesis_"+i
-  };
-
-	delegate.balance=genesisbalance;
-	if(i==1){
-		delegate.balance=extrabalance;
-	}
-
-	delegate.publicKey = arkjs.crypto.getKeys(delegate.passphrase).publicKey;
-	delegate.address = arkjs.crypto.getAddress(delegate.publicKey);
-
-	//send ark to delegate
-	var premineTx = arkjs.transaction.createTransaction(delegate.address, delegate.balance, null, premine.passphrase);
-
-  delete premineTx.asset;
-	premineTx.fee = 0;
-	premineTx.timestamp = 0;
-	premineTx.senderId = premine.address;
-	premineTx.signature = arkjs.crypto.sign(premineTx,arkjs.crypto.getKeys(premine.passphrase));
-	premineTx.id = arkjs.crypto.getId(premineTx);
-	transactions.push(premineTx);
-
-
-	// create delegate
-  var createDelegateTx = arkjs.delegate.createDelegate(delegate.passphrase, delegate.username);
-  createDelegateTx.fee = 0;
-  createDelegateTx.timestamp = 0;
-  createDelegateTx.senderId = delegate.address;
-  createDelegateTx.signature = arkjs.crypto.sign(createDelegateTx,arkjs.crypto.getKeys(delegate.passphrase));
-  createDelegateTx.id = arkjs.crypto.getId(createDelegateTx);
-
-  transactions.push(createDelegateTx);
-
-	//vote for itself
-	var voteTransaction = arkjs.vote.createVote(delegate.passphrase,["+"+delegate.publicKey]);
-	voteTransaction.fee = 0;
-	voteTransaction.timestamp = 0;
-	voteTransaction.senderId = delegate.address;
-	voteTransaction.signature = arkjs.crypto.sign(voteTransaction,arkjs.crypto.getKeys(delegate.passphrase));
-	voteTransaction.id = arkjs.crypto.getId(voteTransaction);
-
-	transactions.push(voteTransaction);
-
-	//push to list of delegates
-  delegates.push(delegate);
-}
-
+console.log(totalbalance);
 
 var genesisBlock = create({
   keypair: arkjs.crypto.getKeys(genesis.passphrase),
@@ -319,15 +295,10 @@ var genesisBlock = create({
   timestamp:0
 });
 
-for(var i=0;i<51;i++){
-	config.forging.secret.push(delegates[i].passphrase);
-}
-
 config.nethash = genesisBlock.payloadHash;
 
 
-
-fs.writeFile("tasks/genesisBlock.json",JSON.stringify(genesisBlock, null, 2));
-fs.writeFile("tasks/config.json",JSON.stringify(config, null, 2));
-fs.writeFile("tasks/delegatesPassphrases.json", JSON.stringify(delegates, null, 2));
-fs.writeFile("tasks/genesisPassphrase.json", JSON.stringify(genesis, null, 2));
+fs.writeFile("_genesisBlock.json",JSON.stringify(genesisBlock, null, 2));
+fs.writeFile("_config.json",JSON.stringify(config, null, 2));
+//fs.writeFile("tasks/delegatesPassphrases.json", JSON.stringify(delegates, null, 2));
+//fs.writeFile("_genesisPassphrase.json", JSON.stringify(genesis, null, 2));

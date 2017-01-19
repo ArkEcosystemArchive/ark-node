@@ -749,11 +749,13 @@ Blocks.prototype.verifyBlock = function (block, skipLastBlockCheck) {
 		}
 	}
 
-	//TODO: This does not work well so far on multithread...
+	//TODO: This does not work at all so far on multithread...
 	var lastBlock=__private.lastBlock;
-	if(!block.height){
-		block.height = lastBlock.height + 1;
-	}
+
+	// Removed because height has been added to block.getBytes
+	// if(!block.height){
+	//  	block.height = lastBlock.height + 1;
+	// }
 
 
 	if (!block.previousBlock && block.height !== 1) {
@@ -1105,11 +1107,12 @@ Blocks.prototype.processBlock = function (block, broadcast, cb, saveBlock) {
 			async.eachSeries(block.transactions, function (transaction, cb) {
 				async.waterfall([
 					function (cb) {
-						try {
-							transaction.id = library.logic.transaction.getId(transaction);
-						} catch (e) {
-							return setImmediate(cb, e.toString());
-						}
+						// Removed LOC because it makes no sense
+						// try {
+						// 	transaction.id = library.logic.transaction.getId(transaction);
+						// } catch (e) {
+						// 	return setImmediate(cb, e.toString());
+						// }
 						transaction.blockId = block.id;
 						// Check if transaction is already in database, otherwise fork 2.
 						// TODO: Uncle forging: Double inclusion is allowed.
@@ -1133,7 +1136,19 @@ Blocks.prototype.processBlock = function (block, broadcast, cb, saveBlock) {
 					function (sender, cb) {
 						// Check if transaction id valid against database state (mem_* tables).
 						// DATABASE: read only
-						library.logic.transaction.verify(transaction, sender, cb);
+						if(block.height!=1){
+							library.logic.transaction.verify(transaction, sender, cb);
+						}
+						else{
+							// Don't verify transaction in Genesis block unless there is a signature
+							if(transaction.signature){
+								library.logic.transaction.verify(transaction, sender, cb);
+							}
+							else {
+								return setImmediate(cb);
+							}
+
+						}
 					}
 				],
 				function (err) {

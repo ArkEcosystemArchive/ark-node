@@ -110,13 +110,14 @@ getHash = function (block) {
 
 
 getBytes = function (block) {
-	var size = 4 + 4 + 8 + 4 + 4 + 8 + 8 + 4 + 4 + 4 + 32 + 32 + 64;
+	var size = 4 + 4 + 4 + 8 + 4 + 4 + 8 + 8 + 4 + 4 + 4 + 32 + 32 + 64;
 	var b, i;
 
 	try {
 		var bb = new ByteBuffer(size, true);
 		bb.writeInt(block.version);
 		bb.writeInt(block.timestamp);
+    bb.writeInt(block.height);
 
 		if (block.previousBlock) {
 			var pb = bignum(block.previousBlock).toBuffer({size: '8'});

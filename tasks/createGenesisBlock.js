@@ -11,7 +11,7 @@ var ed = require('../helpers/ed.js');
 var config = {
     "port": 4000,
     "address": "0.0.0.0",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "fileLogLevel": "info",
     "logFileName": "logs/ark.log",
     "consoleLogLevel": "debug",
@@ -19,7 +19,7 @@ var config = {
     "db": {
         "host": "localhost",
         "port": 5432,
-        "database": "ark_newtest",
+        "database": "ark_testnet",
         "user": null,
         "password": "password",
         "poolSize": 20,
@@ -105,13 +105,14 @@ getHash = function (block) {
 
 
 getBytes = function (block) {
-	var size = 4 + 4 + 8 + 4 + 4 + 8 + 8 + 4 + 4 + 4 + 32 + 32 + 66;
+	var size = 4 + 4 + 4 + 8 + 4 + 4 + 8 + 8 + 4 + 4 + 4 + 32 + 32 + 66;
 	var b, i;
 
 	try {
 		var bb = new ByteBuffer(size, true);
 		bb.writeInt(block.version);
 		bb.writeInt(block.timestamp);
+    bb.writeInt(block.height);
 
 		if (block.previousBlock) {
 			var pb = bignum(block.previousBlock).toBuffer({size: '8'});
