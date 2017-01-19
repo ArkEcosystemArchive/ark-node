@@ -568,22 +568,33 @@ Loader.prototype.syncing = function () {
 
 // Events
 Loader.prototype.onPeersReady = function () {
+
+
 	setImmediate(function nextLoadBlock () {
 		var lastReceipt = modules.blocks.lastReceipt();
 		if(!lastReceipt){
 			modules.blocks.lastReceipt(new Date());
 		}
 		var timeout = modules.delegates.isForging() ? 5000 : 10000;
-		var distance = modules.delegates.isForging() ? 15 : 60;
 
-		if(lastReceipt && lastReceipt.rebuild && (__private.network.height - modules.blocks.getLastBlock().height > distance)){
-			library.logger.info('Unloading several blocks to restart synchronisation');
-			modules.blocks.removeLastBlock(function(err, removedBlocks){
-				library.logger.debug("blocks removed",removedBlocks);
-				modules.blocks.lastReceipt(new Date());
-				setTimeout(nextLoadBlock, 1000);
+
+		// if we have not received a block for a long time, we think a bout rebuilding
+		if(lastReceipt && lastReceipt.rebuild){
+			self.getNetwork(false,function(network){
+				var distance = modules.delegates.isForging() ? 15 : 60;
+				//If we are far from observed network height, rebuild
+				if(__private.network.height - modules.blocks.getLastBlock().height > distance){
+					library.logger.info('Unloading several blocks to restart synchronisation');
+					var blocksToRemove=50;
+					modules.blocks.removeSomeBlocks(blocksToRemove, function(err, removedBlocks){
+						library.logger.debug("blocks removed",removedBlocks);
+						modules.blocks.lastReceipt(new Date());
+						setTimeout(nextLoadBlock, 1000);
+					});
+				}
 			});
 		}
+		// we have received a block but it sounds we did get any for over a blocktime, so we try to poll the network to find some
 		else if (__private.loaded && !self.syncing() && (!lastReceipt || lastReceipt.stale)) {
 			library.logger.debug('Loading blocks from network');
 			library.sequence.add(function (cb) {
@@ -594,6 +605,8 @@ Loader.prototype.onPeersReady = function () {
 				}
 				setTimeout(nextLoadBlock, timeout);
 			});
+
+		//all clear last block was recent enough.
 		} else {
 			setTimeout(nextLoadBlock, timeout);
 		}

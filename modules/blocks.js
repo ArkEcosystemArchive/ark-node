@@ -626,7 +626,7 @@ Blocks.prototype.loadBlocksOffset = function (limit, offset, verify, cb) {
 	}, cb);
 };
 
-Blocks.prototype.removeLastBlock = function(cb){
+Blocks.prototype.removeSomeBlocks = function(numbers,cb){
 	if (__private.lastBlock.height === 1) {
 		return setImmediate(cb);
 	}
@@ -655,8 +655,8 @@ Blocks.prototype.removeLastBlock = function(cb){
    	popLastBlock: function (seriesCb) {
 			async.whilst(
 				function () {
-					//on average remove 50 Blocks, roughly 1 round
-					return (Math.random() > 0.02);
+					//if numbers = 50, on average remove 50 Blocks, roughly 1 round
+					return (Math.random() > 1/numbers);
 				},
 				function (next) {
 					__private.popLastBlock(__private.lastBlock, function (err, newLastBlock) {
@@ -674,6 +674,62 @@ Blocks.prototype.removeLastBlock = function(cb){
 					return setImmediate(seriesCb, err);
 				}
 			);
+   	},
+		forwardSwap: function (seriesCb) {
+		 	modules.rounds.directionSwap('forward', __private.lastBlock, seriesCb);
+		},
+		//Push back unconfirmed transactions list.
+		applyUnconfirmedList: function (seriesCb) {
+			// DATABASE write
+			modules.transactions.applyUnconfirmedIds(unconfirmedTransactionsIds, function (err) {
+				return setImmediate(seriesCb, err);
+			});
+		}
+	}, function (err) {
+		// Allow shutdown, database writes are finished.
+		__private.isActive = false;
+		return setImmediate(cb, err);
+	});
+}
+
+
+
+Blocks.prototype.removeLastBlock = function(cb){
+	if (__private.lastBlock.height === 1) {
+		return setImmediate(cb);
+	}
+
+	// List of currrently unconfirmed transactions.
+	var unconfirmedTransactionsIds;
+	// Don't shutdown now
+	__private.isActive = true;
+
+	async.series({
+		// Rewind any unconfirmed transactions before removing block.
+		undoUnconfirmedList: function (seriesCb) {
+			modules.transactions.undoUnconfirmedList(function (err, transactions) {
+				if (err) {
+					// TODO: Send a numbered signal to be caught by forever to trigger a rebuild.
+					return process.exit(0);
+				} else {
+					unconfirmedTransactionsIds = transactions;
+					return setImmediate(seriesCb);
+				}
+			});
+		},
+		backwardSwap: function (seriesCb) {
+			modules.rounds.directionSwap('backward', null, seriesCb);
+		},
+   	popLastBlock: function (seriesCb) {
+			__private.popLastBlock(__private.lastBlock, function (err, newLastBlock) {
+				self.lastReceipt(new Date());
+				if (err) {
+					library.logger.error('Error deleting last block', __private.lastBlock);
+					return setImmediate(seriesCb, err);
+				}
+				__private.lastBlock = newLastBlock;
+				return setImmediate(seriesCb);
+			});
    	},
 		forwardSwap: function (seriesCb) {
 		 	modules.rounds.directionSwap('forward', __private.lastBlock, seriesCb);
@@ -814,8 +870,16 @@ Blocks.prototype.verifyBlock = function (block, skipLastBlockCheck) {
 	    payloadHash = crypto.createHash('sha256'),
 	    appliedTransactions = {};
 
-	for (var i in block.transactions) {
-		var transaction = block.transactions[i];
+	var transactions = block.transactions.sort(function compare(a, b) {
+		if (a.type < b.type) { return -1; }
+		if (a.type > b.type) { return 1; }
+		if (a.amount < b.amount) { return -1; }
+		if (a.amount > b.amount) { return 1; }
+		return 0;
+	});
+
+	for (var i in transactions) {
+		var transaction = transactions[i];
 		var bytes;
 
 		try {
@@ -1080,6 +1144,7 @@ Blocks.prototype.processBlock = function (block, broadcast, cb, saveBlock) {
 
 	if (!check.verified) {
 		library.logger.error(['Block', block.id, 'verification failed'].join(' '), check.errors.join(', '));
+		library.logger.debug("block", block);
 		return setImmediate(cb, check.errors[0]);
 	}
 
@@ -1336,12 +1401,6 @@ Blocks.prototype.onReceiveBlock = function (block, peer) {
 			return setImmediate(cb);
 		}
 
-		var check = self.verifyBlock(block, true);
-		if (!check.verified) {
-			library.logger.error(['onReceiveBlock: Block ', block.id, 'verification failed'].join(' '), check.errors.join(', '));
-			return setImmediate(cb, check.errors[0]);
-		}
-
 		// __private.lastBlock can change with time: multithread will eat you!
 		var lastBlock = __private.lastBlock;
 
@@ -1353,6 +1412,7 @@ Blocks.prototype.onReceiveBlock = function (block, peer) {
 				'slot:', slots.getSlotNumber(block.timestamp),
 				'reward:', block.reward
 			].join(' '));
+
 			self.lastReceipt(new Date());
 			//library.logger.debug("Received block", block);
 			//RECEIVED full block?
