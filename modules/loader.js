@@ -573,9 +573,10 @@ Loader.prototype.onPeersReady = function () {
 		if(!lastReceipt){
 			modules.blocks.lastReceipt(new Date());
 		}
-		var timeout = modules.delegates.isForging() ? 5000 : 10000
+		var timeout = modules.delegates.isForging() ? 5000 : 10000;
+		var distance = modules.delegates.isForging() ? 15 : 60;
 
-		if(lastReceipt && lastReceipt.rebuild){
+		if(lastReceipt && lastReceipt.rebuild && (__private.network.height - modules.blocks.getLastBlock().height > distance)){
 			library.logger.info('Unloading several blocks to restart synchronisation');
 			modules.blocks.removeLastBlock(function(err, removedBlocks){
 				library.logger.debug("blocks removed",removedBlocks);
