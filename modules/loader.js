@@ -335,7 +335,7 @@ __private.loadBlocksFromNetwork = function (cb) {
 						return setImmediate(cb, 'Unable to load blocks from ' + peer.string);
 					}
 					__private.lastBlock = lastValidBlock;
-					loaded = lastValidBlock.id === modules.blocks.getLastBlock().id;
+					loaded = peer.height <= modules.blocks.getLastBlock().height;
 					lastValidBlock = null;
 					return setImmediate(cb);
 				});
