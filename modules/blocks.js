@@ -865,13 +865,7 @@ Blocks.prototype.verifyBlock = function (block, skipLastBlockCheck) {
 	    payloadHash = crypto.createHash('sha256'),
 	    appliedTransactions = {};
 
-	var transactions = block.transactions.sort(function compare(a, b) {
-		if (a.type < b.type) { return -1; }
-		if (a.type > b.type) { return 1; }
-		if (a.amount < b.amount) { return -1; }
-		if (a.amount > b.amount) { return 1; }
-		return 0;
-	});
+	var transactions = block.transactions;
 
 	for (var i in transactions) {
 		var transaction = transactions[i];
