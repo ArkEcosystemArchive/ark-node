@@ -717,12 +717,12 @@ Blocks.prototype.removeLastBlock = function(cb){
 		},
    	popLastBlock: function (seriesCb) {
 			__private.popLastBlock(__private.lastBlock, function (err, newLastBlock) {
-				self.lastReceipt(new Date());
 				if (err) {
 					library.logger.error('Error deleting last block', __private.lastBlock);
 					return setImmediate(seriesCb, err);
 				}
 				__private.lastBlock = newLastBlock;
+				self.lastReceipt(new Date());
 				return setImmediate(seriesCb);
 			});
    	},
@@ -1153,6 +1153,7 @@ Blocks.prototype.processBlock = function (block, broadcast, cb, saveBlock) {
 		modules.delegates.validateBlockSlot(block, function (err) {
 			if (err) {
 				modules.delegates.fork(block, 3);
+				modules.loader.triggerBlockRemoval(1);
 				return setImmediate(cb, err);
 			}
 
@@ -1453,8 +1454,7 @@ Blocks.prototype.onReceiveBlock = function (block, peer) {
 						if(err){
 							return setImmediate(cb,"Cannot remove block, needs to restart node.");
 						}
-						//I don't have the winning block so returning now and polling the network to get winning block
-						self.lastReceipt(new Date());
+						//I don't have the winning block so returning now
 						return  setImmediate(cb);
 					});
 				});
@@ -1481,7 +1481,6 @@ Blocks.prototype.onReceiveBlock = function (block, peer) {
 						if(err){
 							return setImmediate(cb,"Cannot remove block, needs to restart node.");
 						}
-						self.lastReceipt(new Date());
 						return setImmediate(cb);
 					});
 				});

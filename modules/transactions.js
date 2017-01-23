@@ -271,27 +271,15 @@ Transactions.prototype.undoUnconfirmedList = function (cb) {
 
 Transactions.prototype.apply = function (transaction, block, sender, cb) {
 	library.logger.debug('Applying confirmed transaction', transaction.id);
-	if(!__private.unconfirmedList[transaction.id]){
-		return setImmediate(cb, 'unconfirmed transaction not applied, so cannot apply it as confirmed, likely due to a bug. Please report.');
-	}
-	else{
-		library.logic.transaction.apply(transaction, block, sender, cb);
-	}
+	library.logic.transaction.apply(transaction, block, sender, cb);
 };
 
 Transactions.prototype.undo = function (transaction, block, sender, cb) {
 	library.logger.debug('Undoing confirmed transaction', transaction.id);
-	__private.unconfirmedList[transaction.id]=transaction;
 	library.logic.transaction.undo(transaction, block, sender, cb);
 };
 
 Transactions.prototype.applyUnconfirmed = function (transaction, sender, cb) {
-	if(__private.unconfirmedList[transaction.id]){
-		return setImmediate(cb, 'unconfirmed transaction already applied, likely due to a bug. Please report.');
-	}
-	else{
-		__private.unconfirmedList[transaction.id]=transaction;
-	}
 
 	library.logger.debug('Applying unconfirmed transaction', transaction.id);
 	if (!sender && transaction.blockId !== genesisblock.block.id) {
@@ -316,12 +304,6 @@ Transactions.prototype.applyUnconfirmed = function (transaction, sender, cb) {
 };
 
 Transactions.prototype.undoUnconfirmed = function (transaction, cb) {
-	if(!__private.unconfirmedList[transaction.id]){
-		return setImmediate(cb, 'unconfirmed transaction not applied, cannot undo it, likely due to a bug. Please report.');
-	}
-	else{
-		delete __private.unconfirmedList[transaction.id];
-	}
 	library.logger.debug('Undoing unconfirmed transaction', transaction.id);
 
 	modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, function (err, sender) {

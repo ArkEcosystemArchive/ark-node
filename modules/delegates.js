@@ -599,7 +599,7 @@ Delegates.prototype.fork = function (block, cause) {
 		cause: cause
 	});
 
-	self.disableForging('fork');
+	//self.disableForging('fork');
 
 	library.db.none(sql.insertFork, {
 		delegatePublicKey: block.generatorPublicKey,

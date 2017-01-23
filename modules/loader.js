@@ -22,6 +22,7 @@ __private.blockchainReady = false;
 __private.noShutdownRequired = false;
 __private.lastBlock = null;
 __private.genesisBlock = null;
+__private.forceRemoveBlocks = 0;
 __private.total = 0;
 __private.blocksToSync = 0;
 __private.syncFromNetworkIntervalId = null;
@@ -326,7 +327,6 @@ __private.loadBlocksFromNetwork = function (cb) {
 			var lastBlock = modules.blocks.getLastBlock();
 
 			function loadBlocks (cb) {
-
 				__private.blocksToSync = peer.height - lastBlock.height;
 				modules.blocks.loadBlocksFromPeer(peer, function (err, lastValidBlock) {
 					if (err) {
@@ -365,9 +365,15 @@ __private.loadBlocksFromNetwork = function (cb) {
 				loadBlocks(next);
 		 	} else {
 			 	getCommonBlock(function(cb, err){
-					loadBlocks(function(err){
+					if(err){
+						next();
+					}
+					else{
+						loadBlocks(function(err){
 							next();
-					});
+						});
+					}
+
 				});
 			}
 		},
@@ -451,6 +457,10 @@ __private.findGoodPeers = function (heights) {
 };
 
 // Public methods
+
+Loader.prototype.triggerBlockRemoval = function(number){
+	__private.forceRemoveBlocks = number;
+};
 
 // Rationale:
 // - We pick 100 random peers from a random peer (could be unreachable).
@@ -629,6 +639,25 @@ Loader.prototype.onPeersReady = function () {
 			return setTimeout(nextLoadBlock, 1000);
 		}
 
+		if(__private.forceRemoveBlocks){
+			library.logger.info('# Triggered block removal... ');
+			modules.blocks.removeSomeBlocks(__private.forceRemoveBlocks, function(err, removedBlocks){
+				__private.forceRemoveBlocks=0;
+				library.logger.info("2. Removing several blocks to restart synchronisation... Finished");
+				library.logger.info("3. Downloading blocks from network...");
+				// Update blockchain from network
+				__private.syncFromNetwork(function(err){
+					if(err){
+						library.logger.error("Could not download all blocks from network", err);
+					}
+					library.logger.info("3. Downloading blocks from network... Finished");
+					library.logger.info('# Synchronising with network... Finished');
+					setTimeout(nextLoadBlock, 10000);
+				});
+			});
+			return;
+		}
+
 		var lastReceipt = modules.blocks.lastReceipt();
 		// if we have not received a block for a long time, we think about rebuilding
 		if(lastReceipt.rebuild){
@@ -683,7 +712,7 @@ Loader.prototype.onPeersReady = function () {
 					library.logger.warn('Failed to sync from network', err);
 				}
 				library.logger.info('# Synchronising with network... Finished');
-				setTimeout(nextLoadBlock, modules.delegates.isActiveDelegate()?1:10000);
+				setTimeout(nextLoadBlock, modules.delegates.isActiveDelegate()?500:10000);
 			});
 		}
 
