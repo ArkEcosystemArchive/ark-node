@@ -591,7 +591,6 @@ Loader.prototype.onPeersReady = function () {
 			timeout = 120000;
 		}
 
-
 		// Triggers a network poll and then comparing to the node state decide if a rebuild should be done.
 		self.getNetwork(true,function(network){
 			// If node is an active delegate we should not be too far from network height, otherwise node might fork for missing consensus.
@@ -665,14 +664,14 @@ Loader.prototype.onPeersReady = function () {
 
 			// we have received a block but it sounds we did get any for over a blocktime, so we try to poll the network to find some
 			else if(lastReceipt.stale) {
-				library.logger.info('Not received blocks for over a blocktime');
 				library.logger.info('# Synchronising with network...');
+				library.logger.info('Not received blocks for over a blocktime');
 				__private.syncFromNetwork(function (err) {
 					if (err) {
-						library.logger.warn('Blocks timer', err);
+						library.logger.warn('Failed to sync from network', err);
 					}
 					library.logger.info('# Synchronising with network... Finished');
-					setTimeout(nextLoadBlock, 10000);
+					setTimeout(nextLoadBlock, modules.delegates.isActiveDelegate()?1:10000);
 				});
 			}
 
