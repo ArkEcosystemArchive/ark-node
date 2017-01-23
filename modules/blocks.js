@@ -930,8 +930,7 @@ __private.applyBlock = function (block, broadcast, cb, saveBlock) {
 		undoUnconfirmedList: function (seriesCb) {
 			modules.transactions.undoUnconfirmedList(function (err, transactions) {
 				if (err) {
-					// TODO: Send a numbered signal to be caught by forever to trigger a rebuild.
-					return process.exit(0);
+					return setImmediate(seriesCb, err);
 				} else {
 					unconfirmedTransactionsIds = transactions;
 					return setImmediate(seriesCb);
@@ -998,7 +997,7 @@ __private.applyBlock = function (block, broadcast, cb, saveBlock) {
 						library.logger.error(err);
 						library.logger.error('Transaction', transaction);
 						// TODO: Send a numbered signal to be caught by forever to trigger a rebuild.
-						process.exit(0);
+						return setImmediate(eachSeriesCb, err);
 					}
 					// DATABASE: write
 					modules.transactions.apply(transaction, block, sender, function (err) {
@@ -1007,7 +1006,7 @@ __private.applyBlock = function (block, broadcast, cb, saveBlock) {
 							library.logger.error(err);
 							library.logger.error('Transaction', transaction);
 							// TODO: Send a numbered signal to be caught by forever to trigger a rebuild.
-							process.exit(0);
+							return setImmediate(eachSeriesCb, err);
 						}
 						// Transaction applied, removed from the unconfirmed list.
 						modules.transactions.removeUnconfirmedTransaction(transaction.id);
@@ -1029,7 +1028,7 @@ __private.applyBlock = function (block, broadcast, cb, saveBlock) {
 						library.logger.error('Failed to save block...');
 						library.logger.error('Block', block);
 						// TODO: Send a numbered signal to be caught by forever to trigger a rebuild.
-						process.exit(0);
+						return setImmediate(eachSeriesCb, err);
 					}
 
 					library.logger.debug('Block applied correctly with ' + block.transactions.length + ' transactions');
@@ -1403,7 +1402,8 @@ Blocks.prototype.onReceiveBlock = function (block, peer) {
 				'height:', block.height,
 				'round:',  modules.rounds.calc(block.height),
 				'slot:', slots.getSlotNumber(block.timestamp),
-				'reward:', block.reward
+				'reward:', block.reward,
+				'transactions', block.numberOfTransactions
 			].join(' '));
 
 			self.lastReceipt(new Date());

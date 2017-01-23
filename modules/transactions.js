@@ -18,8 +18,7 @@ var transactionTypes = require('../helpers/transactionTypes.js');
 var modules, library, self, __private = {}, shared = {};
 
 __private.assetTypes = {};
-__private.unconfirmedTransactionsIdIndex = {};
-__private.countfullstack=0;
+__private.unconfirmedList = {};
 
 // Constructor
 function Transactions (cb, scope) {
@@ -212,22 +211,6 @@ __private.getVotesById = function (transaction, cb) {
 	});
 };
 
-__private.addUnconfirmedTransaction = function (transaction, sender, cb) {
-	self.applyUnconfirmed(transaction, sender, function (err) {
-		if (err) {
-			self.removeUnconfirmedTransaction(transaction.id);
-			return setImmediate(cb, err);
-		} else if (modules.loader.syncing()) {
-			self.undoUnconfirmed(transaction, cb);
-		} else {
-			transaction.receivedAt = new Date();
-			__private.unconfirmedTransactionsIdIndex[transaction.id] = transaction;
-
-			return setImmediate(cb);
-		}
-	});
-};
-
 // Public methods
 Transactions.prototype.transactionInPool = function (id) {
 	return __private.transactionPool.transactionInPool(id);
@@ -278,22 +261,39 @@ Transactions.prototype.applyUnconfirmedIds = function (ids, cb) {
 };
 
 Transactions.prototype.undoUnconfirmedList = function (cb) {
-	return __private.transactionPool.undoUnconfirmedList(cb);
+	if(Object.keys(__private.unconfirmedList).length>0){
+		return __private.transactionPool.undoUnconfirmedList(cb);
+	}
+	else {
+		return setImmediate(cb, null, []);
+	}
 };
 
 Transactions.prototype.apply = function (transaction, block, sender, cb) {
 	library.logger.debug('Applying confirmed transaction', transaction.id);
-	library.logic.transaction.apply(transaction, block, sender, cb);
+	if(!__private.unconfirmedList[transaction.id]){
+		return setImmediate(cb, 'unconfirmed transaction not applied, so cannot apply it as confirmed, likely due to a bug. Please report.');
+	}
+	else{
+		library.logic.transaction.apply(transaction, block, sender, cb);
+	}
 };
 
 Transactions.prototype.undo = function (transaction, block, sender, cb) {
 	library.logger.debug('Undoing confirmed transaction', transaction.id);
+	__private.unconfirmedList[transaction.id]=transaction;
 	library.logic.transaction.undo(transaction, block, sender, cb);
 };
 
 Transactions.prototype.applyUnconfirmed = function (transaction, sender, cb) {
-	library.logger.debug('Applying unconfirmed transaction', transaction.id);
+	if(__private.unconfirmedList[transaction.id]){
+		return setImmediate(cb, 'unconfirmed transaction already applied, likely due to a bug. Please report.');
+	}
+	else{
+		__private.unconfirmedList[transaction.id]=transaction;
+	}
 
+	library.logger.debug('Applying unconfirmed transaction', transaction.id);
 	if (!sender && transaction.blockId !== genesisblock.block.id) {
 		return setImmediate(cb, 'Invalid block id');
 	} else {
@@ -316,6 +316,12 @@ Transactions.prototype.applyUnconfirmed = function (transaction, sender, cb) {
 };
 
 Transactions.prototype.undoUnconfirmed = function (transaction, cb) {
+	if(!__private.unconfirmedList[transaction.id]){
+		return setImmediate(cb, 'unconfirmed transaction not applied, cannot undo it, likely due to a bug. Please report.');
+	}
+	else{
+		delete __private.unconfirmedList[transaction.id];
+	}
 	library.logger.debug('Undoing unconfirmed transaction', transaction.id);
 
 	modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, function (err, sender) {
@@ -334,27 +340,6 @@ Transactions.prototype.receiveTransactions = function (transactions, cb) {
 
 Transactions.prototype.fillPool = function (cb) {
 	return __private.transactionPool.fillPool(cb);
-};
-
-Transactions.prototype.receiveTransactionsBack = function (transactions, cb) {
-	if(Object.keys(__private.unconfirmedTransactionsIdIndex).length + transactions.length > constants.maxTxsPerBlock){
-		// __private.countfullstack+=1;
-		// if(__private.countfullstack>100){
-		// 	__private.countfullstack=0;
-		// 	library.logger.info('unconfirmed tx list', Object.keys(__private.unconfirmedTransactionsIdIndex).length);
-		// 	//try to garbage collect the stack
-		// 	var ids = Object.keys(__private.unconfirmedTransactionsIdIndex);
-		// 	for (var i = 0; i < ids.length; i++) {
-		// 		delete __private.unconfirmedTransactionsIdIndex[ids[i]];
-		// 	}
-		// }
-		return setImmediate(cb, "Rejecting your transactions because the maximum node transactions stack is reached.", transactions);
-	}
-	async.eachSeries(transactions, function (transaction, cb) {
-		self.processUnconfirmedTransaction(transaction, transactions.length == 1, cb);
-	}, function (err) {
-		return setImmediate(cb, err, transactions);
-	});
 };
 
 // Events
