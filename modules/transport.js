@@ -148,7 +148,7 @@ __private.attachApi = function () {
 			var limit=1400;
 
 			//if forging send a small bunch only to prevent from being overloaded.
-			if(modules.delegates.isForging()){
+			if(modules.delegates.isActiveDelegate()){
 				limit=100;
 			}
 
@@ -430,9 +430,8 @@ Transport.prototype.getFromPeer = function (peer, options, cb) {
 
 	var request = popsicle.request(req);
 
-	request.use(popsicle.plugins.parse(['json'], false));
-
-	request.then(function (res) {
+	request.use(popsicle.plugins.parse(['json'], false))
+	.then(function (res) {
 		if (res.status !== 200) {
 			// Remove peer
 			__private.removePeer({peer: peer, code: 'ERESPONSE ' + res.status, req: req});
@@ -458,28 +457,34 @@ Transport.prototype.getFromPeer = function (peer, options, cb) {
 				return setImmediate(cb, ['Peer is not on the same network', headers.nethash, req.method, req.url].join(' '));
 			}
 
+			// update the saved list of peers
 			modules.peers.update({
 				ip: peer.ip,
+				blockheader: headers.blockheader,
 				port: headers.port,
-				state: 2,
-				os: headers.os,
-				version: headers.version
+				state: 2
 			}, function(){});
+
+			// update the passed arg 'peer' with its last received state
+			if(headers.blockheader){
+				peer.height = headers.blockheader.height;
+				peer.blockheader = headers.blockheader;
+			}
 
 			return setImmediate(cb, null, {body: res.body, peer: peer});
 		}
-	});
-
-	request.catch(function (err) {
-		if (peer) {
-			if (err.code === 'EUNAVAILABLE' || err.code === 'ETIMEOUT') {
-				// Remove peer
-				__private.removePeer({peer: peer, code: err.code, req: req});
-			} else {
-				// Ban peer for 10 minutes
-				__private.banPeer({peer: peer, code: err.code, req: req, clock: 600});
-			}
-		}
+	})
+	.catch(function (err) {
+		// Commenting out the code because it makes no sense since it could because node is offline
+		// if (peer) {
+		// 	if (err.code === 'EUNAVAILABLE' || err.code === 'ETIMEOUT') {
+		// 		// Remove peer
+		// 		__private.removePeer({peer: peer, code: err.code, req: req});
+		// 	} else {
+		// 		// Ban peer for 10 minutes
+		// 		__private.banPeer({peer: peer, code: err.code, req: req, clock: 600});
+		// 	}
+		// }
 
 		return setImmediate(cb, [err.code, 'Request failed', req.method, req.url].join(' '));
 	});
@@ -539,15 +544,15 @@ Transport.prototype.onNewBlock = function (block, broadcast) {
 
 		var all=false, limitbroadcast=10;
 
-		if(modules.delegates.isForging()){
-			// I am a forging delegate, I broadcast it full block
-			// Rationale i don't want to be pinged back to download the block payload
+		if(modules.delegates.isActiveDelegate()){
+			// I am an active delegate, I broadcast the full block
+			// Rationale: I don't want to be pinged back to download the block payload
 			library.logger.debug("Full block broadcasted", block.id);
 			blockheaders.transactions=block.transactions;
 			// I broadcast to everybody I know if I generated this block
 			all=modules.delegates.isAForgingDelegatesPublicKey(block.generatorPublicKey);
 
-			// I increase the reach if i am a forging node;
+			// I increase the reach if i am an active delegate;
 			limitbroadcast=25;
 		}
 

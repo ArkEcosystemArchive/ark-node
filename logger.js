@@ -58,7 +58,16 @@ module.exports = function (config) {
 			if (message instanceof Error) {
 				log.message = message.stack;
 			} else {
-				log.message = message;
+				if(message.startsWith("# ")){
+					var head="#".repeat(message.length+2);
+					log.message="\n";
+					log.message+=head+"\n";
+					log.message+=message+" #\n";
+					log.message+=head;
+				}
+				else {
+					log.message = message;
+				}
 			}
 
 			if (data && util.isObject(data)) {

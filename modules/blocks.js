@@ -35,7 +35,7 @@ __private.loaded = false;
 //Request for shutdown, please clean/stop your job, will shutdown when isActive = false
 __private.cleanup = false;
 //To prevent from shutdown if true, that would lead to unstable database state
-__private.isActive = false;
+__private.noShutdownRequired = false;
 
 // @formatter:off
 __private.blocksDataFields = {
@@ -361,7 +361,7 @@ __private.popLastBlock = function (oldLastBlock, cb) {
 };
 
 __private.getIdSequence = function (height, cb) {
-	library.db.query(sql.getIdSequence, { height: height, limit: 5, delegates: slots.delegates, activeDelegates: constants.activeDelegates }).then(function (rows) {
+	library.db.query(sql.getIdSequence, { height: height, limit: 10, delegates: slots.delegates, activeDelegates: constants.activeDelegates }).then(function (rows) {
 		if (rows.length === 0) {
 			return setImmediate(cb, 'Failed to get id sequence for height: ' + height);
 		}
@@ -465,17 +465,21 @@ __private.applyTransaction = function (block, transaction, sender, cb) {
 
 // Public methods
 Blocks.prototype.lastReceipt = function (lastReceipt) {
-	if (lastReceipt) {
+	if(lastReceipt){
 		__private.lastReceipt = lastReceipt;
 	}
-
-	if (__private.lastReceipt) {
+	if (!__private.lastReceipt) {
+		__private.lastReceipt = new Date();
+		__private.lastReceipt.stale = true;
+		__private.lastReceipt.rebuild = false;
+		__private.lastReceipt.secondsAgo = 100000;
+	}
+	else {
 		var timeNow = new Date();
-		__private.lastReceipt.secondsAgo = Math.floor((timeNow.getTime() - __private.lastReceipt.getTime()) / 1000);
+		__private.lastReceipt.secondsAgo = Math.floor((timeNow.getTime() -  __private.lastReceipt.getTime()) / 1000);
 		__private.lastReceipt.stale = (modules.delegates.isForging() && __private.lastReceipt.secondsAgo > 8) || __private.lastReceipt.secondsAgo > 60;
 		__private.lastReceipt.rebuild = (modules.delegates.isForging() && __private.lastReceipt.secondsAgo > 60) || __private.lastReceipt.secondsAgo > 120;
 	}
-
 	return __private.lastReceipt;
 };
 
@@ -631,20 +635,18 @@ Blocks.prototype.removeSomeBlocks = function(numbers,cb){
 		return setImmediate(cb);
 	}
 
-	// List of currrently unconfirmed transactions.
-	var unconfirmedTransactionsIds;
 	// Don't shutdown now
-	__private.isActive = true;
+	__private.noShutdownRequired = true;
 
 	async.series({
-		// Rewind any unconfirmed transactions before removing block.
+		// Rewind any unconfirmed transactions before removing blocks.
+		// We won't apply them again since we will have to resync blocks back from network
 		undoUnconfirmedList: function (seriesCb) {
 			modules.transactions.undoUnconfirmedList(function (err, transactions) {
 				if (err) {
 					// TODO: Send a numbered signal to be caught by forever to trigger a rebuild.
 					return process.exit(0);
 				} else {
-					unconfirmedTransactionsIds = transactions;
 					return setImmediate(seriesCb);
 				}
 			});
@@ -669,25 +671,18 @@ Blocks.prototype.removeSomeBlocks = function(numbers,cb){
 		   		});
 				},
 				function (err) {
-					// reset the last receipt and try to rebuild now
-					self.lastReceipt(new Date());
 					return setImmediate(seriesCb, err);
 				}
 			);
    	},
 		forwardSwap: function (seriesCb) {
 		 	modules.rounds.directionSwap('forward', __private.lastBlock, seriesCb);
-		},
-		//Push back unconfirmed transactions list.
-		applyUnconfirmedList: function (seriesCb) {
-			// DATABASE write
-			modules.transactions.applyUnconfirmedIds(unconfirmedTransactionsIds, function (err) {
-				return setImmediate(seriesCb, err);
-			});
 		}
 	}, function (err) {
+		// Reset the last receipt
+		self.lastReceipt(new Date());
 		// Allow shutdown, database writes are finished.
-		__private.isActive = false;
+		__private.noShutdownRequired = false;
 		return setImmediate(cb, err);
 	});
 }
@@ -702,7 +697,7 @@ Blocks.prototype.removeLastBlock = function(cb){
 	// List of currrently unconfirmed transactions.
 	var unconfirmedTransactionsIds;
 	// Don't shutdown now
-	__private.isActive = true;
+	__private.noShutdownRequired = true;
 
 	async.series({
 		// Rewind any unconfirmed transactions before removing block.
@@ -743,7 +738,7 @@ Blocks.prototype.removeLastBlock = function(cb){
 		}
 	}, function (err) {
 		// Allow shutdown, database writes are finished.
-		__private.isActive = false;
+		__private.noShutdownRequired = false;
 		return setImmediate(cb, err);
 	});
 }
@@ -925,7 +920,7 @@ Blocks.prototype.verifyBlock = function (block, skipLastBlockCheck) {
 // Apply the block, provided it has been verified.
 __private.applyBlock = function (block, broadcast, cb, saveBlock) {
 	// Prevent shutdown during database writes.
-	__private.isActive = true;
+	__private.noShutdownRequired = true;
 
 	// Transactions to rewind in case of error.
 	var appliedTransactions = {};
@@ -1072,7 +1067,7 @@ __private.applyBlock = function (block, broadcast, cb, saveBlock) {
 		},
 	}, function (err) {
 		// Allow shutdown, database writes are finished.
-		__private.isActive = false;
+		__private.noShutdownRequired = false;
 
 		// Nullify large objects.
 		// Prevents memory leak during synchronisation.
@@ -1258,6 +1253,10 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, cb) {
 			return setImmediate(cb, err, lastValidBlock);
 		}
 		var blocks = res.body.blocks;
+		// update with last version of peer data (height, blockheader)
+		if(res.peer){
+			peer=res.peer;
+		}
 
 		//library.logger.debug('loaded blocks',blocks);
 
@@ -1392,15 +1391,15 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 
 // Events
 Blocks.prototype.onReceiveBlock = function (block, peer) {
+	// When client is not loaded, is syncing or round is ticking
+	// Do not receive new blocks as client is not ready
+	if (!__private.loaded || modules.loader.syncing() || modules.rounds.ticking()) {
+		library.logger.debug('Client not ready to receive block', block.id);
+		return;
+	}
+
 	//we make sure we process one block at a time
 	library.sequence.add(function (cb) {
-		// When client is not loaded, is syncing or round is ticking
-		// Do not receive new blocks as client is not ready
-		if (!__private.loaded || modules.loader.syncing() || modules.rounds.ticking()) {
-			library.logger.debug('Client not ready to receive block', block.id);
-			return setImmediate(cb);
-		}
-
 		// __private.lastBlock can change with time: multithread will eat you!
 		var lastBlock = __private.lastBlock;
 
@@ -1476,7 +1475,6 @@ Blocks.prototype.onReceiveBlock = function (block, peer) {
 
 			// Orphan Block: Decide winning branch
 			// -> winning chain is smallest block id (comparing with lexicographic order)
-
 			if(block.id < lastBlock.id){
 				// we should verify the block first:
 				// - forging delegate is legit
@@ -1514,11 +1512,11 @@ Blocks.prototype.cleanup = function (cb) {
 	__private.loaded = false;
 	__private.cleanup = true;
 
-	if (!__private.isActive) {
+	if (!__private.noShutdownRequired) {
 		return setImmediate(cb);
 	} else {
 		setImmediate(function nextWatch () {
-			if (__private.isActive) {
+			if (__private.noShutdownRequired) {
 				library.logger.info('Waiting for block processing to finish...');
 				setTimeout(nextWatch, 1 * 1000);
 			} else {

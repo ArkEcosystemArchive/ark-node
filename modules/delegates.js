@@ -20,10 +20,17 @@ var transactionTypes = require('../helpers/transactionTypes.js');
 var modules, library, self, __private = {}, shared = {};
 
 __private.assetTypes = {};
+// Blockchain is up to date
 __private.loaded = false;
+// Server is in forging mode, does not mean it has been configured properly.
 __private.forging = false;
+// Is the node currently forging for an active delegate at the current internal state of blockchain
+__private.isActiveDelegate = false;
+// Block Reward calculator
 __private.blockReward = new BlockReward();
+// keypairs used to sign forge blocks, extracted from passphrase in config files
 __private.keypairs = {};
+// tempo helper to start forging not righ now
 __private.coldstart = new Date().getTime();
 
 // Constructor
@@ -197,9 +204,16 @@ __private.getKeysSortByVote = function (cb) {
 		if (err) {
 			return setImmediate(cb, err);
 		}
-		return setImmediate(cb, null, rows.map(function (el) {
+		var registeredDelegatesPublicKeys = Object.keys(__private.keypairs);
+		var isActive = false;
+		var activeDelegates = rows.map(function (el) {
+			if(registeredDelegatesPublicKeys.indexOf(el.publicKey) > -1){
+				isActive=true;
+			}
 			return el.publicKey;
-		}));
+		});
+		__private.isActiveDelegate = isActive;
+		return setImmediate(cb, null, activeDelegates);
 	});
 };
 
@@ -668,13 +682,21 @@ Delegates.prototype.onBlockchainReady = function () {
 // 	});
 // };
 
+
+// To trigger a blockchain update from network
 Delegates.prototype.cleanup = function (cb) {
 	__private.loaded = false;
 	return setImmediate(cb);
 };
 
+// Ready to forge when it is its slot
 Delegates.prototype.isForging = function(){
 	return __private.forging;
+}
+
+// Is node active at current height of internal blockchain
+Delegates.prototype.isActiveDelegate = function(cb){
+	return __private.isActiveDelegate;
 }
 
 Delegates.prototype.enableForging = function () {

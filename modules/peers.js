@@ -61,7 +61,7 @@ __private.attachApi = function () {
 };
 
 __private.updatePeersList = function (cb) {
-	library.logger.debug('Hello updatePeersList');
+	library.logger.debug('updating Peers List...');
 	if(new Date().getTime()-__private.lastPeersUpdate<60*1000){
 		return setImmediate(cb);
 	}
@@ -339,7 +339,8 @@ Peers.prototype.update = function (peer, cb) {
 
 	if(__private.peers[(peer.ip+":"+peer.port)]){
 		if(peer.blockheader){
-			__private.peers[(peer.ip+":"+peer.port)] = peer
+			__private.peers[(peer.ip+":"+peer.port)] = peer;
+			__private.peers[(peer.ip+":"+peer.port)].height = peer.blockheader.height;
 		}
 	}
 	else{
@@ -359,12 +360,13 @@ Peers.prototype.update = function (peer, cb) {
 	// });
 };
 
+Peers.prototype.getFreshPeer = function(peer) {
+	return __private.peers[peer.ip+":"+peer.port];
+}
+
 // Events
 Peers.prototype.onBind = function (scope) {
 	modules = scope;
-};
-
-Peers.prototype.onBlockchainReady = function () {
 	for(var i=0;i<library.config.peers.list.length;i++){
 		var peer = library.config.peers.list[i];
 		__private.peers[peer.ip+":"+peer.port] = peer;
@@ -417,6 +419,10 @@ Peers.prototype.onBlockchainReady = function () {
 			library.bus.message('peersReady');
 		}
 	});
+};
+
+Peers.prototype.onBlockchainReady = function () {
+
 };
 
 Peers.prototype.onPeersReady = function () {
