@@ -271,47 +271,53 @@ Transactions.prototype.undoUnconfirmedList = function (cb) {
 
 Transactions.prototype.apply = function (transaction, block, sender, cb) {
 	library.logger.debug('Applying confirmed transaction', transaction.id);
-	library.logic.transaction.apply(transaction, block, sender, cb);
+	library.transactionSequence.add(function (cb){
+		library.logic.transaction.apply(transaction, block, sender, cb);
+	}, cb);
 };
 
 Transactions.prototype.undo = function (transaction, block, sender, cb) {
 	library.logger.debug('Undoing confirmed transaction', transaction.id);
-	library.logic.transaction.undo(transaction, block, sender, cb);
+	library.transactionSequence.add(function (cb){
+		library.logic.transaction.undo(transaction, block, sender, cb);
+	}, cb);
 };
 
 Transactions.prototype.applyUnconfirmed = function (transaction, sender, cb) {
-
 	library.logger.debug('Applying unconfirmed transaction', transaction.id);
 	if (!sender && transaction.blockId !== genesisblock.block.id) {
 		return setImmediate(cb, 'Invalid block id');
 	} else {
-		if (transaction.requesterPublicKey) {
-			modules.accounts.getAccount({publicKey: transaction.requesterPublicKey}, function (err, requester) {
-				if (err) {
-					return setImmediate(cb, err);
-				}
+		library.transactionSequence.add(function (cb){
+			if (transaction.requesterPublicKey) {
+				modules.accounts.getAccount({publicKey: transaction.requesterPublicKey}, function (err, requester) {
+					if (err) {
+						return setImmediate(cb, err);
+					}
 
-				if (!requester) {
-					return setImmediate(cb, 'Requester not found');
-				}
+					if (!requester) {
+						return setImmediate(cb, 'Requester not found');
+					}
 
-				library.logic.transaction.applyUnconfirmed(transaction, sender, requester, cb);
-			});
-		} else {
-			library.logic.transaction.applyUnconfirmed(transaction, sender, cb);
-		}
+					library.logic.transaction.applyUnconfirmed(transaction, sender, requester, cb);
+				});
+			} else {
+				library.logic.transaction.applyUnconfirmed(transaction, sender, cb);
+			}
+		}, cb);
 	}
 };
 
 Transactions.prototype.undoUnconfirmed = function (transaction, cb) {
 	library.logger.debug('Undoing unconfirmed transaction', transaction.id);
-
-	modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, function (err, sender) {
-		if (err) {
-			return setImmediate(cb, err);
-		}
-		library.logic.transaction.undoUnconfirmed(transaction, sender, cb);
-	});
+	library.transactionSequence.add(function (cb){
+		modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, function (err, sender) {
+			if (err) {
+				return setImmediate(cb, err);
+			}
+			library.logic.transaction.undoUnconfirmed(transaction, sender, cb);
+		});
+	}, cb);
 };
 
 

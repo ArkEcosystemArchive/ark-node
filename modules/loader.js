@@ -343,7 +343,6 @@ __private.loadBlocksFromNetwork = function (cb) {
 			// we make sure we are on same chain
 			function getCommonBlock (cb) {
 				// get last version of peer header
-
 				__private.blocksToSync = peer.height - lastBlock.height;
 				library.logger.info('Looking for common block with: ' + peer.string);
 				modules.blocks.getCommonBlock(peer, lastBlock.height, function (err, commonBlock) {

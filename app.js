@@ -175,6 +175,24 @@ d.run(function () {
 			});
 		}],
 
+		transactionSequence: ['logger', function (scope, cb) {
+			var sequence = new Sequence({
+				onWarning: function (current, limit) {
+					scope.logger.warn('Transaction queue', current);
+				}
+			});
+			cb(null, sequence);
+		}],
+
+		blockSequence: ['logger', function (scope, cb) {
+			var sequence = new Sequence({
+				onWarning: function (current, limit) {
+					scope.logger.warn('Block queue', current);
+				}
+			});
+			cb(null, sequence);
+		}],
+
 		dbSequence: ['logger', function (scope, cb) {
 			var sequence = new Sequence({
 				onWarning: function (current, limit) {
