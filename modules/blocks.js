@@ -710,7 +710,7 @@ Blocks.prototype.removeLastBlock = function(cb){
 			undoUnconfirmedList: function (seriesCb) {
 				modules.transactions.undoUnconfirmedList(function (err, transactions) {
 					return setImmediate(seriesCb, err);
-					
+
 				});
 			},
 			backwardSwap: function (seriesCb) {
@@ -1272,7 +1272,7 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, cb) {
 					if (!err) {
 						self.lastReceipt(new Date());
 						lastValidBlock = block;
-						library.logger.info(['Block', block.id, 'loaded from:', peer.string].join(' '), 'height: ' + block.height);
+						library.logger.info(['Block', block.id, 'loaded from:', peer.string, "transactions:", block.numberOfTransactions].join(' '), 'height: ' + block.height);
 					} else {
 						var id = (block ? block.id : 'null');
 						library.logger.error(['Block', id].join(' '), err.toString());

@@ -350,8 +350,8 @@ __private.loadBlocksFromNetwork = function (cb) {
 						errorCount += 1;
 						return setImmediate(cb, 'Unable to load blocks from ' + peer.string);
 					}
+					loaded = (lastValidBlock.height == modules.blocks.getLastBlock().height) || (lastValidBlock.id == __private.lastBlock.id);
 					__private.lastBlock = lastValidBlock;
-					loaded = peer.height <= modules.blocks.getLastBlock().height;
 					lastValidBlock = null;
 					return setImmediate(cb);
 				});
@@ -367,7 +367,6 @@ __private.loadBlocksFromNetwork = function (cb) {
 							library.logger.error(err.toString());
 						}
 						modules.peers.remove(peer.ip, peer.port);
-						errorCount += 1;
 						return setImmediate(cb, "Detected forked chain, no common block with: " + peer.string);
 					} else {
 						library.logger.info(['Found common block:', commonBlock.id, 'with:', peer.string].join(' '));
@@ -381,11 +380,11 @@ __private.loadBlocksFromNetwork = function (cb) {
 		 	} else {
 			 	getCommonBlock(function(cb, err){
 					if(err){
-						next();
+						next(err);
 					}
 					else{
 						loadBlocks(function(err){
-							next();
+							next(err);
 						});
 					}
 
@@ -404,7 +403,11 @@ __private.loadBlocksFromNetwork = function (cb) {
 };
 
 __private.syncFromNetwork = function (cb) {
-	library.logger.info('Starting sync');
+	if(self.syncing()){
+		library.logger.info('Already syncing');
+		return setImmediate(cb);
+	}
+	library.logger.debug('Starting sync');
 	__private.syncFromNetworkTrigger(true);
 
 	async.series({
@@ -423,7 +426,7 @@ __private.syncFromNetwork = function (cb) {
 		__private.syncFromNetworkTrigger(false);
 		__private.blocksToSync = 0;
 
-		library.logger.info('Finished sync');
+		library.logger.debug('Finished sync');
 		return setImmediate(cb, err);
 	});
 };
@@ -602,6 +605,10 @@ Loader.prototype.onPeersReady = function () {
 	// Main loop to observe network state (peers, height, forks etc...)
 	// And strategy to sync to winning chain
 	setImmediate(function listenToNetwork(){
+		if(self.syncing()){
+			setTimeout(listenToNetwork, 1000);
+			return;
+		}
 		// Active delegate: poll every 30s
 		// Standby delegate: poll every 2min
 		// Not active delegate: poll every 5min
@@ -625,26 +632,11 @@ Loader.prototype.onPeersReady = function () {
 			var blocksToRemove = modules.delegates.isActiveDelegate() ? 3 : 50;
 
 			// If node is far from observed network height, try some small rebuild
-			if(modules.blocks.getLastBlock().height > 1 && __private.blockchainReady && !self.syncing() && (__private.network.height - modules.blocks.getLastBlock().height > distance)){
-				library.logger.info("# Syncing blocks from network...");
-				library.logger.info('1. Late on blockchain height, unloading some blocks to restart synchronisation...');
-				modules.blocks.removeSomeBlocks(blocksToRemove, function(err, removedBlocks){
-					library.logger.info("1. Blocks removed.");
-					library.logger.info("2. Downloading blocks from network...");
-					// Update blockchain from network
-					__private.syncFromNetwork(function(err){
-						if(err){
-							library.logger.error("Could not load all blocks from network", err);
-						}
-						library.logger.info("2. Downloading blocks from network... Finished");
-						library.logger.info("# Syncing blocks from network... Finished");
-						setTimeout(listenToNetwork, timeout);
-					});
-				});
+			if(modules.blocks.getLastBlock().height > 1 && __private.blockchainReady && (__private.network.height - modules.blocks.getLastBlock().height > distance)){
+				library.logger.info('Late on blockchain height, unloading some blocks to restart synchronisation...');
+				self.triggerBlockRemoval(blocksToRemove);
 			}
-			else{
-				setTimeout(listenToNetwork, timeout);
-			}
+			setTimeout(listenToNetwork, timeout);
 		});
 	});
 
@@ -666,11 +658,10 @@ Loader.prototype.onPeersReady = function () {
 						library.logger.error("Could not download all blocks from network", err);
 					}
 					library.logger.info("2. Downloading blocks from network... Finished");
-					library.logger.info('# Synchronising with network... Finished');
+					library.logger.info('# Triggered block removal... Finished');
 					setTimeout(nextLoadBlock, 10000);
 				});
 			});
-
 		}
 		else{
 			var lastReceipt = modules.blocks.lastReceipt();
