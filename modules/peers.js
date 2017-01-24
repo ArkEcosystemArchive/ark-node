@@ -343,7 +343,7 @@ Peers.prototype.update = function (peer, cb) {
 			__private.peers[(peer.ip+":"+peer.port)].height = peer.blockheader.height;
 		}
 	}
-	else{
+	else if(parseInt(peer.port)!=1){
 		__private.peers[(peer.ip+":"+peer.port)] = peer;
 		library.logger.debug("New peer added", peer);
 	}
