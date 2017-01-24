@@ -731,11 +731,11 @@ __private.toggleForgingOnReceipt = function () {
 
 		library.logger.debug('Last block received: ' + lastReceipt.secondsAgo + ' seconds ago');
 
-		if (lastReceipt.secondsAgo > timeOut) {
-			return self.disableForging('timeout');
-		} else {
-			return self.enableForging();
-		}
+		// if (lastReceipt.secondsAgo > timeOut) {
+		// 	return self.disableForging('timeout');
+		// } else {
+		return self.enableForging();
+		// }
 	}
 };
 
