@@ -670,8 +670,9 @@ Blocks.prototype.removeSomeBlocks = function(numbers,cb){
 			   				library.logger.error('Error deleting last block', __private.lastBlock);
 								library.logger.error('Error deleting last block', err);
 			   			}
-
-			   			__private.lastBlock = newLastBlock;
+			   			else {
+								__private.lastBlock = newLastBlock;
+							}
 			   			next(err);
 			   		});
 					},
@@ -723,7 +724,9 @@ Blocks.prototype.removeLastBlock = function(cb){
 						library.logger.error('Error deleting last block', __private.lastBlock);
 						library.logger.error('Error deleting last block', err);
 					}
-					__private.lastBlock = newLastBlock;
+					else{
+						__private.lastBlock = newLastBlock;
+					}
 					return setImmediate(cb, err);
 				});
 	   	},
