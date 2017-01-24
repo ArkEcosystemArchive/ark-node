@@ -347,7 +347,9 @@ __private.loadBlocksFromNetwork = function (cb) {
 
 			async.waterfall([
 				function getCommonBlock (seriesCb) {
-					// get last version of peer header
+					if (lastBlock.height === 1){
+						return setImmediate(seriesCb);
+					}
 					__private.blocksToSync = peer.height - lastBlock.height;
 					library.logger.info('Looking for common block with: ' + peer.string);
 					modules.blocks.getCommonBlock(peer, lastBlock.height, function (err, commonBlock) {
