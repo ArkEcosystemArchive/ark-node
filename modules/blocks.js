@@ -668,6 +668,7 @@ Blocks.prototype.removeSomeBlocks = function(numbers,cb){
 						__private.popLastBlock(__private.lastBlock, function (err, newLastBlock) {
 			   			if (err) {
 			   				library.logger.error('Error deleting last block', __private.lastBlock);
+								library.logger.error('Error deleting last block', err);
 			   			}
 
 			   			__private.lastBlock = newLastBlock;
@@ -720,6 +721,7 @@ Blocks.prototype.removeLastBlock = function(cb){
 				__private.popLastBlock(__private.lastBlock, function (err, newLastBlock) {
 					if (err) {
 						library.logger.error('Error deleting last block', __private.lastBlock);
+						library.logger.error('Error deleting last block', err);
 					}
 					__private.lastBlock = newLastBlock;
 					return setImmediate(cb, err);
@@ -1314,6 +1316,7 @@ Blocks.prototype.deleteBlocksBefore = function (block, cb) {
 			__private.popLastBlock(lastBlock, function (err, newLastBlock) {
 				if(err){
 					library.logger.error('error removing block', block);
+					library.logger.error('error removing block', err);
 				}
 
 				library.logger.debug('removing block', block);
@@ -1463,6 +1466,8 @@ Blocks.prototype.onReceiveBlock = function (block, peer) {
 			}
 		} else if (block.previousBlock === lastBlock.previousBlock && block.height === lastBlock.height && block.id !== lastBlock.id) {
 			// Fork: Same height and previous block id, but different block id
+			library.logger.info("last block", lastBlock);
+			library.logger.info("received block", block);
 			modules.delegates.fork(block, 5);
 
 			// Orphan Block: Decide winning branch

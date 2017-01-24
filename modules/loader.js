@@ -334,62 +334,54 @@ __private.loadBlocksFromNetwork = function (cb) {
 			return p1.blockheader.height<p2.blockheader.height;
 		}
 	});
+
+
 	async.whilst(
 		function () {
 			return !loaded && (errorCount < 5) && (peers.length > errorCount+1);
 		},
 		function (next) {
+
 			var peer = peers[errorCount];
 			var lastBlock = modules.blocks.getLastBlock();
 
-			function loadBlocks (cb) {
-				__private.blocksToSync = peer.height - lastBlock.height;
-				modules.blocks.loadBlocksFromPeer(peer, function (err, lastValidBlock) {
-					if (err) {
-						library.logger.error(err.toString());
-						errorCount += 1;
-						return setImmediate(cb, 'Unable to load blocks from ' + peer.string);
-					}
-					loaded = (lastValidBlock.height == modules.blocks.getLastBlock().height) || (lastValidBlock.id == __private.lastBlock.id);
-					__private.lastBlock = lastValidBlock;
-					lastValidBlock = null;
-					return setImmediate(cb);
-				});
-			}
-			// we make sure we are on same chain
-			function getCommonBlock (cb) {
-				// get last version of peer header
-				__private.blocksToSync = peer.height - lastBlock.height;
-				library.logger.info('Looking for common block with: ' + peer.string);
-				modules.blocks.getCommonBlock(peer, lastBlock.height, function (err, commonBlock) {
-					if (!commonBlock) {
+			async.waterfall([
+				function getCommonBlock (seriesCb) {
+					// get last version of peer header
+					__private.blocksToSync = peer.height - lastBlock.height;
+					library.logger.info('Looking for common block with: ' + peer.string);
+					modules.blocks.getCommonBlock(peer, lastBlock.height, function (err, commonBlock) {
+						if (err) {
+							return setImmediate(seriesCb, err);
+							errorCount += 1;
+						}
+						else if (!commonBlock) {
+							errorCount += 1;
+							modules.peers.remove(peer.ip, peer.port);
+							return setImmediate(seriesCb, "Detected forked chain, no common block with: " + peer.string);
+						} else {
+							library.logger.info(['Found common block:', commonBlock.id, 'with:', peer.string].join(' '));
+							return setImmediate(seriesCb);
+						}
+					});
+				},
+				function loadBlocks (seriesCb) {
+					__private.blocksToSync = peer.height - lastBlock.height;
+					modules.blocks.loadBlocksFromPeer(peer, function (err, lastValidBlock) {
 						if (err) {
 							library.logger.error(err.toString());
+							errorCount += 1;
+							return setImmediate(seriesCb, 'Unable to load blocks from ' + peer.string);
 						}
-						modules.peers.remove(peer.ip, peer.port);
-						return setImmediate(cb, "Detected forked chain, no common block with: " + peer.string);
-					} else {
-						library.logger.info(['Found common block:', commonBlock.id, 'with:', peer.string].join(' '));
-						return setImmediate(cb);
-					}
-				});
-			}
-
-			if (lastBlock.height === 1) {
-				loadBlocks(next);
-		 	} else {
-			 	getCommonBlock(function(cb, err){
-					if(err){
-						next(err);
-					}
-					else{
-						loadBlocks(function(err){
-							next(err);
-						});
-					}
-
-				});
-			}
+						loaded = (lastValidBlock.height == modules.blocks.getLastBlock().height) || (lastValidBlock.id == __private.lastBlock.id);
+						__private.lastBlock = lastValidBlock;
+						lastValidBlock = null;
+						return setImmediate(seriesCb);
+					});
+				}
+			], function (err, res) {
+				return setImmediate(next, err, res);
+			});
 		},
 		function (err) {
 			if (err) {
@@ -400,6 +392,73 @@ __private.loadBlocksFromNetwork = function (cb) {
 			}
 		}
 	);
+
+	// async.whilst(
+	// 	function () {
+	// 		return !loaded && (errorCount < 5) && (peers.length > errorCount+1);
+	// 	},
+	// 	function (next) {
+	// 		var peer = peers[errorCount];
+	// 		var lastBlock = modules.blocks.getLastBlock();
+	//
+	// 		function loadBlocks (cb) {
+	// 			__private.blocksToSync = peer.height - lastBlock.height;
+	// 			modules.blocks.loadBlocksFromPeer(peer, function (err, lastValidBlock) {
+	// 				if (err) {
+	// 					library.logger.error(err.toString());
+	// 					errorCount += 1;
+	// 					return setImmediate(cb, 'Unable to load blocks from ' + peer.string);
+	// 				}
+	// 				loaded = (lastValidBlock.height == modules.blocks.getLastBlock().height) || (lastValidBlock.id == __private.lastBlock.id);
+	// 				__private.lastBlock = lastValidBlock;
+	// 				lastValidBlock = null;
+	// 				return setImmediate(cb);
+	// 			});
+	// 		}
+	// 		// we make sure we are on same chain
+	// 		function getCommonBlock (cb) {
+	// 			// get last version of peer header
+	// 			__private.blocksToSync = peer.height - lastBlock.height;
+	// 			library.logger.info('Looking for common block with: ' + peer.string);
+	// 			modules.blocks.getCommonBlock(peer, lastBlock.height, function (err, commonBlock) {
+	// 				if (!commonBlock) {
+	// 					if (err) {
+	// 						library.logger.error(err.toString());
+	// 					}
+	// 					modules.peers.remove(peer.ip, peer.port);
+	// 					return setImmediate(cb, "Detected forked chain, no common block with: " + peer.string);
+	// 				} else {
+	// 					library.logger.info(['Found common block:', commonBlock.id, 'with:', peer.string].join(' '));
+	// 					return setImmediate(cb);
+	// 				}
+	// 			});
+	// 		}
+	//
+	// 		if (lastBlock.height === 1) {
+	// 			loadBlocks(next);
+	// 	 	} else {
+	// 		 	getCommonBlock(function(cb, err){
+	// 				if(err){
+	// 					next(err);
+	// 				}
+	// 				else{
+	// 					loadBlocks(function(err){
+	// 						next(err);
+	// 					});
+	// 				}
+	//
+	// 			});
+	// 		}
+	// 	},
+	// 	function (err) {
+	// 		if (err) {
+	// 			library.logger.error('Failed to load blocks from network', err);
+	// 			return setImmediate(cb, err);
+	// 		} else {
+	// 			return setImmediate(cb);
+	// 		}
+	// 	}
+	// );
 };
 
 __private.syncFromNetwork = function (cb) {
