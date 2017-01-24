@@ -115,25 +115,21 @@ __private.loadUnconfirmedTransactions = function (cb) {
 		method: 'GET'
 	}, function (err, res) {
 		if (err) {
-			return setImmediate(cb);
+			return setImmediate(cb, err);
 		}
 
 		var report = library.schema.validate(res.body, schema.loadUnconfirmedTransactions);
 
 		if (!report) {
-			return setImmediate(cb);
+			return setImmediate(cb, "Transactions list is not conform");
 		}
 
 		var peer = modules.peers.inspect(res.peer);
 		var transactions = res.body.transactions;
+		var skimmedtransactions = [];
 
-		for (var i = 0; i < transactions.length; i++) {
-			var transaction = transactions[i];
-			if(transaction){
-				transaction.bundled = true;
-			}
-			var id = (transaction ? transactions.id : 'null');
-
+		async.eachSeries(transactions, function (transaction, cb) {
+			var id = transaction.id;
 			try {
 				transaction = library.logic.transaction.objectNormalize(transaction);
 			} catch (e) {
@@ -143,13 +139,33 @@ __private.loadUnconfirmedTransactions = function (cb) {
 				library.logger.warn(['Transaction', id, 'is not valid, ban 60 min'].join(' '), peer.string);
 				modules.peers.state(peer.ip, peer.port, 0, 3600);
 
+				return setImmediate(cb, e);
+			}
+
+			library.db.query(sql.getTransactionId, { id: transaction.id }).then(function (rows) {
+				if (rows.length > 0) {
+					library.logger.debug('Transaction ID is already in blockchain', transaction.id);
+				}
+				else{
+					transaction.bundled = true;
+					skimmedtransactions.push(transaction);
+				}
+				return setImmediate(cb);
+			});
+		}, function (err) {
+			if(err){
+				return setImmediate(cb, err);
+			}
+			if(skimmedtransactions.length>0){
+				library.balancesSequence.add(function (cb) {
+					library.logger.debug('Loading '+skimmedtransactions.length+' new transactions from peer '+peer.ip+':'+peer.port);
+					modules.transactions.receiveTransactions(skimmedtransactions, cb);
+				}, cb);
+			}
+			else{
 				return setImmediate(cb);
 			}
-		}
-
-		library.balancesSequence.add(function (cb) {
-			modules.transactions.receiveTransactions(transactions, cb);
-		}, cb);
+		});
 	});
 };
 
@@ -642,93 +658,94 @@ Loader.prototype.onPeersReady = function () {
 			library.logger.info('# Triggered block removal... ');
 			modules.blocks.removeSomeBlocks(__private.forceRemoveBlocks, function(err, removedBlocks){
 				__private.forceRemoveBlocks=0;
-				library.logger.info("2. Removing several blocks to restart synchronisation... Finished");
-				library.logger.info("3. Downloading blocks from network...");
+				library.logger.info("1. Removing several blocks to restart synchronisation... Finished");
+				library.logger.info("2. Downloading blocks from network...");
 				// Update blockchain from network
 				__private.syncFromNetwork(function(err){
 					if(err){
 						library.logger.error("Could not download all blocks from network", err);
 					}
-					library.logger.info("3. Downloading blocks from network... Finished");
+					library.logger.info("2. Downloading blocks from network... Finished");
 					library.logger.info('# Synchronising with network... Finished');
 					setTimeout(nextLoadBlock, 10000);
 				});
 			});
-			return;
+
 		}
+		else{
+			var lastReceipt = modules.blocks.lastReceipt();
+			// if we have not received a block for a long time, we think about rebuilding
+			if(lastReceipt.rebuild){
+				library.logger.info('# Synchronising with network...');
+				library.logger.info('Looks like the node has not received a valid block for too long, assessing if a rebuild should be done...');
+				library.logger.info('1. polling network...');
+				self.getNetwork(true,function(network){
+					library.logger.info('1. polling network... Finished');
 
-		var lastReceipt = modules.blocks.lastReceipt();
-		// if we have not received a block for a long time, we think about rebuilding
-		if(lastReceipt.rebuild){
-			library.logger.info('# Synchronising with network...');
-			library.logger.info('Looks like the node has not received a valid block for too long, assessing if a rebuild should be done...');
-			library.logger.info('1. polling network...');
-			self.getNetwork(true,function(network){
-				library.logger.info('1. polling network... Finished');
-
-				var distance = modules.delegates.isForging() ? 8 : 50;
-				if(modules.delegates.isActiveDelegate()){
-					distance = 4;
-				}
-				//If we are far from observed network height, rebuild
-				if(__private.network.height - modules.blocks.getLastBlock().height > distance){
-					library.logger.info('Node too far from network height, rebuild triggered', {networkHeight: __private.network.height, nodeHeight: modules.blocks.getLastBlock().height});
-					library.logger.info('2. Removing several blocks to restart synchronisation...');
-					var blocksToRemove=10;
-					modules.blocks.removeSomeBlocks(blocksToRemove, function(err, removedBlocks){
-						library.logger.info("2. Removing several blocks to restart synchronisation... Finished");
-						library.logger.info("3. Downloading blocks from network...");
-						// Update blockchain from network
-						__private.syncFromNetwork(function(err){
-							if(err){
-								library.logger.error("Could not download all blocks from network", err);
+					var distance = modules.delegates.isForging() ? 8 : 50;
+					if(modules.delegates.isActiveDelegate()){
+						distance = 4;
+					}
+					//If we are far from observed network height, rebuild
+					if(__private.network.height - modules.blocks.getLastBlock().height > distance){
+						library.logger.info('Node too far from network height, rebuild triggered', {networkHeight: __private.network.height, nodeHeight: modules.blocks.getLastBlock().height});
+						library.logger.info('2. Removing several blocks to restart synchronisation...');
+						var blocksToRemove=10;
+						modules.blocks.removeSomeBlocks(blocksToRemove, function(err, removedBlocks){
+							library.logger.info("2. Removing several blocks to restart synchronisation... Finished");
+							library.logger.info("3. Downloading blocks from network...");
+							// Update blockchain from network
+							__private.syncFromNetwork(function(err){
+								if(err){
+									library.logger.error("Could not download all blocks from network", err);
+								}
+								library.logger.info("3. Downloading blocks from network... Finished");
+								library.logger.info('# Synchronising with network... Finished');
+								setTimeout(nextLoadBlock, 10000);
+							});
+						});
+					}
+					else {
+						library.logger.info('Node in sync with network, likely some active delegates are missing blocks, rebuild NOT triggered', {networkHeight: __private.network.height, nodeHeight: modules.blocks.getLastBlock().height});
+						__private.syncFromNetwork(function (err) {
+							if (err) {
+								library.logger.warn('Failed to sync from network', err);
 							}
-							library.logger.info("3. Downloading blocks from network... Finished");
 							library.logger.info('# Synchronising with network... Finished');
 							setTimeout(nextLoadBlock, 10000);
 						});
-					});
-				}
-				else {
-					library.logger.info('Node in sync with network, likely some active delegates are missing blocks, rebuild NOT triggered', {networkHeight: __private.network.height, nodeHeight: modules.blocks.getLastBlock().height});
-					__private.syncFromNetwork(function (err) {
-						if (err) {
-							library.logger.warn('Failed to sync from network', err);
-						}
-						library.logger.info('# Synchronising with network... Finished');
-						setTimeout(nextLoadBlock, 10000);
-					});
-				}
-			});
-		}
+					}
+				});
+			}
 
-		// we have received a block but it sounds we did get any for over a blocktime, so we try to poll the network to find some
-		else if(lastReceipt.stale) {
-			library.logger.info('# Synchronising with network...');
-			library.logger.info('Not received blocks for over a blocktime');
-			__private.syncFromNetwork(function (err) {
-				if (err) {
-					library.logger.warn('Failed to sync from network', err);
-				}
-				library.logger.info('# Synchronising with network... Finished');
-				setTimeout(nextLoadBlock, modules.delegates.isActiveDelegate()?500:10000);
-			});
-		}
+			// we have received a block but it sounds we did get any for over a blocktime, so we try to poll the network to find some
+			else if(lastReceipt.stale) {
+				library.logger.info('# Synchronising with network...');
+				library.logger.info('Not received blocks for over a blocktime');
+				__private.syncFromNetwork(function (err) {
+					if (err) {
+						library.logger.warn('Failed to sync from network', err);
+					}
+					library.logger.info('# Synchronising with network... Finished');
+					setTimeout(nextLoadBlock, modules.delegates.isActiveDelegate()?500:10000);
+				});
+			}
 
-		//all clear last block was recent enough.
-		else {
-			setTimeout(nextLoadBlock, 10000);
+			//all clear last block was recent enough.
+			else {
+				setTimeout(nextLoadBlock, 10000);
+			}
 		}
 	});
 
 	setImmediate(function nextLoadUnconfirmedTransactions () {
 		if (__private.blockchainReady && !self.syncing()) {
-			library.logger.debug('# Loading unconfirmed transactions...');
+			library.logger.info('# Loading unconfirmed transactions...');
 			__private.loadUnconfirmedTransactions(function (err) {
 				if (err) {
-					library.logger.warn('Unconfirmed transactions timer', err);
+					library.logger.debug('Unconfirmed transactions timer', err);
 				}
-				library.logger.debug('# Loading unconfirmed transactions... Finished');
+				library.logger.info('# Loading unconfirmed transactions... Finished');
 
 				setTimeout(nextLoadUnconfirmedTransactions, 30000);
 			});

@@ -638,56 +638,58 @@ Blocks.prototype.removeSomeBlocks = function(numbers,cb){
 		return setImmediate(cb);
 	}
 
-	// Don't shutdown now
-	__private.noShutdownRequired = true;
+	library.blockSequence.add(function (cb){
+		// Don't shutdown now
+		__private.noShutdownRequired = true;
 
-	async.series({
-		// Rewind any unconfirmed transactions before removing blocks.
-		// We won't apply them again since we will have to resync blocks back from network
-		undoUnconfirmedList: function (seriesCb) {
-			modules.transactions.undoUnconfirmedList(function (err, transactions) {
-				if (err) {
-					// TODO: Send a numbered signal to be caught by forever to trigger a rebuild.
-					return process.exit(0);
-				} else {
-					return setImmediate(seriesCb);
-				}
-			});
-		},
-		backwardSwap: function (seriesCb) {
-			modules.rounds.directionSwap('backward', null, seriesCb);
-		},
-   	popLastBlock: function (seriesCb) {
-			async.whilst(
-				function () {
-					//if numbers = 50, on average remove 50 Blocks, roughly 1 round
-					return (Math.random() > 1/numbers);
-				},
-				function (next) {
-					__private.popLastBlock(__private.lastBlock, function (err, newLastBlock) {
-		   			if (err) {
-		   				library.logger.error('Error deleting last block', __private.lastBlock);
-		   			}
+		async.series({
+			// Rewind any unconfirmed transactions before removing blocks.
+			// We won't apply them again since we will have to resync blocks back from network
+			undoUnconfirmedList: function (seriesCb) {
+				modules.transactions.undoUnconfirmedList(function (err, transactions) {
+					if (err) {
+						// TODO: Send a numbered signal to be caught by forever to trigger a rebuild.
+						return setImmediate(seriesCb, err);
+					} else {
+						return setImmediate(seriesCb);
+					}
+				});
+			},
+			backwardSwap: function (seriesCb) {
+				modules.rounds.directionSwap('backward', null, seriesCb);
+			},
+	   	popLastBlock: function (seriesCb) {
+				async.whilst(
+					function () {
+						//if numbers = 50, on average remove 50 Blocks, roughly 1 round
+						return (Math.random() > 1/numbers);
+					},
+					function (next) {
+						__private.popLastBlock(__private.lastBlock, function (err, newLastBlock) {
+			   			if (err) {
+			   				library.logger.error('Error deleting last block', __private.lastBlock);
+			   			}
 
-		   			__private.lastBlock = newLastBlock;
-		   			next(err);
-		   		});
-				},
-				function (err) {
-					return setImmediate(seriesCb, err);
-				}
-			);
-   	},
-		forwardSwap: function (seriesCb) {
-		 	modules.rounds.directionSwap('forward', __private.lastBlock, seriesCb);
-		}
-	}, function (err) {
-		// Reset the last receipt
-		self.lastReceipt(new Date());
-		// Allow shutdown, database writes are finished.
-		__private.noShutdownRequired = false;
-		return setImmediate(cb, err);
-	});
+			   			__private.lastBlock = newLastBlock;
+			   			next(err);
+			   		});
+					},
+					function (err) {
+						return setImmediate(seriesCb, err);
+					}
+				);
+	   	},
+			forwardSwap: function (seriesCb) {
+			 	modules.rounds.directionSwap('forward', __private.lastBlock, seriesCb);
+			}
+		}, function (err) {
+			// Reset the last receipt
+			self.lastReceipt(new Date());
+			// Allow shutdown, database writes are finished.
+			__private.noShutdownRequired = false;
+			return setImmediate(cb, err);
+		});
+	}, cb);
 }
 
 
@@ -699,22 +701,16 @@ Blocks.prototype.removeLastBlock = function(cb){
 	// one block after the other
 	library.blockSequence.add(function (cb){
 
-		// List of currrently unconfirmed transactions.
-		var unconfirmedTransactionsIds;
 		// Don't shutdown now
 		__private.noShutdownRequired = true;
 
 		async.series({
-			// Rewind any unconfirmed transactions before removing block.
+			// Rewind any unconfirmed transactions before removing blocks.
+			// We won't apply them again since we will have to resync blocks back from network
 			undoUnconfirmedList: function (seriesCb) {
 				modules.transactions.undoUnconfirmedList(function (err, transactions) {
-					if (err) {
-						// TODO: Send a numbered signal to be caught by forever to trigger a rebuild.
-						return process.exit(0);
-					} else {
-						unconfirmedTransactionsIds = transactions;
-						return setImmediate(seriesCb);
-					}
+					return setImmediate(seriesCb, err);
+					
 				});
 			},
 			backwardSwap: function (seriesCb) {
@@ -724,24 +720,17 @@ Blocks.prototype.removeLastBlock = function(cb){
 				__private.popLastBlock(__private.lastBlock, function (err, newLastBlock) {
 					if (err) {
 						library.logger.error('Error deleting last block', __private.lastBlock);
-						return setImmediate(seriesCb, err);
 					}
 					__private.lastBlock = newLastBlock;
-					self.lastReceipt(new Date());
-					return setImmediate(seriesCb);
+					return setImmediate(cb, err);
 				});
 	   	},
 			forwardSwap: function (seriesCb) {
 			 	modules.rounds.directionSwap('forward', __private.lastBlock, seriesCb);
-			},
-			//Push back unconfirmed transactions list.
-			applyUnconfirmedList: function (seriesCb) {
-				// DATABASE write
-				modules.transactions.applyUnconfirmedIds(unconfirmedTransactionsIds, function (err) {
-					return setImmediate(seriesCb, err);
-				});
 			}
 		}, function (err) {
+			// Reset the last receipt
+			self.lastReceipt(new Date());
 			// Allow shutdown, database writes are finished.
 			__private.noShutdownRequired = false;
 			return setImmediate(cb, err);
@@ -1511,7 +1500,6 @@ Blocks.prototype.onBind = function (scope) {
 };
 
 Blocks.prototype.cleanup = function (cb) {
-	__private.loaded = false;
 	__private.cleanup = true;
 
 	if (!__private.noShutdownRequired) {

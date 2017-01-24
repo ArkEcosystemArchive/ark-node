@@ -12,10 +12,10 @@ function TransactionPool (scope) {
 	library = scope;
 	self = this;
 
-	self.unconfirmed = { transactions: [], index: {} };
-	self.bundled = { transactions: [], index: {} };
-	self.queued = { transactions: [], index: {} };
-	self.multisignature = { transactions: [], index: {} };
+	self.unconfirmed = { };
+	self.bundled = { };
+	self.queued = { };
+	self.multisignature = { };
 	self.expiryInterval = 30000;
 	self.bundledInterval = 5000;
 	self.bundleLimit = 25;
@@ -55,52 +55,48 @@ TransactionPool.prototype.bind = function (scope) {
 
 TransactionPool.prototype.transactionInPool = function (id) {
 	return [
-		self.unconfirmed.index[id],
-		self.bundled.index[id],
-		self.queued.index[id],
-		self.multisignature.index[id]
+		self.unconfirmed[id],
+		self.bundled[id],
+		self.queued[id],
+		self.multisignature[id]
 	].filter(Boolean).length > 0;
 };
 
 TransactionPool.prototype.getUnconfirmedTransaction = function (id) {
-	var index = self.unconfirmed.index[id];
-	return self.unconfirmed.transactions[index];
+	return self.unconfirmed[id];
 };
 
 TransactionPool.prototype.getBundledTransaction = function (id) {
-	var index = self.bundled.index[id];
-	return self.bundled.transactions[index];
+	return self.bundled[id];
 };
 
 TransactionPool.prototype.getQueuedTransaction = function (id) {
-	var index = self.queued.index[id];
-	return self.queued.transactions[index];
+	return self.queued[id];
 };
 
 TransactionPool.prototype.getMultisignatureTransaction = function (id) {
-	var index = self.multisignature.index[id];
-	return self.multisignature.transactions[index];
+	return self.multisignature[id];
 };
 
 TransactionPool.prototype.getUnconfirmedTransactionList = function (reverse, limit) {
-	return __private.getTransactionList(self.unconfirmed.transactions, reverse, limit);
+	return __private.getTransactionList(self.unconfirmed, reverse, limit);
 };
 
 TransactionPool.prototype.getBundledTransactionList  = function (reverse, limit) {
-	return __private.getTransactionList(self.bundled.transactions, reverse, limit);
+	return __private.getTransactionList(self.bundled, reverse, limit);
 };
 
 TransactionPool.prototype.getQueuedTransactionList  = function (reverse, limit) {
-	return __private.getTransactionList(self.queued.transactions, reverse, limit);
+	return __private.getTransactionList(self.queued, reverse, limit);
 };
 
 TransactionPool.prototype.getMultisignatureTransactionList = function (reverse, ready, limit) {
 	if (ready) {
-		return __private.getTransactionList(self.multisignature.transactions, reverse).filter(function (transaction) {
+		return __private.getTransactionList(self.multisignature, reverse).filter(function (transaction) {
 			return transaction.ready;
 		});
 	} else {
-		return __private.getTransactionList(self.multisignature.transactions, reverse, limit);
+		return __private.getTransactionList(self.multisignature, reverse, limit);
 	}
 };
 
@@ -129,25 +125,17 @@ TransactionPool.prototype.addUnconfirmedTransaction = function (transaction) {
 	} else {
 		self.removeQueuedTransaction(transaction.id);
 	}
-
-	if (self.unconfirmed.index[transaction.id] === undefined) {
+	if (!self.unconfirmed[transaction.id]) {
 		if (!transaction.receivedAt) {
 			transaction.receivedAt = new Date();
 		}
-
-		self.unconfirmed.transactions.push(transaction);
-		var index = self.unconfirmed.transactions.indexOf(transaction);
-		self.unconfirmed.index[transaction.id] = index;
+		self.unconfirmed[transaction.id] = transaction;
 	}
 };
 
 TransactionPool.prototype.removeUnconfirmedTransaction = function (id) {
-	var index = self.unconfirmed.index[id];
+	delete self.unconfirmed[id];
 
-	if (index !== undefined) {
-		self.unconfirmed.transactions[index] = false;
-		delete self.unconfirmed.index[id];
-	}
 
 	self.removeBundledTransaction(id);
 	self.removeQueuedTransaction(id);
@@ -155,77 +143,56 @@ TransactionPool.prototype.removeUnconfirmedTransaction = function (id) {
 };
 
 TransactionPool.prototype.countUnconfirmed = function () {
-	return Object.keys(self.unconfirmed.index).length;
+	return Object.keys(self.unconfirmed).length;
 };
 
 TransactionPool.prototype.addBundledTransaction = function (transaction) {
-	self.bundled.transactions.push(transaction);
-	var index = self.bundled.transactions.indexOf(transaction);
-	self.bundled.index[transaction.id] = index;
+	self.bundled[transaction.id] = transaction;
 };
 
 TransactionPool.prototype.removeBundledTransaction = function (id) {
-	var index = self.bundled.index[id];
-
-	if (index !== undefined) {
-		self.bundled.transactions[index] = false;
-		delete self.bundled.index[id];
-	}
+  delete self.bundled[id];
 };
 
 TransactionPool.prototype.countBundled = function () {
-	return Object.keys(self.bundled.index).length;
+	return Object.keys(self.bundled).length;
 };
 
 TransactionPool.prototype.addQueuedTransaction = function (transaction) {
-	if (self.queued.index[transaction.id] === undefined) {
+	if (!self.queued[transaction.id]) {
 		if (!transaction.receivedAt) {
 			transaction.receivedAt = new Date();
 		}
 
-		self.queued.transactions.push(transaction);
-		var index = self.queued.transactions.indexOf(transaction);
-		self.queued.index[transaction.id] = index;
+		self.queued[transaction.id] = transaction;
 	}
 };
 
 TransactionPool.prototype.removeQueuedTransaction = function (id) {
-	var index = self.queued.index[id];
-
-	if (index !== undefined) {
-		self.queued.transactions[index] = false;
-		delete self.queued.index[id];
-	}
+	delete self.queued[id];
 };
 
 TransactionPool.prototype.countQueued = function () {
-	return Object.keys(self.queued.index).length;
+	return Object.keys(self.queued).length;
 };
 
 TransactionPool.prototype.addMultisignatureTransaction = function (transaction) {
 
-	if (self.multisignature.index[transaction.id] === undefined) {
+	if (!self.multisignature[transaction.id]) {
 		if (!transaction.receivedAt) {
 			transaction.receivedAt = new Date();
 		}
 
-		self.multisignature.transactions.push(transaction);
-		var index = self.multisignature.transactions.indexOf(transaction);
-		self.multisignature.index[transaction.id] = index;
+		self.multisignature[transaction.id] = transaction;
 	}
 };
 
 TransactionPool.prototype.removeMultisignatureTransaction = function (id) {
-	var index = self.multisignature.index[id];
-
-	if (index !== undefined) {
-		self.multisignature.transactions[index] = false;
-		delete self.multisignature.index[id];
-	}
+	delete self.multisignature[id];
 };
 
 TransactionPool.prototype.countMultisignature = function () {
-	return Object.keys(self.multisignature.index).length;
+	return Object.keys(self.multisignature).length;
 };
 
 TransactionPool.prototype.receiveTransactions = function (transactions, broadcast, cb) {
@@ -236,16 +203,6 @@ TransactionPool.prototype.receiveTransactions = function (transactions, broadcas
 	});
 };
 
-TransactionPool.prototype.reindexQueues = function () {
-	['bundled', 'queued', 'multisignature', 'unconfirmed'].forEach(function (queue) {
-		self[queue].index = {};
-		self[queue].transactions = self[queue].transactions.filter(Boolean);
-		self[queue].transactions.forEach(function (transaction) {
-			var index = self[queue].transactions.indexOf(transaction);
-			self[queue].index[transaction.id] = index;
-		});
-	});
-};
 
 TransactionPool.prototype.processBundled = function (cb) {
 	var bundled = self.getBundledTransactionList(true, self.bundleLimit);
@@ -254,9 +211,6 @@ TransactionPool.prototype.processBundled = function (cb) {
 		if (!transaction) {
 			return setImmediate(eachSeriesCb);
 		}
-
-		self.removeBundledTransaction(transaction.id);
-		delete transaction.bundled;
 
 		__private.processVerifyTransaction(transaction, true, function (err, sender) {
 			if (err) {
@@ -280,12 +234,6 @@ TransactionPool.prototype.processBundled = function (cb) {
 TransactionPool.prototype.processUnconfirmedTransaction = function (transaction, broadcast, cb) {
 	if (self.transactionInPool(transaction.id)) {
 		return setImmediate(cb, 'Transaction is already processed: ' + transaction.id);
-	} else {
-		self.processed++;
-		if (self.processed > 1000) {
-			self.reindexQueues();
-			self.processed = 1;
-		}
 	}
 
 	if (transaction.bundled) {
@@ -407,10 +355,10 @@ TransactionPool.prototype.fillPool = function (cb) {
 __private.getTransactionList = function (transactions, reverse, limit) {
 	var a = [];
 
-	for (var i = 0; i < transactions.length; i++) {
+	for (var i in transactions) {
 		var transaction = transactions[i];
 
-		if (transaction !== false)	{
+		if (transaction)	{
 			a.push(transaction);
 		}
 	}

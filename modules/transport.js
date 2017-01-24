@@ -261,34 +261,53 @@ __private.attachApi = function () {
 	router.post('/transactions', function (req, res) {
 		res.set(__private.headers);
 
-		var transactions = req.body.transactions;
 
-		for(var i=0;i<transactions.length;i++){
-			var transaction=transactions[i];
-			//transaction.bundled = true;
+		var transactions = req.body.transactions;
+		var skimmedtransactions = [];
+		var peer=req.peer;
+
+		async.eachSeries(transactions, function (transaction, cb) {
+			var id = transaction.id;
 			try {
 				transaction = library.logic.transaction.objectNormalize(transaction);
 			} catch (e) {
 				library.logger.error(['Transaction', id].join(' '), e.toString());
 				if (transaction) { library.logger.error('Transaction', transaction); }
 
-				if (req.peer) {
-					// Ban peer for 60 minutes
-					__private.banPeer({peer: req.peer, code: 'ETRANSACTION', req: req, clock: 3600});
-				}
-				return res.status(200).json({success: false, message: 'Invalid transaction body'});
-			}
-		}
+				library.logger.warn(['Transaction', id, 'is not valid, ban 60 min'].join(' '), peer.string);
+				modules.peers.state(peer.ip, peer.port, 0, 3600);
 
-		library.balancesSequence.add(function (cb) {
-			library.logger.debug('Received '+ transactions.length +' transactions from peer ' + req.peer.string);
-			modules.transactions.receiveTransactions(transactions, cb);
+				return setImmediate(cb, e);
+			}
+
+			library.db.query(sql.getTransactionId, { id: transaction.id }).then(function (rows) {
+				if (rows.length > 0) {
+					library.logger.debug('Transaction ID is already in blockchain', transaction.id);
+				}
+				else{
+					skimmedtransactions.push(transaction);
+				}
+				return setImmediate(cb);
+			});
 		}, function (err) {
-			if (err) {
-				res.status(200).json({success: false, message: err.toString()});
-			} else {
-				modules.peers.update(req.peer, function(){});
-				res.status(200).json({success: true, transactionId: transaction.id});
+			if(err){
+				return res.status(200).json({success: false, message: 'Invalid transaction body detected', error: err.toString()});
+			}
+			if(skimmedtransactions.length>0){
+				library.balancesSequence.add(function (cb) {
+					library.logger.debug('Loading '+skimmedtransactions.length+' new transactions from peer '+peer.ip+':'+peer.port);
+					modules.transactions.receiveTransactions(skimmedtransactions, cb);
+				}, function (err) {
+					if (err) {
+						res.status(200).json({success: false, message: err.toString()});
+					} else {
+						modules.peers.update(req.peer, function(){});
+						res.status(200).json({success: true, transactionIds: skimmedtransactions.map(function(t){return t.id;})});
+					}
+				});
+			}
+			else{
+				return res.status(200).json({success: false, message: 'Transactions already in blockchain'});
 			}
 		});
 	});

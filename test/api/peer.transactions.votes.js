@@ -127,7 +127,7 @@ describe('POST /peer/transactions', function () {
 	it('using undefined transaction', function (done) {
 		postVote(undefined, function (err, res) {
 			node.expect(res.body).to.have.property('success').to.be.not.ok;
-			node.expect(res.body).to.have.property('error').to.equal("API error: id is not defined");
+			node.expect(res.body).to.have.property('error').to.equal("API error: Cannot read property 'id' of null");
 			done();
 		});
 	});
@@ -139,7 +139,7 @@ describe('POST /peer/transactions', function () {
 
 		postVote(transaction, function (err, res) {
 			node.expect(res.body).to.have.property('success').to.be.not.ok;
-			node.expect(res.body).to.have.property('error').to.equal("API error: id is not defined");
+			node.expect(res.body).to.have.property('message').to.equal("Invalid transaction body detected");
 			done();
 		});
 	});
@@ -204,7 +204,8 @@ describe('POST /peer/transactions', function () {
 			var transaction = node.ark.vote.createVote(account.password, ['-' + delegate]);
 			postVote(transaction, function (err, res) {
 				node.expect(res.body).to.have.property('success').to.be.ok;
-				node.expect(res.body).to.have.property('transactionId').to.equal(transaction.id);
+				node.expect(res.body).to.have.property('transactionIds');
+				node.expect(res.body.transactionIds[0]).to.equal(transaction.id);
 				done();
 			});
 		});
@@ -218,7 +219,8 @@ describe('POST /peer/transactions', function () {
 
 			postVote(transaction, function (err, res) {
 				node.expect(res.body).to.have.property('success').to.be.ok;
-				node.expect(res.body).to.have.property('transactionId').to.equal(transaction.id);
+				node.expect(res.body).to.have.property('transactionIds');
+				node.expect(res.body.transactionIds[0]).to.equal(transaction.id);
 				done();
 			});
 		});
@@ -232,7 +234,8 @@ describe('POST /peer/transactions', function () {
 
 			postVote(transaction, function (err, res) {
 				node.expect(res.body).to.have.property('success').to.be.ok;
-				node.expect(res.body).to.have.property('transactionId').to.equal(transaction.id);
+				node.expect(res.body).to.have.property('transactionIds');
+				node.expect(res.body.transactionIds[0]).to.equal(transaction.id);
 				done();
 			});
 		});
@@ -260,7 +263,7 @@ describe('POST /peer/transactions', function () {
 				action: '+',
 				voteCb: function (err, res) {
 					node.expect(res.body).to.have.property('success').to.be.ok;
-					node.expect(res.body).to.have.property('transactionId').that.is.a('string');
+					node.expect(res.body).to.have.property('transactionIds');
 				}
 			}, done);
 		});
@@ -287,7 +290,7 @@ describe('POST /peer/transactions', function () {
 			action: '-',
 			voteCb: function (err, res) {
 				node.expect(res.body).to.have.property('success').to.be.ok;
-				node.expect(res.body).to.have.property('transactionId').that.is.a('string');
+				node.expect(res.body).to.have.property('transactionIds');
 			}
 		}, done);
 	});
@@ -322,7 +325,8 @@ describe('POST /peer/transactions after registering a new delegate', function ()
 
 		postVote(transaction, function (err, res) {
 			node.expect(res.body).to.have.property('success').to.be.ok;
-			node.expect(res.body).to.have.property('transactionId').to.equal(transaction.id);
+			node.expect(res.body).to.have.property('transactionIds');
+			node.expect(res.body.transactionIds[0]).to.equal(transaction.id);
 			node.onNewBlock(function (err) {
 				return done(err);
 			});
@@ -368,7 +372,8 @@ describe('POST /peer/transactions after registering a new delegate', function ()
 
 		postVote(transaction, function (err, res) {
 			node.expect(res.body).to.have.property('success').to.be.ok;
-			node.expect(res.body).to.have.property('transactionId').to.equal(transaction.id);
+			node.expect(res.body).to.have.property('transactionIds');
+			node.expect(res.body.transactionIds[0]).to.equal(transaction.id);
 			done();
 		});
 	});

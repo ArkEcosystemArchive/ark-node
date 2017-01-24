@@ -32,7 +32,7 @@ describe('POST /peer/transactions', function () {
 		it('using undefined transaction', function (done) {
 			postTransaction(undefined, function (err, res) {
 				node.expect(res.body).to.have.property('success').to.be.not.ok;
-				node.expect(res.body).to.have.property('error').to.equal("API error: id is not defined");
+				node.expect(res.body).to.have.property('error').to.equal("API error: Cannot read property 'id' of null");
 				done();
 			});
 		});
@@ -45,7 +45,7 @@ describe('POST /peer/transactions', function () {
 
 			postTransaction(transaction, function (err, res) {
 				node.expect(res.body).to.have.property('success').to.be.not.ok;
-				node.expect(res.body).to.have.property('error').to.equal("API error: id is not defined");
+				node.expect(res.body).to.have.property('message').to.equal("Invalid transaction body detected");
 				done();
 			});
 		});
@@ -111,7 +111,8 @@ describe('POST /peer/transactions', function () {
 
 				postTransaction(transaction, function (err, res) {
 					node.expect(res.body).to.have.property('success').to.be.ok;
-					node.expect(res.body).to.have.property('transactionId').to.equal(transaction.id);
+					node.expect(res.body).to.have.property('transactionIds');
+					node.expect(res.body.transactionIds[0]).to.equal(transaction.id);
 					done();
 				});
 			});

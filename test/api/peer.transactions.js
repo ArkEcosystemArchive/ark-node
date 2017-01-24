@@ -22,7 +22,8 @@ describe('GET /peer/transactions', function () {
 		console.log(transaction);
 		postTransaction(transaction, function (err, res) {
 			node.expect(res.body).to.have.property('success').to.be.ok;
-			node.expect(res.body).to.have.property('transactionId').to.equal(transaction.id);
+			node.expect(res.body).to.have.property('transactionIds');
+			node.expect(res.body.transactionIds[0]).to.equal(transaction.id);
 			done();
 		});
 	});
@@ -67,7 +68,8 @@ describe('POST /peer/transactions', function () {
 
 		postTransaction(transaction, function (err, res) {
 			node.expect(res.body).to.have.property('success').to.be.ok;
-			node.expect(res.body).to.have.property('transactionId').to.equal(transaction.id);
+			node.expect(res.body).to.have.property('transactionIds');
+			node.expect(res.body.transactionIds[0]).to.equal(transaction.id);
 			done();
 		});
 	});
@@ -77,7 +79,8 @@ describe('POST /peer/transactions', function () {
 
 		postTransaction(transaction, function (err, res) {
 			node.expect(res.body).to.have.property('success').to.be.ok;
-			node.expect(res.body).to.have.property('transactionId').to.equal(transaction.id);
+			node.expect(res.body).to.have.property('transactionIds');
+			node.expect(res.body.transactionIds[0]).to.equal(transaction.id);
 
 			postTransaction(transaction, function (err, res) {
 				node.expect(res.body).to.have.property('success').to.be.not.ok;
@@ -91,7 +94,8 @@ describe('POST /peer/transactions', function () {
 
 		postTransaction(transaction, function (err, res) {
 			node.expect(res.body).to.have.property('success').to.be.ok;
-			node.expect(res.body).to.have.property('transactionId').to.equal(transaction.id);
+			node.expect(res.body).to.have.property('transactionIds');
+			node.expect(res.body.transactionIds[0]).to.equal(transaction.id);
 
 			node.onNewBlock(function (err) {
 				postTransaction(transaction, function (err, res) {
