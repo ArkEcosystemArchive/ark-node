@@ -338,6 +338,8 @@ __private.loadBlocksFromNetwork = function (cb) {
 
 	async.whilst(
 		function () {
+			// console.log(loaded);
+			// console.log(errorCount);
 			return !loaded && (errorCount < 5) && (peers.length > errorCount+1);
 		},
 		function (next) {
@@ -375,14 +377,18 @@ __private.loadBlocksFromNetwork = function (cb) {
 							errorCount += 1;
 							return setImmediate(seriesCb, 'Unable to load blocks from ' + peer.string);
 						}
-						loaded = (lastValidBlock.height == modules.blocks.getLastBlock().height) || (lastValidBlock.id == __private.lastBlock.id);
+						// console.log(lastValidBlock);
+						// console.log(modules.blocks.getLastBlock());
+						// console.log(lastBlock);
+						// console.log(peer);
+						loaded = !peer.height || (modules.blocks.getLastBlock().height >= peer.height);
 						__private.lastBlock = lastValidBlock;
 						lastValidBlock = null;
 						return setImmediate(seriesCb);
 					});
 				}
 			], function (err, res) {
-				return setImmediate(next, err, res);
+				next();
 			});
 		},
 		function (err) {
