@@ -747,11 +747,30 @@ Loader.prototype.onPeersReady = function () {
 					if(modules.delegates.isActiveDelegate()){
 						distance = 4;
 					}
-					//If we are far from observed network height, rebuild
+					//If we are far behind from observed network height, rebuild
 					if(__private.network.height - modules.blocks.getLastBlock().height > distance){
-						library.logger.info('Node too far from network height, rebuild triggered', {networkHeight: __private.network.height, nodeHeight: modules.blocks.getLastBlock().height});
+						library.logger.info('Node too behind from network height, rebuild triggered', {networkHeight: __private.network.height, nodeHeight: modules.blocks.getLastBlock().height});
 						library.logger.info('2. Removing several blocks to restart synchronisation...');
 						var blocksToRemove=10;
+						modules.blocks.removeSomeBlocks(blocksToRemove, function(err, removedBlocks){
+							library.logger.info("2. Removing several blocks to restart synchronisation... Finished");
+							library.logger.info("3. Downloading blocks from network...");
+							// Update blockchain from network
+							__private.syncFromNetwork(function(err){
+								if(err){
+									library.logger.error("Could not download all blocks from network", err);
+								}
+								library.logger.info("3. Downloading blocks from network... Finished");
+								library.logger.info('# Synchronising with network... Finished');
+								setTimeout(nextLoadBlock, 10000);
+							});
+						});
+					}
+					else //If we are far front from observed (majority) network height, rebuild harder
+					if(modules.blocks.getLastBlock().height - __private.network.height > 1){
+						library.logger.info('Node too front from network majority height, rebuild triggered', {networkHeight: __private.network.height, nodeHeight: modules.blocks.getLastBlock().height});
+						library.logger.info('2. Removing several blocks to restart synchronisation...');
+						var blocksToRemove=100;
 						modules.blocks.removeSomeBlocks(blocksToRemove, function(err, removedBlocks){
 							library.logger.info("2. Removing several blocks to restart synchronisation... Finished");
 							library.logger.info("3. Downloading blocks from network...");
