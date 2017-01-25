@@ -789,8 +789,6 @@ Loader.prototype.onPeersReady = function () {
 					}
 					else {
 						library.logger.info('Node in sync with network, likely some active delegates are missing blocks, rebuild NOT triggered', {networkHeight: __private.network.height, nodeHeight: modules.blocks.getLastBlock().height});
-						// fake receiving a block that were supposed to be forged
-						modules.blocks.lastReceipt(new Date());
 						__private.syncFromNetwork(function (err) {
 							if (err) {
 								library.logger.warn('Failed to sync from network', err);
@@ -905,7 +903,8 @@ shared.sync = function (req, cb) {
 	return setImmediate(cb, null, {
 		syncing: self.syncing(),
 		blocks: __private.blocksToSync,
-		height: modules.blocks.getLastBlock().height
+		height: modules.blocks.getLastBlock().height,
+		id: modules.blocks.getLastBlock().id
 	});
 };
 

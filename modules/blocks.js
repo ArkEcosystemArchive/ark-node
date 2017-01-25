@@ -475,8 +475,20 @@ Blocks.prototype.lastReceipt = function (lastReceipt) {
 	else {
 		var timeNow = new Date().getTime();
 		__private.lastReceipt.secondsAgo = Math.floor((timeNow -  __private.lastReceipt.getTime()) / 1000);
-		__private.lastReceipt.stale = (modules.delegates.isActiveDelegate() && __private.lastReceipt.secondsAgo > 8) || __private.lastReceipt.secondsAgo > 60;
-		__private.lastReceipt.rebuild = (modules.delegates.isActiveDelegate() && __private.lastReceipt.secondsAgo > 60) || __private.lastReceipt.secondsAgo > 120;
+		if(modules.delegates.isActiveDelegate()){
+			__private.lastReceipt.stale = __private.lastReceipt.secondsAgo > 8;
+			__private.lastReceipt.rebuild = __private.lastReceipt.secondsAgo > 60;
+		}
+
+		else if(modules.delegates.isForging()){
+			__private.lastReceipt.stale = __private.lastReceipt.secondsAgo > 30;
+			__private.lastReceipt.rebuild = __private.lastReceipt.secondsAgo > 100;
+		}
+
+		else {
+			__private.lastReceipt.stale = __private.lastReceipt.secondsAgo > 60;
+			__private.lastReceipt.rebuild = __private.lastReceipt.secondsAgo > 200;
+		}
 	}
 	return __private.lastReceipt;
 };
