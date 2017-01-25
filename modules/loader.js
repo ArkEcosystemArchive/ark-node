@@ -355,8 +355,8 @@ __private.loadBlocksFromNetwork = function (cb) {
 					__private.blocksToSync = peer.height - lastBlock.height;
 					library.logger.info('Looking for common block with: ' + peer.string);
 					modules.blocks.getCommonBlock(peer, lastBlock.height, function (err, commonBlock) {
-						console.log(err);
-						console.log(commonBlock);
+						//console.log(err);
+						//console.log(commonBlock);
 						if (err) {
 							errorCount += 1;
 							return setImmediate(seriesCb, err);
