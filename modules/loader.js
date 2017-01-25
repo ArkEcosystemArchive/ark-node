@@ -694,7 +694,7 @@ Loader.prototype.onPeersReady = function () {
 		}
 
 		// Triggers a network poll and then comparing to the node state decide if a rebuild should be done.
-		self.getNetwork(true,function(network){
+		self.getNetwork(true,function(err, network){
 			// If node is an active delegate we should not be too far from network height, otherwise node might fork for missing consensus.
 			var distance = modules.delegates.isActiveDelegate() ? 5 : 60;
 
@@ -740,13 +740,15 @@ Loader.prototype.onPeersReady = function () {
 				library.logger.info('# Synchronising with network...');
 				library.logger.info('Looks like the node has not received a valid block for too long, assessing if a rebuild should be done...');
 				library.logger.info('1. polling network...');
-				self.getNetwork(true,function(network){
+				self.getNetwork(true,function(err, network){
 					library.logger.info('1. polling network... Finished');
 
-					var distance = modules.delegates.isForging() ? 8 : 50;
+					var distance = modules.delegates.isForging() ? 20 : 50;
 					if(modules.delegates.isActiveDelegate()){
-						distance = 4;
+						distance = 10;
 					}
+					//The more we wait without block, the more likely we will rebuild
+					distance = distance - (lastReceipt.secondsAgo/20);
 					//If we are far behind from observed network height, rebuild
 					if(__private.network.height - modules.blocks.getLastBlock().height > distance){
 						library.logger.info('Node too behind from network height, rebuild triggered', {networkHeight: __private.network.height, nodeHeight: modules.blocks.getLastBlock().height});
@@ -770,7 +772,7 @@ Loader.prototype.onPeersReady = function () {
 					if(modules.blocks.getLastBlock().height - __private.network.height > 1){
 						library.logger.info('Node too front from network majority height, rebuild triggered', {networkHeight: __private.network.height, nodeHeight: modules.blocks.getLastBlock().height});
 						library.logger.info('2. Removing several blocks to restart synchronisation...');
-						var blocksToRemove=100;
+						var blocksToRemove=(modules.blocks.getLastBlock().height - __private.network.height)*10;
 						modules.blocks.removeSomeBlocks(blocksToRemove, function(err, removedBlocks){
 							library.logger.info("2. Removing several blocks to restart synchronisation... Finished");
 							library.logger.info("3. Downloading blocks from network...");
@@ -787,6 +789,8 @@ Loader.prototype.onPeersReady = function () {
 					}
 					else {
 						library.logger.info('Node in sync with network, likely some active delegates are missing blocks, rebuild NOT triggered', {networkHeight: __private.network.height, nodeHeight: modules.blocks.getLastBlock().height});
+						// fake receiving a block that were supposed to be forged
+						modules.blocks.lastReceipt(new Date());
 						__private.syncFromNetwork(function (err) {
 							if (err) {
 								library.logger.warn('Failed to sync from network', err);

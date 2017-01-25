@@ -19,8 +19,6 @@ function Signatures (cb, scope) {
 	library = scope;
 	self = this;
 
-	__private.attachApi();
-
 	var Signature = require('../logic/signature.js');
 	__private.assetTypes[transactionTypes.SIGNATURE] = library.logic.transaction.attachAssetType(
 		transactionTypes.SIGNATURE, new Signature()
@@ -64,6 +62,11 @@ Signatures.prototype.onBind = function (scope) {
 	__private.assetTypes[transactionTypes.SIGNATURE].bind({
 		modules: modules, library: library
 	});
+};
+
+
+Signatures.prototype.onBlockchainReady = function () {
+	__private.attachApi();
 };
 
 // Shared

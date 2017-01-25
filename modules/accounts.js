@@ -22,8 +22,6 @@ function Accounts (cb, scope) {
 	library = scope;
 	self = this;
 
-	__private.attachApi();
-
 	var Vote = require('../logic/vote.js');
 	__private.assetTypes[transactionTypes.VOTE] = library.logic.transaction.attachAssetType(
 		transactionTypes.VOTE, new Vote()
@@ -170,6 +168,12 @@ Accounts.prototype.onBind = function (scope) {
 		modules: modules, library: library
 	});
 };
+
+Accounts.prototype.onBlockchainReady = function () {
+	__private.attachApi();
+};
+
+
 
 shared.getBalance = function (req, cb) {
 	library.schema.validate(req.body, schema.getBalance, function (err) {

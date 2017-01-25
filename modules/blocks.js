@@ -80,8 +80,6 @@ function Blocks (cb, scope) {
 	genesisblock = library.genesisblock;
 	self = this;
 
-	__private.attachApi();
-
 	__private.saveGenesisBlock(function (err) {
 		return setImmediate(cb, err, self);
 	});
@@ -1494,6 +1492,11 @@ Blocks.prototype.onBind = function (scope) {
 	modules = scope;
 
 	__private.loaded = true;
+};
+
+
+Blocks.prototype.onBlockchainReady = function () {
+	__private.attachApi();
 };
 
 Blocks.prototype.cleanup = function (cb) {

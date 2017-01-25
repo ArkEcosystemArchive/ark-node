@@ -26,8 +26,6 @@ function Transactions (cb, scope) {
 	genesisblock = library.genesisblock;
 	self = this;
 
-	__private.attachApi();
-
 	__private.transactionPool = new TransactionPool(library);
 
 	var Transfer = require('../logic/transfer.js');
@@ -339,6 +337,11 @@ Transactions.prototype.onBind = function (scope) {
 	__private.assetTypes[transactionTypes.SEND].bind({
 		modules: modules, library: library
 	});
+};
+
+
+Transactions.prototype.onBlockchainReady = function () {
+	__private.attachApi();
 };
 
 Transactions.prototype.onPeersReady = function () {

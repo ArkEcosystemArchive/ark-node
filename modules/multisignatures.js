@@ -23,8 +23,7 @@ function Multisignatures (cb, scope) {
 	genesisblock = library.genesisblock;
 	self = this;
 
-	__private.attachApi();
-	
+
 	__private.assetTypes[transactionTypes.MULTI] = library.logic.transaction.attachAssetType(
 		transactionTypes.MULTI, new Multisignature()
 	);
@@ -69,6 +68,11 @@ Multisignatures.prototype.onBind = function (scope) {
 	__private.assetTypes[transactionTypes.MULTI].bind({
 		modules: modules, library: library
 	});
+};
+
+
+Multisignatures.prototype.onBlockchainReady = function () {
+	__private.attachApi();
 };
 
 shared.getAccounts = function (req, cb) {

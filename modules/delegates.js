@@ -38,7 +38,6 @@ function Delegates (cb, scope) {
 	library = scope;
 	self = this;
 
-	__private.attachApi();
 
 	var Delegate = require('../logic/delegate.js');
 	__private.assetTypes[transactionTypes.DELEGATE] = library.logic.transaction.attachAssetType(
@@ -640,7 +639,7 @@ Delegates.prototype.onBind = function (scope) {
 
 Delegates.prototype.onBlockchainReady = function () {
 	__private.loaded = true;
-
+	__private.attachApi();
 	__private.loadMyDelegates(function nextForge (err) {
 		if (err) {
 			library.logger.error('Failed to load delegates', err);
