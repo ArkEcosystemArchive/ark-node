@@ -338,8 +338,8 @@ __private.loadBlocksFromNetwork = function (cb) {
 
 	async.whilst(
 		function () {
-			// console.log(loaded);
-			// console.log(errorCount);
+			 //console.log(loaded);
+			 //console.log(errorCount);
 			return !loaded && (errorCount < 5) && (peers.length > errorCount+1);
 		},
 		function (next) {
@@ -355,9 +355,11 @@ __private.loadBlocksFromNetwork = function (cb) {
 					__private.blocksToSync = peer.height - lastBlock.height;
 					library.logger.info('Looking for common block with: ' + peer.string);
 					modules.blocks.getCommonBlock(peer, lastBlock.height, function (err, commonBlock) {
+						console.log(err);
+						console.log(commonBlock);
 						if (err) {
-							return setImmediate(seriesCb, err);
 							errorCount += 1;
+							return setImmediate(seriesCb, err);
 						}
 						else if (!commonBlock) {
 							errorCount += 1;
@@ -380,7 +382,8 @@ __private.loadBlocksFromNetwork = function (cb) {
 						// console.log(lastValidBlock);
 						// console.log(modules.blocks.getLastBlock());
 						// console.log(lastBlock);
-						// console.log(peer);
+						//console.log(modules.blocks.getLastBlock().height);
+						//console.log(peer);
 						loaded = !peer.height || (modules.blocks.getLastBlock().height >= peer.height);
 						__private.lastBlock = lastValidBlock;
 						lastValidBlock = null;
