@@ -31,8 +31,7 @@ __private.syncFromNetworkIntervalId = null;
 function Loader (cb, scope) {
 	library = scope;
 	self = this;
-
-	__private.attachApi();
+	
 	__private.genesisBlock = __private.lastBlock = library.genesisblock;
 
 	setImmediate(cb, null, self);
@@ -212,8 +211,7 @@ __private.loadBlockChain = function () {
 										});
 									}
 								}
-								library.bus.message('blockchainReady');
-								library.logger.info('Blockchain ready');
+								library.bus.message('databaseLoaded');
 							}
 						);
 					}
@@ -309,8 +307,7 @@ __private.loadBlockChain = function () {
 					return reload(count, err || 'Failed to load last block');
 				} else {
 					__private.lastBlock = block;
-					library.bus.message('blockchainReady');
-					library.logger.info('Blockchain ready');
+					library.bus.message('databaseLoaded');
 				}
 			});
 		});
@@ -323,6 +320,9 @@ __private.loadBlockChain = function () {
 __private.loadBlocksFromNetwork = function (cb) {
 	var errorCount = 0;
 	var loaded = false;
+
+
+	console.log(__private.network);
 
 	var network = __private.network;
 
@@ -399,7 +399,7 @@ __private.loadBlocksFromNetwork = function (cb) {
 				library.logger.error('Failed to load blocks from network', err);
 				return setImmediate(cb, err);
 			} else {
-				return setImmediate(cb);
+				return setImmediate(cb, null, __private.lastBlock);
 			}
 		}
 	);
@@ -855,12 +855,27 @@ Loader.prototype.onPeersReady = function () {
 // started up
 Loader.prototype.onBind = function (scope) {
 	modules = scope;
-	__private.loadBlockChain();
 };
 
+Loader.prototype.onLoadDatabase = function(){
+	__private.loadBlockChain();
+}
+
+
+Loader.prototype.onAttachPublicApi = function () {
+ 	__private.attachApi();
+};
+
+
+
 // Blockchain loaded from database and ready to accept blocks from network
-Loader.prototype.onBlockchainReady = function () {
-	__private.blockchainReady = true;
+Loader.prototype.onDownloadBlocks = function () {
+	__private.loadBlocksFromNetwork(function(err, lastBlock){
+		if(err){
+
+		}
+		library.bus.message("blocksDownloaded", lastBlock);
+	});
 };
 
 // Shutdown asked.

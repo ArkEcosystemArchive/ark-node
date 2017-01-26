@@ -20,8 +20,6 @@ var transactionTypes = require('../helpers/transactionTypes.js');
 var modules, library, self, __private = {}, shared = {};
 
 __private.assetTypes = {};
-// Blockchain is up to date
-__private.loaded = false;
 // Server is in forging mode, does not mean it has been configured properly.
 __private.forging = false;
 // Is the node currently forging for an active delegate at the current internal state of blockchain
@@ -52,7 +50,7 @@ __private.attachApi = function () {
 	var router = new Router();
 
 	router.use(function (req, res, next) {
-		if (modules && __private.loaded) { return next(); }
+		if (modules) { return next(); }
 		res.status(500).send({success: false, error: 'Blockchain is loading'});
 	});
 
@@ -242,35 +240,29 @@ __private.getBlockSlotData = function (slot, height, cb) {
 };
 
 __private.forge = function (cb) {
+	var err;
 	if (!Object.keys(__private.keypairs).length) {
-		library.logger.debug('No delegates enabled');
-		return setImmediate(cb);
+		err = 'No delegates enabled';
+		return setImmediate(cb, err);
 	}
 
 	if (!__private.forging) {
-		library.logger.debug('Forging disabled due to timeout');
-		return setImmediate(cb);
-	}
-
-	// When client is not loaded, is syncing or round is ticking
-	// Do not try to forge new blocks as client is not ready
-	if (!__private.loaded || modules.loader.syncing() || !modules.rounds.loaded() || modules.rounds.ticking()) {
-		library.logger.debug('Client not ready to forge');
-		return setImmediate(cb);
+		err = 'Forging disabled';
+		return setImmediate(cb, err);
 	}
 
 	var currentSlot = slots.getSlotNumber();
 	// If we are supposed to forge now, be sure we got the very last block
 	var lastBlock = modules.blocks.getLastBlock();
 	if (currentSlot === slots.getSlotNumber(lastBlock.timestamp)) {
-		library.logger.debug('Last block within same delegate slot');
-		return setImmediate(cb);
+		err = 'Last block within same delegate slot';
+		return setImmediate(cb, err);
 	}
 
 	__private.getBlockSlotData(currentSlot, lastBlock.height + 1, function (err, currentBlockData) {
 		if (err || currentBlockData === null) {
-			library.logger.debug('Skipping delegate slot');
-			return setImmediate(cb);
+			err = 'Skipping delegate slot';
+			return setImmediate(cb, err);
 		}
 
 
@@ -352,7 +344,7 @@ __private.forge = function (cb) {
 							"quorum:", quorum/(quorum+noquorum),
 							"last block id:", lastBlock.id
 						].join(' '));
-						self.fork(lastBlock, 6);
+						library.bus.message("fork",lastBlock, 6);
 						return setImmediate(cb, "Fork 6 - Not enough quorum to forge next block: " + quorum/(quorum+noquorum));
 					}
 
@@ -361,9 +353,8 @@ __private.forge = function (cb) {
 							"quorum:", quorum/(quorum+noquorum),
 							"last block id:", lastBlock.id
 						].join(' '));
-						modules.blocks.generateBlock(currentBlockData.keypair, currentBlockData.time, function (err) {
+						modules.blocks.generateBlock(currentBlockData.keypair, currentBlockData.time, function (err, b) {
 							if(!err){
-								var b=modules.blocks.getLastBlock();
 								library.logger.info([
 									'Forged new block id:', b.id,
 									'height:', b.height,
@@ -372,6 +363,7 @@ __private.forge = function (cb) {
 									'reward:' + b.reward,
 									'transactions:' + b.numberOfTransactions
 								].join(' '));
+								library.bus.message('blockForged', b);
 								modules.blocks.lastReceipt(new Date());
 							}
 							else{
@@ -494,7 +486,9 @@ __private.loadMyDelegates = function (cb) {
 			}
 			return setImmediate(cb);
 		});
-	}, cb);
+	}, function(err){
+		return setImmediate(cb, err, __private.keypairs);
+	});
 };
 
 
@@ -589,25 +583,6 @@ Delegates.prototype.checkUnconfirmedDelegates = function (publicKey, votes, cb) 
 	return __private.checkDelegates(publicKey, votes, 'unconfirmed', cb);
 };
 
-Delegates.prototype.fork = function (block, cause) {
-	library.logger.info('Fork', {
-		delegate: block.generatorPublicKey,
-		block: { id: block.id, timestamp: block.timestamp, height: block.height, previousBlock: block.previousBlock },
-		cause: cause
-	});
-
-	//self.disableForging('fork');
-
-	library.db.none(sql.insertFork, {
-		delegatePublicKey: block.generatorPublicKey,
-		blockTimestamp: block.timestamp,
-		blockId: block.id,
-		blockHeight: block.height,
-		previousBlock: block.previousBlock,
-		cause: cause
-	});
-};
-
 Delegates.prototype.validateBlockSlot = function (block, cb) {
 	self.generateDelegateList(block.height, function (err, activeDelegates) {
 		if (err) {
@@ -637,28 +612,60 @@ Delegates.prototype.onBind = function (scope) {
 	});
 };
 
-Delegates.prototype.onBlockchainReady = function () {
-	__private.loaded = true;
-	__private.attachApi();
-	__private.loadMyDelegates(function nextForge (err) {
-		if (err) {
-			library.logger.error('Failed to load delegates', err);
-		}
 
-		try {
-			__private.toggleForgingOnReceipt();
-		} catch(error){
-			library.logger.error('Failed to toggle Forging On Receipt', error);
+Delegates.prototype.onLoadDelegates = function () {
+	__private.loadMyDelegates(function(err, keypairs){
+		if(err){
 		}
-
-		async.series([
-			__private.forge,
-			modules.transactions.fillPool
-		], function (err) {
-			return setTimeout(nextForge, 1000);
-		});
+		library.bus.message('delegatesLoaded', keypairs);
 	});
 };
+
+Delegates.prototype.onStartForging = function () {
+	__private.forging = true;
+	function forgeLoop(){
+		__private.forge(function(debug){
+			if(debug && Math.random()<1){
+				library.logger.debug(debug);
+			}
+			if(__private.forging){
+				return setTimeout(forgeLoop, 1000);
+			}
+		});
+	};
+	forgeLoop();
+};
+
+Delegates.prototype.onStopForging = function () {
+	__private.forging=false;
+};
+
+
+// Delegates.prototype.onBlockchainReady = function () {
+// 	__private.loaded = true;
+// 	__private.attachApi();
+// 	__private.loadMyDelegates(function nextForge (err) {
+// 		if (err) {
+// 			library.logger.error('Failed to load delegates', err);
+// 		}
+//
+// 		try {
+// 			__private.toggleForgingOnReceipt();
+// 		} catch(error){
+// 			library.logger.error('Failed to toggle Forging On Receipt', error);
+// 		}
+//
+// 		async.series([
+// 			__private.forge,
+// 			modules.transactions.fillPool
+// 		], function (debug) {
+// 			if(debug && Math.random()<0.1){
+// 				library.logger.debug(debug);
+// 			}
+// 			return setTimeout(nextForge, 1000);
+// 		});
+// 	});
+// };
 //
 // Delegates.prototype.onBlockchainReady = function () {
 // 	__private.loaded = true;
@@ -682,7 +689,6 @@ Delegates.prototype.onBlockchainReady = function () {
 
 // To trigger a blockchain update from network
 Delegates.prototype.cleanup = function (cb) {
-	__private.loaded = false;
 	return setImmediate(cb);
 };
 
@@ -726,7 +732,7 @@ __private.toggleForgingOnReceipt = function () {
 	if (lastReceipt) {
 		var timeOut = Number(constants.forgingTimeOut);
 
-		library.logger.debug('Last block received: ' + lastReceipt.secondsAgo + ' seconds ago');
+		//library.logger.debug('Last block received: ' + lastReceipt.secondsAgo + ' seconds ago');
 
 		// if (lastReceipt.secondsAgo > timeOut) {
 		// 	return self.disableForging('timeout');

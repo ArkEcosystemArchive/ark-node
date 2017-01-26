@@ -76,14 +76,9 @@ Block.prototype.create = function (data) {
 		generatorPublicKey: data.keypair.publicKey.toString('hex'),
 		transactions: blockTransactions
 	};
-
-	try {
-		block.blockSignature = this.sign(block, data.keypair);
-
-		block = this.objectNormalize(block);
-	} catch (e) {
-		throw e;
-	}
+	block.blockSignature = this.sign(block, data.keypair);
+	block = this.objectNormalize(block);
+	block.id = this.getId(block);
 
 	return block;
 };

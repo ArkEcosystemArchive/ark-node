@@ -79,6 +79,7 @@ if (program.snapshot) {
 var config = {
 	db: appConfig.db,
 	modules: {
+		nodeManager: './modules/nodeManager.js',
 		server: './modules/server.js',
 		accounts: './modules/accounts.js',
 		transactions: './modules/transactions.js',
@@ -406,6 +407,7 @@ d.run(function () {
 
 		ready: ['modules', 'bus', function (scope, cb) {
 			scope.bus.message('bind', scope.modules);
+			scope.modules.nodeManager.startApp();
 			cb();
 		}]
 	}, function (err, scope) {

@@ -19,10 +19,6 @@ var transactionTypes = require('../helpers/transactionTypes.js');
 // Private fields
 var modules, library, self, __private = {}, shared = {};
 
-//Block on the top of the chain
-//TODO: encapsulate all changes into a blocksequence
-__private.lastBlock = {};
-
 //Last time received a block
 __private.lastReceipt = null;
 
@@ -378,7 +374,7 @@ __private.getIdSequence = function (height, cb) {
 		}
 
 		// multithread will eat you
-		var lastBlock = __private.lastBlock;
+		var lastBlock = modules.nodeManager.getLastBlock();
 
 		if (lastBlock && !_.includes(rows, lastBlock.id)) {
 			rows.unshift({
@@ -493,6 +489,21 @@ Blocks.prototype.lastReceipt = function (lastReceipt) {
 	return __private.lastReceipt;
 };
 
+Blocks.prototype.getTransactionsFromIds = function(blockid, ids, cb){
+	__private.getById(blockid, function (err, block) {
+		if (!block || err) {
+			return setImmediate(cb, 'Block not found');
+		}
+		var transactions=[];
+		for(var i=0;i<block.transactions.length;i++){
+			if(block.transactions[i].id in ids){
+				transactions.push[block.transactions[i]];
+			}
+		}
+		return setImmediate(cb, null, transactions);
+	});
+}
+
 Blocks.prototype.getCommonBlock = function (peer, height, cb) {
 	async.waterfall([
 		function (waterCb) {
@@ -605,6 +616,7 @@ Blocks.prototype.loadBlocksOffset = function (limit, offset, verify, cb) {
 
 	library.logger.debug('Loading blocks offset', {limit: limit, offset: offset, verify: verify});
 	library.dbSequence.add(function (cb) {
+		var lastBlock;
 		library.db.query(sql.loadBlocksOffset, params).then(function (rows) {
 			var blocks = __private.readDbRows(rows);
 
@@ -629,9 +641,9 @@ Blocks.prototype.loadBlocksOffset = function (limit, offset, verify, cb) {
 				} else {
 					__private.applyBlock(block, false, cb, false);
 				}
-				__private.lastBlock = block;
+				lastBlock = block;
 			}, function (err) {
-				return setImmediate(cb, err, __private.lastBlock);
+				return setImmediate(cb, err, lastBlock);
 			});
 		}).catch(function (err) {
 			library.logger.error(err.stack);
@@ -640,8 +652,8 @@ Blocks.prototype.loadBlocksOffset = function (limit, offset, verify, cb) {
 	}, cb);
 };
 
-Blocks.prototype.removeSomeBlocks = function(numbers,cb){
-	if (__private.lastBlock.height === 1) {
+Blocks.prototype.removeSomeBlocks = function(numbers, cb){
+	if (modules.nodeManager.getLastBlock().height === 1) {
 		return setImmediate(cb);
 	}
 
@@ -669,17 +681,15 @@ Blocks.prototype.removeSomeBlocks = function(numbers,cb){
 				async.whilst(
 					function () {
 						//if numbers = 50, on average remove 50 Blocks, roughly 1 round
-						return (Math.random() > 1/numbers);
+						return (Math.random() > 1/(numbers+1));
 					},
 					function (next) {
-						__private.popLastBlock(__private.lastBlock, function (err, newLastBlock) {
+						var block = modules.nodeManager.getLastBlock();
+						__private.popLastBlock(block, function (err, newLastBlock) {
 			   			if (err) {
-			   				library.logger.error('Error deleting last block', __private.lastBlock);
+			   				library.logger.error('Error deleting last block', block);
 								library.logger.error('Error deleting last block', err);
 			   			}
-			   			else {
-								__private.lastBlock = newLastBlock;
-							}
 			   			next(err);
 			   		});
 					},
@@ -689,7 +699,7 @@ Blocks.prototype.removeSomeBlocks = function(numbers,cb){
 				);
 	   	},
 			forwardSwap: function (seriesCb) {
-			 	modules.rounds.directionSwap('forward', __private.lastBlock, seriesCb);
+			 	modules.rounds.directionSwap('forward', modules.nodeManager.getLastBlock(), seriesCb);
 			}
 		}, function (err) {
 			// Reset the last receipt
@@ -704,7 +714,7 @@ Blocks.prototype.removeSomeBlocks = function(numbers,cb){
 
 
 Blocks.prototype.removeLastBlock = function(cb){
-	if (__private.lastBlock.height === 1) {
+	if (modules.nodeManager.getLastBlock().height === 1) {
 		return setImmediate(cb);
 	}
 	// one block after the other
@@ -726,19 +736,17 @@ Blocks.prototype.removeLastBlock = function(cb){
 				modules.rounds.directionSwap('backward', null, seriesCb);
 			},
 	   	popLastBlock: function (seriesCb) {
-				__private.popLastBlock(__private.lastBlock, function (err, newLastBlock) {
+				var block = modules.nodeManager.getLastBlock();
+				__private.popLastBlock(block, function (err, newLastBlock) {
 					if (err) {
-						library.logger.error('Error deleting last block', __private.lastBlock);
+						library.logger.error('Error deleting last block', block);
 						library.logger.error('Error deleting last block', err);
-					}
-					else{
-						__private.lastBlock = newLastBlock;
 					}
 					return setImmediate(cb, err);
 				});
 	   	},
 			forwardSwap: function (seriesCb) {
-			 	modules.rounds.directionSwap('forward', __private.lastBlock, seriesCb);
+			 	modules.rounds.directionSwap('forward', modules.nodeManager.getLastBlock(), seriesCb);
 			}
 		}, function (err) {
 			// Reset the last receipt
@@ -768,8 +776,6 @@ Blocks.prototype.loadLastBlock = function (cb) {
 
 				return 0;
 			});
-
-			__private.lastBlock = block;
 			return setImmediate(cb, null, block);
 		}).catch(function (err) {
 			library.logger.error(err.stack);
@@ -779,8 +785,7 @@ Blocks.prototype.loadLastBlock = function (cb) {
 };
 
 Blocks.prototype.getLastBlock = function () {
-	// multithread will eat you
-	var lastBlock = __private.lastBlock;
+	var lastBlock = modules.nodeManager.getLastBlock();
 
 	if (lastBlock) {
 		var epoch = constants.epochTime / 1000;
@@ -807,8 +812,7 @@ Blocks.prototype.verifyBlock = function (block, skipLastBlockCheck) {
 		}
 	}
 
-	//TODO: This does not work at all so far on multithread...
-	var lastBlock=__private.lastBlock;
+	var lastBlock=modules.nodeManager.getLastBlock();
 
 	// Removed because height has been added to block.getBytes
 	// if(!block.height){
@@ -820,7 +824,7 @@ Blocks.prototype.verifyBlock = function (block, skipLastBlockCheck) {
 		result.errors.push('Invalid previous block');
 	} else if (!skipLastBlockCheck && block.previousBlock !== lastBlock.id) {
 		// Fork: Same height but different previous block id.
-		modules.delegates.fork(block, 1);
+		library.bus.message("fork",block, 1);
 		result.errors.push(['Invalid previous block:', block.previousBlock, 'expected:', lastBlock.id].join(' '));
 	}
 
@@ -919,7 +923,7 @@ Blocks.prototype.verifyBlock = function (block, skipLastBlockCheck) {
 };
 
 // Apply the block, provided it has been verified.
-__private.applyBlock = function (block, broadcast, cb, saveBlock) {
+__private.applyBlock = function (block, cb) {
 
 	// Prevent shutdown during database writes.
 	__private.noShutdownRequired = true;
@@ -1025,32 +1029,20 @@ __private.applyBlock = function (block, broadcast, cb, saveBlock) {
 				return setImmediate(seriesCb, err);
 			});
 		},
-		// Optionally save the block to the database.
 		saveBlock: function (seriesCb) {
-			__private.lastBlock = block;
+			__private.saveBlock(block, function (err) {
+				if (err) {
+					library.logger.error('Failed to save block...');
+					library.logger.error('Block', block);
+					// TODO: Send a numbered signal to be caught by forever to trigger a rebuild.
+					return setImmediate(eachSeriesCb, err);
+				}
 
-			if (saveBlock) {
-				// DATABASE: write
-				__private.saveBlock(block, function (err) {
-					if (err) {
-						library.logger.error('Failed to save block...');
-						library.logger.error('Block', block);
-						// TODO: Send a numbered signal to be caught by forever to trigger a rebuild.
-						return setImmediate(eachSeriesCb, err);
-					}
-
-					library.logger.debug('Block applied correctly with ' + block.transactions.length + ' transactions');
-					library.bus.message('newBlock', block, broadcast);
-
-					// DATABASE write. Update delegates accounts
-					modules.rounds.tick(block, seriesCb);
-				});
-			} else {
-				library.bus.message('newBlock', block, broadcast);
+				library.logger.debug('Block applied correctly with ' + block.transactions.length + ' transactions');
 
 				// DATABASE write. Update delegates accounts
 				modules.rounds.tick(block, seriesCb);
-			}
+			});
 		},
 		// Push back unconfirmed transactions list (minus the one that were on the block if applied correctly).
 		// TODO: See undoUnconfirmedList discussion above.
@@ -1111,7 +1103,6 @@ __private.applyGenesisBlock = function (block, cb) {
 			library.logger.error(err);
 			return process.exit(0);
 		} else {
-			__private.lastBlock = block;
 			modules.rounds.tick(block, cb);
 		}
 	});
@@ -1121,11 +1112,9 @@ __private.applyGenesisBlock = function (block, cb) {
 // * Verify the block looks ok
 // * Verify the block is compatible with database state (DATABASE readonly)
 // * Apply the block to database if both verifications are ok
-Blocks.prototype.processBlock = function (block, broadcast, cb, saveBlock) {
+Blocks.prototype.processBlock = function (block, cb) {
 	if (__private.cleanup) {
 		return setImmediate(cb, 'Cleaning up');
-	} else if (!__private.loaded) {
-		return setImmediate(cb, 'Blockchain is loading');
 	}
 
 	// be sure to apply only one block after the other
@@ -1155,15 +1144,11 @@ Blocks.prototype.processBlock = function (block, broadcast, cb, saveBlock) {
 				return setImmediate(cb, ['Block', block.id, 'already exists'].join(' '));
 			}
 
-			// if blocks looks ok, broadcast early
-			//library.bus.message('newBlock', block, broadcast);
-
-
 			// Check if block was generated by the right active delagate. Otherwise, fork 3.
 			// DATABASE: Read only to mem_accounts to extract active delegate list
 			modules.delegates.validateBlockSlot(block, function (err) {
 				if (err) {
-					modules.delegates.fork(block, 3);
+					library.bus.message("fork",block, 3);
 					return setImmediate(cb, err);
 				}
 
@@ -1183,7 +1168,7 @@ Blocks.prototype.processBlock = function (block, broadcast, cb, saveBlock) {
 							// DATABASE: read only
 							library.db.query(sql.getTransactionId, { id: transaction.id }).then(function (rows) {
 								if (rows.length > 0) {
-									modules.delegates.fork(block, 2);
+									library.bus.message("fork",block, 2);
 									library.logger.error("error existing tx", block);
 									library.logger.error("error existing tx", rows);
 									return setImmediate(cb, ['Transaction', transaction.id, 'already exists'].join(' '));
@@ -1227,7 +1212,7 @@ Blocks.prototype.processBlock = function (block, broadcast, cb, saveBlock) {
 						// * Block and transactions have valid values (signatures, block slots, etc...)
 						// * The check against database state passed (for instance sender has enough ARK, votes are under 101, etc...)
 						// We thus update the database with the transactions values, save the block and tick it.
-						__private.applyBlock(block, broadcast, cb, saveBlock);
+						__private.applyBlock(block, cb);
 					}
 				});
 			});
@@ -1245,7 +1230,7 @@ Blocks.prototype.simpleDeleteAfterBlock = function (blockId, cb) {
 };
 
 Blocks.prototype.loadBlocksFromPeer = function (peer, cb) {
-	var lastValidBlock = __private.lastBlock;
+	var lastValidBlock = modules.nodeManager.getLastBlock();
 
 	peer = modules.peers.inspect(peer);
 	library.logger.info('Loading blocks from: ' + peer.string);
@@ -1281,7 +1266,7 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, cb) {
 				block.reward=parseInt(block.reward);
 				block.totalAmount=parseInt(block.totalAmount);
 				block.totalFee=parseInt(block.totalFee);
-				self.processBlock(block, false, function (err) {
+				self.processBlock(block, function (err) {
 					if (!err) {
 						self.lastReceipt(new Date());
 						lastValidBlock = block;
@@ -1295,7 +1280,7 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, cb) {
 						modules.peers.state(peer.ip, peer.port, 0, 3600);
 					}
 					return cb(err);
-				}, true);
+				});
 			}, function (err) {
 				// Nullify large array of blocks.
 				// Prevents memory leak during synchronisation.
@@ -1315,8 +1300,6 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, cb) {
 Blocks.prototype.deleteBlocksBefore = function (block, cb) {
 	var blocks = [];
 
-	//multithread will eat you
-	var lastBlock = __private.lastBlock;
 
 	async.whilst(
 		function () {
@@ -1324,15 +1307,13 @@ Blocks.prototype.deleteBlocksBefore = function (block, cb) {
 		},
 		function (next) {
 			blocks.unshift(lastBlock);
-			__private.popLastBlock(lastBlock, function (err, newLastBlock) {
+			__private.popLastBlock(modules.nodeManager.getLastBlock(), function (err, newLastBlock) {
 				if(err){
 					library.logger.error('error removing block', block);
 					library.logger.error('error removing block', err);
 				}
 
 				library.logger.debug('removing block', block);
-				__private.lastBlock = newLastBlock;
-				lastBlock = newLastBlock;
 				next(err);
 			});
 		},
@@ -1383,133 +1364,47 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 				keypair: keypair,
 				timestamp: timestamp,
 				//TODO: fireworks!
-				previousBlock: __private.lastBlock,
+				previousBlock: modules.nodeManager.getLastBlock(),
 				transactions: ready
 			});
 		} catch (e) {
 			library.logger.error(e.stack);
 			return setImmediate(cb, e);
 		}
-		self.processBlock(block, true, cb, true);
+
+		setImmediate(cb, null, block);
+		//self.processBlock(block, true, cb, true);
 	});
 };
+
+
 
 // Events
-Blocks.prototype.onReceiveBlock = function (block, peer) {
-	// When client is not loaded, is syncing or round is ticking
-	// Do not receive new blocks as client is not ready
-	if (!__private.loaded || modules.loader.syncing() || modules.rounds.ticking()) {
-		library.logger.debug('Client not ready to receive block', block.id);
-		return;
-	}
-
-	//we make sure we process one block at a time
-	library.sequence.add(function (cb) {
-		// __private.lastBlock can change with time: multithread will eat you!
-		var lastBlock = __private.lastBlock;
-
-		if (block.previousBlock === lastBlock.id && lastBlock.height + 1 === block.height) {
-			library.logger.info([
-				'Received new block id:', block.id,
-				'height:', block.height,
-				'round:',  modules.rounds.calc(block.height),
-				'slot:', slots.getSlotNumber(block.timestamp),
-				'reward:', block.reward,
-				'transactions', block.numberOfTransactions
-			].join(' '));
-
-			self.lastReceipt(new Date());
-			//library.logger.debug("Received block", block);
-			//RECEIVED full block?
-			if(block.numberOfTransactions==0 || block.numberOfTransactions==block.transactions.length){
-				library.logger.debug("processing full block",block.id);
-				self.processBlock(block, true, cb, true);
+Blocks.prototype.onProcessBlock = function (block) {
+	self.processBlock(block, function(err){
+		if (err) {
+			var id = (block ? block.id : 'null');
+			library.logger.error(err.toString());
+			if (block) {
+				library.logger.error('Block', block);
 			}
-			else{
-				//let's download the full block transactions
-				modules.transport.getFromPeer(peer, {
-					 method: 'GET',
-					 api: '/block?id=' + block.id
-				 }, function (err, res) {
-					 if (err || res.body.error) {
-						 library.logger.debug('Cannot get block', block.id);
-						 return setImmediate(cb, err);
-					 }
-					 library.logger.debug("calling "+peer.ip+":"+peer.port+"/peer/block?id=" + block.id);
-					 library.logger.debug("received transactions",res.body);
-
-					 if(res.body.transactions.length==block.numberOfTransactions){
-						 block.transactions=res.body.transactions
-						 self.processBlock(block, true, cb, true);
-					 }
-					 else{
-						 return setImmediate(cb, "Block transactions could not be downloaded.");
-					 }
-				 }
-			 );
-			}
-		} else if (block.previousBlock !== lastBlock.id && lastBlock.height + 1 === block.height) {
-			// Fork: consecutive height but different previous block id
-			modules.delegates.fork(block, 1);
-			// Uncle forging: decide winning chain
-			// -> winning chain is smallest block id (comparing with lexicographic order)
-			if(block.previousBlock < lastBlock.id){
-				// we should verify the block first:
-				// - forging delegate is legit
-				modules.delegates.validateBlockSlot(block, function (err) {
-					if (err) {
-						library.logger.warn("received block is not forged by a legit delegate", err);
-						return setImmediate(cb, err);
-					}
-					modules.loader.triggerBlockRemoval(1);
-					return  setImmediate(cb);
-				});
-			}
-			else {
-				// we are on winning chain, ignoring block
-				return setImmediate(cb);
-			}
-		} else if (block.previousBlock === lastBlock.previousBlock && block.height === lastBlock.height && block.id !== lastBlock.id) {
-			// Fork: Same height and previous block id, but different block id
-			library.logger.info("last block", lastBlock);
-			library.logger.info("received block", block);
-			modules.delegates.fork(block, 5);
-
-			// Orphan Block: Decide winning branch
-			// -> winning chain is smallest block id (comparing with lexicographic order)
-			if(block.id < lastBlock.id){
-				// we should verify the block first:
-				// - forging delegate is legit
-				modules.delegates.validateBlockSlot(block, function (err) {
-					if (err) {
-						library.logger.warn("received block is not forged by a legit delegate", err);
-						return setImmediate(cb, err);
-					}
-					modules.loader.triggerBlockRemoval(1);
-					return  setImmediate(cb);
-				});
-			}
-			else {
-				// we are on winning chain, ignoring block
-				return  setImmediate(cb);
-			}
-		} else {
-			//Dunno what this block coming from, ignoring block
-			return setImmediate(cb);
 		}
-	});
+		else{
+			library.bus.message("blockProcessed",block);
+		}
+	})
 };
+
 
 Blocks.prototype.onBind = function (scope) {
 	modules = scope;
-
-	__private.loaded = true;
 };
 
 
-Blocks.prototype.onBlockchainReady = function () {
-	__private.attachApi();
+Blocks.prototype.onAttachPublicApi = function () {
+ 	__private.attachApi();
 };
+
 
 Blocks.prototype.cleanup = function (cb) {
 	__private.cleanup = true;
@@ -1529,11 +1424,7 @@ Blocks.prototype.cleanup = function (cb) {
 };
 
 // Shared public API
-// TODO: should be removed on forging node
 shared.getBlock = function (req, cb) {
-	if (!__private.loaded) {
-		return setImmediate(cb, 'Blockchain is loading');
-	}
 
 	library.schema.validate(req.body, schema.getBlock, function (err) {
 		if (err) {
@@ -1552,9 +1443,6 @@ shared.getBlock = function (req, cb) {
 };
 
 shared.getBlocks = function (req, cb) {
-	if (!__private.loaded) {
-		return setImmediate(cb, 'Blockchain is loading');
-	}
 
 	library.schema.validate(req.body, schema.getBlocks, function (err) {
 		if (err) {
@@ -1573,82 +1461,55 @@ shared.getBlocks = function (req, cb) {
 };
 
 shared.getEpoch = function (req, cb) {
-	if (!__private.loaded) {
-		return setImmediate(cb, 'Blockchain is loading');
-	}
 
 	return setImmediate(cb, null, {epoch: constants.epochTime});
 };
 
 shared.getHeight = function (req, cb) {
-	if (!__private.loaded) {
-		return setImmediate(cb, 'Blockchain is loading');
-	}
+	var block=modules.nodeManager.getLastBlock();
 
-	return setImmediate(cb, null, {height: __private.lastBlock.height, id:__private.lastBlock.id});
+	return setImmediate(cb, null, {height: block.height, id:block.id});
 };
 
 shared.getFee = function (req, cb) {
-	if (!__private.loaded) {
-		return setImmediate(cb, 'Blockchain is loading');
-	}
 
 	return setImmediate(cb, null, {fee: library.logic.block.calculateFee()});
 };
 
 shared.getFees = function (req, cb) {
-	if (!__private.loaded) {
-		return setImmediate(cb, 'Blockchain is loading');
-	}
 
 	return setImmediate(cb, null, {fees: constants.fees});
 };
 
 shared.getNethash = function (req, cb) {
-	if (!__private.loaded) {
-		return setImmediate(cb, 'Blockchain is loading');
-	}
 
 	return setImmediate(cb, null, {nethash: library.config.nethash});
 };
 
 shared.getMilestone = function (req, cb) {
-	if (!__private.loaded) {
-		return setImmediate(cb, 'Blockchain is loading');
-	}
-
-	return setImmediate(cb, null, {milestone: __private.blockReward.calcMilestone(__private.lastBlock.height)});
+	return setImmediate(cb, null, {milestone: __private.blockReward.calcMilestone(modules.nodeManager.getLastBlock().height)});
 };
 
 shared.getReward = function (req, cb) {
-	if (!__private.loaded) {
-		return setImmediate(cb, 'Blockchain is loading');
-	}
-
-	return setImmediate(cb, null, {reward: __private.blockReward.calcReward(__private.lastBlock.height)});
+	return setImmediate(cb, null, {reward: __private.blockReward.calcReward(modules.nodeManager.getLastBlock().height)});
 };
 
 shared.getSupply = function (req, cb) {
-	if (!__private.loaded) {
-		return setImmediate(cb, 'Blockchain is loading');
-	}
-
-	return setImmediate(cb, null, {supply: __private.blockReward.calcSupply(__private.lastBlock.height)});
+	return setImmediate(cb, null, {supply: __private.blockReward.calcSupply(modules.nodeManager.getLastBlock().height)});
 };
 
 shared.getStatus = function (req, cb) {
-	if (!__private.loaded) {
-		return setImmediate(cb, 'Blockchain is loading');
-	}
+
+	var block = modules.nodeManager.getLastBlock();
 
 	return setImmediate(cb, null, {
 		epoch:     constants.epochTime,
-		height:    __private.lastBlock.height,
+		height:    block.height,
 		fee:       library.logic.block.calculateFee(),
-		milestone: __private.blockReward.calcMilestone(__private.lastBlock.height),
+		milestone: __private.blockReward.calcMilestone(block.height),
 		nethash:   library.config.nethash,
-		reward:    __private.blockReward.calcReward(__private.lastBlock.height),
-		supply:    __private.blockReward.calcSupply(__private.lastBlock.height)
+		reward:    __private.blockReward.calcReward(block.height),
+		supply:    __private.blockReward.calcSupply(block.height)
 	});
 };
 

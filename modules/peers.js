@@ -62,9 +62,6 @@ __private.attachApi = function () {
 
 __private.updatePeersList = function (cb) {
 	library.logger.debug('updating Peers List...');
-	if(new Date().getTime()-__private.lastPeersUpdate<60*1000){
-		return setImmediate(cb);
-	}
 	__private.lastPeersUpdate = new Date().getTime();
 	modules.transport.getFromRandomPeer({
 		api: '/list',
@@ -371,58 +368,20 @@ Peers.prototype.onBind = function (scope) {
 		var peer = library.config.peers.list[i];
 		__private.peers[peer.ip+":"+peer.port] = peer;
 	}
-	// async.eachSeries(library.config.peers.list, function (peer, cb) {
-	// 	var params = {
-	// 		ip: peer.ip,
-	// 		port: peer.port,
-	// 		state: 2
-	// 	};
-	// 	library.db.query(sql.insertSeed, params).then(function (res) {
-	// 		library.logger.debug('Inserted seed peer', params);
-	// 		return setImmediate(cb, null, res);
-	// 	}).catch(function (err) {
-	// 		library.logger.error(err.stack);
-	// 		return setImmediate(cb, 'Peers#onBlockchainReady error');
-	// 	});
-	// }, function (err) {
-	// 	if (err) {
-	// 		library.logger.error(err);
-	// 	}
-	//
-	// 	__private.count(function (err, count) {
-	// 		if (count) {
-	// 			__private.updatePeersList(function (err) {
-	// 				if (err) {
-	// 					library.logger.error('Peers#updatePeersList error', err);
-	// 				}
-	// 				library.bus.message('peersReady');
-	// 			});
-	// 			library.logger.info('Peers ready, stored ' + count);
-	// 		} else {
-	// 			library.logger.warn('Peers list is empty');
-	// 			library.bus.message('peersReady');
-	// 		}
-	// 	});
-	// });
-
-	__private.count(function (err, count) {
-		if (count) {
-			__private.updatePeersList(function (err) {
-				if (err) {
-					library.logger.error('Peers#updatePeersList error', err);
-				}
-				library.bus.message('peersReady');
-			});
-			library.logger.info('Peers ready, stored ' + count);
-		} else {
-			library.logger.warn('Peers list is empty');
-			library.bus.message('peersReady');
-		}
-	});
 };
 
-Peers.prototype.onBlockchainReady = function () {
 
+Peers.prototype.onAttachPublicApi = function () {
+ 	__private.attachApi();
+};
+
+Peers.prototype.onUpdatePeers = function () {
+	__private.updatePeersList(function (err) {
+		if (err) {
+			library.logger.error('Peers timer:', err);
+		}
+		library.bus.message('peersUpdated');
+	});
 };
 
 Peers.prototype.onPeersReady = function () {

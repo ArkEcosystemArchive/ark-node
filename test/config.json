@@ -30,7 +30,8 @@
         "delayAfter": 0,
         "windowMs": 60000
       }
-    }
+    },
+    "mount":true
   },
   "peers": {
     "minimumNetworkReach": 1,

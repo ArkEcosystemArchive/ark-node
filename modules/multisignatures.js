@@ -71,8 +71,9 @@ Multisignatures.prototype.onBind = function (scope) {
 };
 
 
-Multisignatures.prototype.onBlockchainReady = function () {
-	__private.attachApi();
+
+Multisignatures.prototype.onAttachPublicApi = function () {
+ 	__private.attachApi();
 };
 
 shared.getAccounts = function (req, cb) {

@@ -21,9 +21,9 @@ Crypto.prototype.onBind = function (scope) {
 	modules = scope;
 };
 
-Crypto.prototype.onBlockchainReady = function () {
-	__private.loaded = true;
-};
+// Crypto.prototype.onBlockchainReady = function () {
+// 	__private.loaded = true;
+// };
 
 // Shared
 module.exports = Crypto;

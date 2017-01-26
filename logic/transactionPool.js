@@ -78,6 +78,10 @@ TransactionPool.prototype.getMultisignatureTransaction = function (id) {
 	return self.multisignature[id];
 };
 
+TransactionPool.prototype.getMissingTransactions = function (ids, cb) {
+	return __private.getMissingTransactions(ids, cb);
+};
+
 TransactionPool.prototype.getUnconfirmedTransactionList = function (reverse, limit) {
 	return __private.getTransactionList(self.unconfirmed, reverse, limit);
 };

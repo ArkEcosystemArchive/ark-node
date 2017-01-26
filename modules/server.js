@@ -14,8 +14,6 @@ function Server (cb, scope) {
 	library = scope;
 	self = this;
 
-	__private.attachApi();
-
 	setImmediate(cb, null, self);
 }
 
@@ -53,12 +51,11 @@ Server.prototype.onBind = function (scope) {
 	modules = scope;
 };
 
-Server.prototype.onBlockchainReady = function () {
-	__private.loaded = true;
+Server.prototype.onAttachPublicApi = function () {
+ 	__private.attachApi();
 };
 
 Server.prototype.cleanup = function (cb) {
-	__private.loaded = false;
 	return setImmediate(cb);
 };
 

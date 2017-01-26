@@ -16,7 +16,6 @@ var zlib = require('zlib');
 var modules, library, self, __private = {}, shared = {};
 
 __private.headers = {};
-__private.loaded = false;
 __private.messages = {};
 __private.broadcastTransactions = [];
 
@@ -24,6 +23,7 @@ __private.broadcastTransactions = [];
 function Transport (cb, scope) {
 	library = scope;
 	self = this;
+
 
 	__private.attachApi();
 
@@ -43,7 +43,7 @@ __private.attachApi = function () {
 	var router = new Router();
 
 	router.use(function (req, res, next) {
-		if (modules && __private.loaded) { return next(); }
+		if (modules) { return next(); }
 		res.status(500).send({success: false, error: 'Blockchain is loading'});
 	});
 
@@ -114,7 +114,7 @@ __private.attachApi = function () {
 
 			var escapedIds = query.ids
 				// Remove quotes
-				.replace(/['"]+/g, '')
+				.replace(/['"]+/g, '') //'
 				// Separate by comma into an array
 				.split(',')
 				// Reject any non-numeric values
@@ -190,11 +190,11 @@ __private.attachApi = function () {
 		res.set(__private.headers);
 
 		var block = req.body.block;
-		var id = (block ? block.id : 'null');
 
 		try {
 			block = library.logic.block.objectNormalize(block);
 		} catch (e) {
+			var id = (block ? block.id : 'null');
 			library.logger.error(['Block', id].join(' '), e.toString());
 			if (block) { library.logger.error('Block', block); }
 
@@ -208,7 +208,7 @@ __private.attachApi = function () {
 
 		modules.peers.update(req.peer, function(){});
 
-		library.bus.message('receiveBlock', block, req.peer);
+		library.bus.message('blockReceived', block, req.peer);
 
 		return res.status(200).json({success: true, blockId: block.id});
 	});
@@ -256,7 +256,26 @@ __private.attachApi = function () {
 		res.status(200).json({success: true, transactions: modules.transactions.getUnconfirmedTransactionList()});
 	});
 
-
+	router.get('/transactionsFromIds', function (req, res) {
+		res.set(__private.headers);
+		var escapedIds = query.ids
+			// Remove quotes
+			.replace(/['"]+/g, '') //'
+			// Separate by comma into an array
+			.split(',')
+			// Reject any non-numeric values
+			.filter(function (id) {
+				return /^[0-9]+$/.test(id);
+			});
+		modules.blocks.getTransactionsFromIds(query.blockid,escapedIds,function(err, transactions){
+			if(err){
+				res.status(200).json({success: false, message: err.toString()});
+			}
+			else{
+				res.status(200).json({success: true, transactions: transactions});
+			}
+		});
+	});
 
 	router.post('/transactions', function (req, res) {
 		res.set(__private.headers);
@@ -522,8 +541,14 @@ Transport.prototype.onBind = function (scope) {
 };
 
 Transport.prototype.onBlockchainReady = function () {
-	__private.loaded = true;
+
 };
+
+Transport.prototype.onAttachNetworkApi = function () {
+
+	library.bus.message("NetworkApiAttached");
+};
+
 
 // Transport.prototype.onSignature = function (signature, broadcast) {
 // 	if (broadcast) {
@@ -541,48 +566,41 @@ Transport.prototype.onUnconfirmedTransaction = function (transaction, broadcast)
 	}
 };
 
-Transport.prototype.onNewBlock = function (block, broadcast) {
-	if (broadcast) {
-		// we want to propagate as fast as possible only the headers unless the node generated it.
-		var blockheaders = {
-			id: block.id,
-			height: block.height,
-			version: block.version,
-			totalAmount: block.totalAmount,
-			totalFee: block.totalFee,
-			reward: block.reward,
-			payloadHash: block.payloadHash,
-			timestamp: block.timestamp,
-			numberOfTransactions: block.numberOfTransactions,
-			payloadLength: block.payloadLength,
-			previousBlock: block.previousBlock,
-			generatorPublicKey: block.generatorPublicKey,
-			blockSignature: block.blockSignature,
-			transactions:[]
-		}
-
-		var all=false, limitbroadcast=10;
-
-		if(modules.delegates.isActiveDelegate()){
-			// I am an active delegate, I broadcast the full block
-			// Rationale: I don't want to be pinged back to download the block payload
-			library.logger.debug("Full block broadcasted", block.id);
-			blockheaders.transactions=block.transactions;
-			// I broadcast to everybody I know if I generated this block
-			all=modules.delegates.isAForgingDelegatesPublicKey(block.generatorPublicKey);
-
-			// I increase the reach if i am an active delegate;
-			limitbroadcast=25;
-		}
-
-		self.broadcast({all: all, limit: limitbroadcast}, {api: '/blocks', data: {block: blockheaders}, method: 'POST'});
-		//library.network.io.sockets.emit('blocks/change', {});
+Transport.prototype.onBroadcastBlock = function (block) {
+	// we want to propagate as fast as possible only the headers unless the node generated it.
+	var blockheaders = {
+		id: block.id,
+		height: block.height,
+		version: block.version,
+		totalAmount: block.totalAmount,
+		totalFee: block.totalFee,
+		reward: block.reward,
+		payloadHash: block.payloadHash,
+		timestamp: block.timestamp,
+		numberOfTransactions: block.numberOfTransactions,
+		payloadLength: block.payloadLength,
+		previousBlock: block.previousBlock,
+		generatorPublicKey: block.generatorPublicKey,
+		blockSignature: block.blockSignature,
+		transactions:[]
 	}
+
+	var limitbroadcast=15;
+
+	if(modules.delegates.isActiveDelegate()){
+		// I increase the reach if i am an active delegate;
+		limitbroadcast=30;
+	}
+	else if(block.numberOfTransactions>0){//i send only ids, because nodes likely have already transactions in mempool.
+		blockheaders.transactionIds=block.transactions.map(function(t){return t.id});
+	}
+
+	self.broadcast({all: block.forged, limit: limitbroadcast}, {api: '/blocks', data: {block: blockheaders}, method: 'POST'});
+	//library.network.io.sockets.emit('blocks/change', {});
 };
 
 
 Transport.prototype.cleanup = function (cb) {
-	__private.loaded = false;
 	return setImmediate(cb);
 };
 

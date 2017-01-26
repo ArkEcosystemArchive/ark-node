@@ -65,8 +65,8 @@ Signatures.prototype.onBind = function (scope) {
 };
 
 
-Signatures.prototype.onBlockchainReady = function () {
-	__private.attachApi();
+Signatures.prototype.onAttachPublicApi = function () {
+ 	__private.attachApi();
 };
 
 // Shared

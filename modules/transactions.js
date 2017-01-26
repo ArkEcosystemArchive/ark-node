@@ -210,6 +210,11 @@ __private.getVotesById = function (transaction, cb) {
 };
 
 // Public methods
+
+Transactions.prototype.getMissingTransactions = function(ids, cb){
+	return __private.transactionPool.getMissingTransactions(ids, cb);
+}
+
 Transactions.prototype.transactionInPool = function (id) {
 	return __private.transactionPool.transactionInPool(id);
 };
@@ -340,8 +345,9 @@ Transactions.prototype.onBind = function (scope) {
 };
 
 
-Transactions.prototype.onBlockchainReady = function () {
-	__private.attachApi();
+
+Transactions.prototype.onAttachPublicApi = function () {
+ 	__private.attachApi();
 };
 
 Transactions.prototype.onPeersReady = function () {

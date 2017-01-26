@@ -169,8 +169,8 @@ Accounts.prototype.onBind = function (scope) {
 	});
 };
 
-Accounts.prototype.onBlockchainReady = function () {
-	__private.attachApi();
+Accounts.prototype.onAttachPublicApi = function () {
+ 	__private.attachApi();
 };
 
 
