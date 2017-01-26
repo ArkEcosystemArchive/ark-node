@@ -79,7 +79,6 @@ if (program.snapshot) {
 var config = {
 	db: appConfig.db,
 	modules: {
-		nodeManager: './modules/nodeManager.js',
 		server: './modules/server.js',
 		accounts: './modules/accounts.js',
 		transactions: './modules/transactions.js',
@@ -92,7 +91,8 @@ var config = {
 		delegates: './modules/delegates.js',
 		rounds: './modules/rounds.js',
 		multisignatures: './modules/multisignatures.js',
-		crypto: './modules/crypto.js'
+		crypto: './modules/crypto.js',
+		nodeManager: './modules/nodeManager.js'
 	}
 };
 
@@ -407,14 +407,16 @@ d.run(function () {
 
 		ready: ['modules', 'bus', function (scope, cb) {
 			scope.bus.message('bind', scope.modules);
-			scope.modules.nodeManager.startApp();
 			cb();
 		}]
 	}, function (err, scope) {
 		if (err) {
 			logger.fatal(err);
 		} else {
+
 			scope.logger.info('Modules ready and launched');
+
+			scope.modules.nodeManager.startApp();
 
 			process.once('cleanup', function () {
 				scope.logger.info('Cleaning up...');

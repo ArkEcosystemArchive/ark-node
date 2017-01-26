@@ -13,16 +13,15 @@ __private.blockchain={};
 function NodeManager (cb, scope) {
 	library = scope;
 	self = this;
-  self.blockSequence = new Sequence();
 	setImmediate(cb, null, self);
 }
 
 NodeManager.prototype.updateBlock = function(block, cb){
   var error = null;
   if(!__private.blockchain[block.height]){
-    error = "Block already removed from blockchain"
+    error = "updateBlock - Block already removed from blockchain"
   } else if(__private.blockchain[block.height].id!=block.id){
-    error = "Block has been replaced in the blockchain";
+    error = "updateBlock - Block has been replaced in the blockchain";
   } else {
     __private.blockchain[block.height]=block;
   }
@@ -34,19 +33,19 @@ NodeManager.prototype.addToBlockchain = function(block, cb){
   if(!__private.blockchain[block.height]){
     __private.blockchain[block.height]=block;
   }
-  else {
-    error = "Block has been replaced in the blockchain";
+  else if(__private.blockchain[block.height].id != block.id){
+    error = "addToBlockchain - Block has been replaced in the blockchain";
   }
-  return setImmediate(cb, error, __private.blockchain[block.height]);
+  return cb && setImmediate(cb, error, __private.blockchain[block.height]);
 
 };
 
 NodeManager.prototype.removeFromBlockchain = function(block, cb){
   var error = null;
   if(!__private.blockchain[block.height]){
-    error = "Block already removed from blockchain"
+    error = "removeFromBlockchain - Block already removed from blockchain"
   } else if(__private.blockchain[block.height].id!=block.id){
-    error = "Block has been replaced in the blockchain";
+    error = "removeFromBlockchain - Block has been replaced in the blockchain";
   } else {
     delete __private.blockchain[block.height];
   }
@@ -66,20 +65,50 @@ NodeManager.prototype.getLastBlock = function(){
   return lastBlock;
 };
 
-
-NodeManager.prototype.onBind = function (modules) {
-	modules = modules;
+NodeManager.prototype.getLastVerifiedBlock = function(){
+  var lastBlock=null;
+  for(var height in __private.blockchain){
+    if(!lastBlock){
+      lastBlock = __private.blockchain[height];
+    }
+    else if(parseInt(height)>lastBlock.height && __private.blockchain[height].verified){
+      lastBlock = __private.blockchain[height];
+    }
+  }
+  return lastBlock;
 };
+
+NodeManager.prototype.getLastIncludedBlock = function(){
+  var lastBlock=null;
+  for(var height in __private.blockchain){
+    if(!lastBlock){
+      lastBlock = __private.blockchain[height];
+    }
+    else if(parseInt(height)>lastBlock.height){
+      lastBlock = __private.blockchain[height];
+    }
+  }
+  return lastBlock;
+};
+
 
 //Main entry point of the node app
-NodeManager.prototype.startApp = function(){
-  library.logger.info("# Starting App");
-  library.bus.message('loadDatabase');
+NodeManager.prototype.onBind = function (scope) {
+	modules = scope;
 };
 
-NodeManager.prototype.onDatabaseLoaded = function(height) {
+NodeManager.prototype.startApp = function(){
+	library.logger.info("# Starting App");
+  library.bus.message('loadDatabase');
+}
+
+NodeManager.prototype.onDatabaseLoaded = function(lastBlock) {
+	lastBlock.processed = true;
+	lastBlock.verified = true;
+	self.addToBlockchain(lastBlock);
   library.bus.message('attachNetworkApi');
   library.bus.message('loadDelegates');
+	library.bus.message('startTransactionPool');
 };
 
 NodeManager.prototype.onNetworkApiAttached = function(){
@@ -92,7 +121,6 @@ NodeManager.prototype.onDelegatesLoaded = function(keypairs) {
     __private.keypairs=keypairs;
     library.logger.info("# Loaded "+numberOfDelegates+" delegate(s). Started as a forging node");
     library.bus.message('startForging');
-		library.bus.message('startTransactionPool');
     if(library.config.api.mount){
       library.bus.message('attachPublicApi');
     }
@@ -106,23 +134,27 @@ NodeManager.prototype.onDelegatesLoaded = function(keypairs) {
 };
 
 NodeManager.prototype.onPeersUpdated = function() {
-  library.bus.message('downloadBlocks');
+	library.bus.message('observeNetwork');
 };
 
+NodeManager.prototype.onNetworkObserved = function(){
+	library.bus.message('downloadBlocks');
+}
+
 NodeManager.prototype.onBlocksDownloaded = function(lastBlock) {
-  library.logger.info("# Blocks Loaded from network");
   self.addToBlockchain(lastBlock, function(err, block){
     if(err){
-      library.logger.error(err);
+      library.logger.error(err, block);
     }
     else{
-      library.logger.info("Last block downloaded", block);
+      library.logger.debug("Last block downloaded", block);
     }
   });
 	// listening to internal state
-	library.bus.message('verifyBlock', block);
-
+	//library.bus.message('verifyBlock', block);
 };
+
+
 
 NodeManager.prototype.onReceiveBlock = function (block, peer) {
 	// When client is not loaded, is syncing or round is ticking
@@ -201,7 +233,7 @@ NodeManager.prototype.onReceiveBlock = function (block, peer) {
 			// Fork: Same height and previous block id, but different block id
 			library.logger.info("last block", lastBlock);
 			library.logger.info("received block", block);
-			library.bus.message("fork",block, 5);
+			library.bus.message("fork", block, 5);
 
 			// Orphan Block: Decide winning branch
 			// -> winning chain is smallest block id (comparing with lexicographic order)
@@ -228,6 +260,34 @@ NodeManager.prototype.onReceiveBlock = function (block, peer) {
 	});
 };
 
+NodeManager.prototype.onBlocksReceived = function(blocks, peer) {
+	async.eachSeries(blocks, function (block, cb) {
+		block.reward=parseInt(block.reward);
+		block.totalAmount=parseInt(block.totalAmount);
+		block.totalFee=parseInt(block.totalFee);
+		block.verified = false;
+	  block.processed = false;
+		if(block.height%1000 == 0){
+			library.logger.info("Processsing block height", block.height);
+		}
+		self.addToBlockchain(block, function(err, block){
+			if(err){
+				setImmediate(cb, err, block);
+			}
+			else{
+				library.bus.message('verifyBlock', block, cb);
+			}
+		});
+	}, function(err, block){
+		if(err){
+			library.logger.error(err, block);
+		}
+		else{
+			library.bus.message("downloadBlocks");
+		}
+	});
+}
+
 NodeManager.prototype.onBlockReceived = function(block, peer) {
 	var lastBlock = self.getLastBlock();
   if(!__private.blockchain[""+(block.height-1)]){
@@ -239,7 +299,6 @@ NodeManager.prototype.onBlockReceived = function(block, peer) {
 	    block.broadcast=true;
 	    self.addToBlockchain(block);
 		}
-    return;
   }
 
   var myblock = __private.blockchain[block.height];
@@ -272,7 +331,7 @@ NodeManager.prototype.onBlockReceived = function(block, peer) {
 		}
 		// lets download transactions
 		// carefully since order is important to validate block
-		else {
+		else if(transactions.length == 0){
 			var transactionIds = block.transactionIds;
 
 			modules.transactions.getMissingTransactions(transactionIds, function(err, missingTransactionIds, transactions){
@@ -334,6 +393,9 @@ NodeManager.prototype.onBlockReceived = function(block, peer) {
 				}
 			});
 		}
+		else{ //block complete
+			library.bus.message('verifyBlock', block);
+		}
   }
 };
 
@@ -343,7 +405,7 @@ NodeManager.prototype.onBlockForged = function(block) {
   block.processed = false;
   self.addToBlockchain(block, function(err, block){
     if(err){
-      library.logger.error(err);
+      library.logger.error(err, block);
     }
     else{
       library.logger.info("Forged block added to blockchain", block);
@@ -353,20 +415,23 @@ NodeManager.prototype.onBlockForged = function(block) {
   });
 }
 
-NodeManager.prototype.onBlockVerified = function(block) {
+NodeManager.prototype.onBlockVerified = function(block, cb) {
   block.verified = true;
   block.processed = false;
   self.updateBlock(block, function(error, block){
-    if(!err){
-      library.bus.message('processBlock', block);
+    if(error){
+			cb && setImmediate(cb, error, block);
+		}
+		else{
+      library.bus.message('processBlock', block, cb);
       if(block.broadcast){
-        library.bus.message('broadcastBlock', block);
+        library.bus.message('broadcastBlock', block, cb);
       }
     }
   });
 }
 
-NodeManager.prototype.onBlockProcessed = function(block) {
+NodeManager.prototype.onBlockProcessed = function(block, cb) {
   block.processed = true;
   self.updateBlock(block, function(error, block){
     if(error){
@@ -374,12 +439,14 @@ NodeManager.prototype.onBlockProcessed = function(block) {
     }
 		else{
 			__private.timestampState(new Date());
+
 			//Maybe we already got the next block
-			var nextblock = __private.blockchain[""+(block.height+1)];
-			if(nextblock && !nextblock.verified && !nextblock.processed){
-				library.bus.message('verifyBlock', nextblock);
-			}
+			// var nextblock = __private.blockchain[""+(block.height+1)];
+			// if(nextblock && !nextblock.verified && !nextblock.processed){
+			// 	library.bus.message('verifyBlock', nextblock);
+			// }
 		}
+		cb && setImmediate(cb, error, block);
   });
 }
 

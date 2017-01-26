@@ -12,6 +12,8 @@ function TransactionPool (scope) {
 	library = scope;
 	self = this;
 
+	__private.active=false;
+
 	self.unconfirmed = { };
 	self.bundled = { };
 	self.queued = { };
@@ -20,8 +22,18 @@ function TransactionPool (scope) {
 	self.bundledInterval = 5000;
 	self.bundleLimit = 25;
 	self.processed = 0;
+}
 
-	// Bundled transaction timer
+// Public methods
+TransactionPool.prototype.bind = function (scope) {
+	modules = scope;
+};
+
+TransactionPool.prototype.start = function () {
+	if(__private.active){
+		return;
+	}
+	__private.active = true;
 	setImmediate(function nextBundle () {
 		async.series([
 			self.processBundled
@@ -29,8 +41,22 @@ function TransactionPool (scope) {
 			if (err) {
 				library.logger.log('Bundled transaction timer', err);
 			}
+			if(__private.active){
+				return setTimeout(nextBundle, self.bundledInterval);
+			}
+		});
+	});
 
-			return setTimeout(nextBundle, self.bundledInterval);
+	setImmediate(function fillPool () {
+		async.series([
+			self.fillPool
+		], function (err) {
+			if (err) {
+				library.logger.log('fillPool transaction timer', err);
+			}
+			if(__private.active){
+				return setTimeout(fillPool, 1000);
+			}
 		});
 	});
 
@@ -43,14 +69,18 @@ function TransactionPool (scope) {
 				library.logger.log('Transaction expiry timer', err);
 			}
 
-			return setTimeout(nextExpiry, self.expiryInterval);
+			if(__private.active){
+				return setTimeout(nextExpiry, self.expiryInterval);
+			}
 		});
 	});
-}
 
-// Public methods
-TransactionPool.prototype.bind = function (scope) {
-	modules = scope;
+	library.logger.info('# Transaction pool started');
+};
+
+TransactionPool.prototype.stop = function () {
+	__private.active = false;
+	library.logger.info('# Transaction pool stopped');
 };
 
 TransactionPool.prototype.transactionInPool = function (id) {

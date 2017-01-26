@@ -344,7 +344,9 @@ Transactions.prototype.onBind = function (scope) {
 	});
 };
 
-
+Transactions.prototype.onStartTransactionPool = function () {
+	__private.transactionPool.start();
+};
 
 Transactions.prototype.onAttachPublicApi = function () {
  	__private.attachApi();

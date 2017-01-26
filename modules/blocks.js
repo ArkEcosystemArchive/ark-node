@@ -625,21 +625,31 @@ Blocks.prototype.loadBlocksOffset = function (limit, offset, verify, cb) {
 					return setImmediate(cb);
 				}
 
-				library.logger.debug('Processing block', block.id);
+				library.logger.debug('Processing block', block.height);
 				if (verify && block.id !== genesisblock.block.id) {
 					// Sanity check of the block, if values are coherent.
 					// No access to database.
-					var check = self.verifyBlock(block);
+					var check = self.verifyBlock(block, lastBlock);
 
 					if (!check.verified) {
 						library.logger.error(['loadBlocksOffset: Block ', block.id, 'verification failed'].join(' '), check.errors.join(', '));
 						return setImmediate(cb, check.errors[0]);
 					}
 				}
+				block.verified = true;
+				block.processed = true;
 				if (block.id === genesisblock.block.id) {
 					__private.applyGenesisBlock(block, cb);
-				} else {
-					__private.applyBlock(block, false, cb, false);
+				}
+				else {
+					async.waterfall([
+						function(cb){
+							__private.applyBlock(block, cb);
+						},
+						function(cb){
+							modules.rounds.tick(block, cb);
+						}
+					],cb);
 				}
 				lastBlock = block;
 			}, function (err) {
@@ -799,10 +809,20 @@ Blocks.prototype.getLastBlock = function () {
 	return lastBlock;
 };
 
+Blocks.prototype.onVerifyBlock = function (block, cb) {
+	var result = self.verifyBlock(block, false);
+	if(result.verified){
+		library.bus.message("blockVerified",block, cb);
+	}
+	else{
+		setImmediate(cb, result.errors.join(" - "), block);
+	}
+}
+
 // Will return all possible errors that are intrinsic to the block.
 // NO DATABASE access
 // skipLastBlockCheck: to check any block, and not check if we have the next block of the internal chain
-Blocks.prototype.verifyBlock = function (block, skipLastBlockCheck) {
+Blocks.prototype.verifyBlock = function (block, lastBlock) {
 	var result = { verified: false, errors: [] };
 	if(!block.id){
 		try {
@@ -812,8 +832,6 @@ Blocks.prototype.verifyBlock = function (block, skipLastBlockCheck) {
 		}
 	}
 
-	var lastBlock=modules.nodeManager.getLastBlock();
-
 	// Removed because height has been added to block.getBytes
 	// if(!block.height){
 	//  	block.height = lastBlock.height + 1;
@@ -822,7 +840,7 @@ Blocks.prototype.verifyBlock = function (block, skipLastBlockCheck) {
 
 	if (!block.previousBlock && block.height !== 1) {
 		result.errors.push('Invalid previous block');
-	} else if (!skipLastBlockCheck && block.previousBlock !== lastBlock.id) {
+	} else if (lastBlock && block.previousBlock !== lastBlock.id) {
 		// Fork: Same height but different previous block id.
 		library.bus.message("fork",block, 1);
 		result.errors.push(['Invalid previous block:', block.previousBlock, 'expected:', lastBlock.id].join(' '));
@@ -851,11 +869,18 @@ Blocks.prototype.verifyBlock = function (block, skipLastBlockCheck) {
 	}
 
 	var blockSlotNumber = slots.getSlotNumber(block.timestamp);
-	var lastBlockSlotNumber = slots.getSlotNumber(lastBlock.timestamp);
 
-	if (blockSlotNumber > slots.getSlotNumber() || (!skipLastBlockCheck && blockSlotNumber <= lastBlockSlotNumber)) {
+
+	if (blockSlotNumber > slots.getSlotNumber()){
 		result.errors.push('Invalid block timestamp');
 	}
+	if(lastBlock){
+		var lastBlockSlotNumber = slots.getSlotNumber(lastBlock.timestamp);
+		if(blockSlotNumber <= lastBlockSlotNumber) {
+		 	result.errors.push('Invalid block timestamp');
+		}
+	}
+
 
 	if (block.payloadLength > constants.maxPayloadLength) {
 		result.errors.push('Payload length is too high');
@@ -1029,21 +1054,6 @@ __private.applyBlock = function (block, cb) {
 				return setImmediate(seriesCb, err);
 			});
 		},
-		saveBlock: function (seriesCb) {
-			__private.saveBlock(block, function (err) {
-				if (err) {
-					library.logger.error('Failed to save block...');
-					library.logger.error('Block', block);
-					// TODO: Send a numbered signal to be caught by forever to trigger a rebuild.
-					return setImmediate(eachSeriesCb, err);
-				}
-
-				library.logger.debug('Block applied correctly with ' + block.transactions.length + ' transactions');
-
-				// DATABASE write. Update delegates accounts
-				modules.rounds.tick(block, seriesCb);
-			});
-		},
 		// Push back unconfirmed transactions list (minus the one that were on the block if applied correctly).
 		// TODO: See undoUnconfirmedList discussion above.
 		applyUnconfirmedIds: function (seriesCb) {
@@ -1136,6 +1146,7 @@ Blocks.prototype.processBlock = function (block, cb) {
 			return setImmediate(cb, check.errors[0]);
 		}
 
+
 		// Check if block id is already in the database (very low probability of hash collision).
 		// TODO: In case of hash-collision, to me it would be a special autofork...
 		// DATABASE: read only
@@ -1212,7 +1223,17 @@ Blocks.prototype.processBlock = function (block, cb) {
 						// * Block and transactions have valid values (signatures, block slots, etc...)
 						// * The check against database state passed (for instance sender has enough ARK, votes are under 101, etc...)
 						// We thus update the database with the transactions values, save the block and tick it.
-						__private.applyBlock(block, cb);
+						async.waterfall([
+							function(cb){
+								__private.applyBlock(block, cb);
+							},
+							function(cb){
+								__private.saveBlock(block, cb);
+							},
+							function(cb){
+								modules.rounds.tick(block, cb);
+							}
+						],cb);
 					}
 				});
 			});
@@ -1259,39 +1280,45 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, cb) {
 		if (blocks.length === 0) {
 			return setImmediate(cb, null, lastValidBlock);
 		} else {
-			async.eachSeries(blocks, function (block, cb) {
-				if (__private.cleanup) {
-					return setImmediate(cb);
-				}
-				block.reward=parseInt(block.reward);
-				block.totalAmount=parseInt(block.totalAmount);
-				block.totalFee=parseInt(block.totalFee);
-				self.processBlock(block, function (err) {
-					if (!err) {
-						self.lastReceipt(new Date());
-						lastValidBlock = block;
-						library.logger.info(['Block', block.id, 'loaded from:', peer.string, "transactions:", block.numberOfTransactions].join(' '), 'height: ' + block.height);
-					} else {
-						var id = (block ? block.id : 'null');
-						library.logger.error(['Block', id].join(' '), err.toString());
-						if (block) { library.logger.error('Block', block); }
+			library.bus.message("blocksReceived", blocks, peer);
+			return setImmediate(cb);
+			// async.eachSeries(blocks, function (block, cb) {
+			// 	if (__private.cleanup) {
+			// 		return setImmediate(cb);
+			// 	}
+			// 	library.bus.message("blockReceived", block, peer, function(err){
+			// 		return cb(err);
+			// 	});
 
-						library.logger.warn(['Block', id, 'is not valid, ban 60 min'].join(' '), peer.string);
-						modules.peers.state(peer.ip, peer.port, 0, 3600);
-					}
-					return cb(err);
-				});
-			}, function (err) {
-				// Nullify large array of blocks.
-				// Prevents memory leak during synchronisation.
-				res = blocks = null;
-
-				if (err) {
-					return setImmediate(cb, 'Error loading blocks: ' + (err.message || err), lastValidBlock);
-				} else {
-					return setImmediate(cb, null, lastValidBlock);
-				}
-			});
+				// block.reward=parseInt(block.reward);
+				// block.totalAmount=parseInt(block.totalAmount);
+				// block.totalFee=parseInt(block.totalFee);
+				// self.processBlock(block, function (err) {
+				// 	if (!err) {
+				// 		self.lastReceipt(new Date());
+				// 		lastValidBlock = block;
+				// 		library.logger.info(['Block', block.id, 'loaded from:', peer.string, "transactions:", block.numberOfTransactions].join(' '), 'height: ' + block.height);
+				// 	} else {
+				// 		var id = (block ? block.id : 'null');
+				// 		library.logger.error(['Block', id].join(' '), err.toString());
+				// 		if (block) { library.logger.error('Block', block); }
+				//
+				// 		library.logger.warn(['Block', id, 'is not valid, ban 60 min'].join(' '), peer.string);
+				// 		modules.peers.state(peer.ip, peer.port, 0, 3600);
+				// 	}
+				// 	return cb(err);
+				// });
+			// }, function (err) {
+			// 	// Nullify large array of blocks.
+			// 	// Prevents memory leak during synchronisation.
+			// 	res = blocks = null;
+			//
+			// 	if (err) {
+			// 		return setImmediate(cb, 'Error loading blocks: ' + (err.message || err), lastValidBlock);
+			// 	} else {
+			// 		return setImmediate(cb, null, lastValidBlock);
+			// 	}
+			// });
 		}
 	});
 };
@@ -1380,17 +1407,13 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 
 
 // Events
-Blocks.prototype.onProcessBlock = function (block) {
+Blocks.prototype.onProcessBlock = function (block, cb) {
 	self.processBlock(block, function(err){
 		if (err) {
-			var id = (block ? block.id : 'null');
-			library.logger.error(err.toString());
-			if (block) {
-				library.logger.error('Block', block);
-			}
+			setImmediate(cb, err, block);
 		}
 		else{
-			library.bus.message("blockProcessed",block);
+			library.bus.message("blockProcessed", block, cb);
 		}
 	})
 };

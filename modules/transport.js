@@ -24,9 +24,6 @@ function Transport (cb, scope) {
 	library = scope;
 	self = this;
 
-
-	__private.attachApi();
-
 	setInterval(function(){
 		if(__private.broadcastTransactions.length>0){
 			var transactions=__private.broadcastTransactions;
@@ -545,7 +542,7 @@ Transport.prototype.onBlockchainReady = function () {
 };
 
 Transport.prototype.onAttachNetworkApi = function () {
-
+	__private.attachApi();
 	library.bus.message("NetworkApiAttached");
 };
 

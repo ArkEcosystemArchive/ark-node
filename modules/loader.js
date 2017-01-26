@@ -31,7 +31,7 @@ __private.syncFromNetworkIntervalId = null;
 function Loader (cb, scope) {
 	library = scope;
 	self = this;
-	
+
 	__private.genesisBlock = __private.lastBlock = library.genesisblock;
 
 	setImmediate(cb, null, self);
@@ -211,7 +211,7 @@ __private.loadBlockChain = function () {
 										});
 									}
 								}
-								library.bus.message('databaseLoaded');
+								library.bus.message('databaseLoaded', __private.lastBlock);
 							}
 						);
 					}
@@ -307,7 +307,7 @@ __private.loadBlockChain = function () {
 					return reload(count, err || 'Failed to load last block');
 				} else {
 					__private.lastBlock = block;
-					library.bus.message('databaseLoaded');
+					library.bus.message('databaseLoaded', block);
 				}
 			});
 		});
@@ -320,9 +320,6 @@ __private.loadBlockChain = function () {
 __private.loadBlocksFromNetwork = function (cb) {
 	var errorCount = 0;
 	var loaded = false;
-
-
-	console.log(__private.network);
 
 	var network = __private.network;
 
@@ -345,7 +342,8 @@ __private.loadBlocksFromNetwork = function (cb) {
 		function (next) {
 
 			var peer = peers[errorCount];
-			var lastBlock = modules.blocks.getLastBlock();
+			var lastBlock = modules.nodeManager.getLastBlock();
+			//console.log(lastBlock);
 
 			async.waterfall([
 				function getCommonBlock (seriesCb) {
@@ -367,30 +365,16 @@ __private.loadBlocksFromNetwork = function (cb) {
 							return setImmediate(seriesCb, "Detected forked chain, no common block with: " + peer.string);
 						} else {
 							library.logger.info(['Found common block:', commonBlock.id, 'with:', peer.string].join(' '));
+							loaded=true;
 							return setImmediate(seriesCb);
 						}
 					});
 				},
 				function loadBlocks (seriesCb) {
 					__private.blocksToSync = peer.height - lastBlock.height;
-					modules.blocks.loadBlocksFromPeer(peer, function (err, lastValidBlock) {
-						if (err) {
-							library.logger.error(err.toString());
-							errorCount += 1;
-							return setImmediate(seriesCb, 'Unable to load blocks from ' + peer.string);
-						}
-						// console.log(lastValidBlock);
-						// console.log(modules.blocks.getLastBlock());
-						// console.log(lastBlock);
-						//console.log(modules.blocks.getLastBlock().height);
-						//console.log(peer);
-						loaded = !peer.height || (modules.blocks.getLastBlock().height >= peer.height);
-						__private.lastBlock = lastValidBlock;
-						lastValidBlock = null;
-						return setImmediate(seriesCb);
-					});
+					modules.blocks.loadBlocksFromPeer(peer, seriesCb);
 				}
-			], function (err, res) {
+			], function (err, lastBlock) {
 				next();
 			});
 		},
@@ -859,6 +843,12 @@ Loader.prototype.onBind = function (scope) {
 
 Loader.prototype.onLoadDatabase = function(){
 	__private.loadBlockChain();
+}
+
+Loader.prototype.onObserveNetwork = function(){
+	self.getNetwork(true, function(err, network){
+		library.bus.message("networkObserved");
+	});
 }
 
 

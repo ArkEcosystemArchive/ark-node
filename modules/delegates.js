@@ -640,6 +640,10 @@ Delegates.prototype.onStopForging = function () {
 	__private.forging=false;
 };
 
+Delegates.prototype.onAttachPublicApi = function () {
+	__private.attachApi();
+};
+
 
 // Delegates.prototype.onBlockchainReady = function () {
 // 	__private.loaded = true;
