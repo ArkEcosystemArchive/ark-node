@@ -2,17 +2,26 @@
 
 var async = require('async');
 var Sequence = require('../helpers/sequence.js');
+var schema = require('../schema/nodeManager.js');
+var sql = require('../sql/nodeManager.js');
 
 
 var self, library, modules;
 
 var __private = {};
-__private.blockchain={};
+__private.blockchain = {};
+
 
 // Constructor
 function NodeManager (cb, scope) {
 	library = scope;
 	self = this;
+	if(library.config.maxhop){
+		__private.maxhop = ibrary.config.maxhop;
+	}
+	else{
+		__private.maxhop = 10;
+	}
 	setImmediate(cb, null, self);
 }
 
@@ -335,7 +344,7 @@ NodeManager.prototype.onBlockReceived = function(block, peer) {
 		else if(transactions.length == 0){
 			var transactionIds = block.transactionIds;
 
-			modules.transactions.getMissingTransactions(transactionIds, function(err, missingTransactionIds, transactions){
+			modules.transactionPool.getMissingTransactions(transactionIds, function(err, missingTransactionIds, transactions){
 				if(err){
 					return setImmediate(cb, "Cannot process block.", err);
 				}
@@ -466,7 +475,73 @@ NodeManager.prototype.onFork = function (block, cause) {
 };
 
 
-NodeManager.prototype.onNewTransactions = function(transactions, broadcast) {
+NodeManager.prototype.onTransactionsReceived = function(transactions, source, cb) {
+	if(!source || typeof source !== "string"){
+		cb && setImmediate(cb, "Rejecting not sourced transactions", transactions);
+	}
+	// node created the transaction so it is safe include it
+	if(source.toLowerCase() == "api"){
+		transactions.forEach(function(tx){
+			tx.broadcast = true;
+			tx.hop = 0;
+		});
+		library.bus.message("addTransactionsToPool", transactions, cb);
+	}
+	// we need sanity check of the transaction list
+	else if(source.toLowerCase() == "network"){
+
+		var report = library.schema.validate(transactions, schema.transactions);
+
+		if (!report) {
+			return setImmediate(cb, "Transactions list is not conform", transactions);
+		}
+		var skimmedtransactions = [];
+
+		async.eachSeries(transactions, function (transaction, cb) {
+			var id = transaction.id;
+			try {
+				transaction = library.logic.transaction.objectNormalize(transaction);
+			} catch (e) {
+				return setImmediate(cb, e);
+			}
+
+			library.db.query(sql.getTransactionId, { id: transaction.id }).then(function (rows) {
+				if (rows.length > 0) {
+					library.logger.debug('Transaction ID is already in blockchain', transaction.id);
+				}
+				else{ // we only broadcast tx with known hop.
+					transaction.broadcast = false;
+					if(transaction.hop){
+						transaction.hop = parseInt(transaction.hop);
+						if(transaction.hop > -1 && transaction.hop < __private.maxhop){
+							transaction.hop++;
+							transaction.broadcast = true;
+						}
+					}
+					else { // TODO: backward compatibility, to deprecate
+						transaction.hop = 1;
+						transaction.broadcast = true;
+					}
+					skimmedtransactions.push(transaction);
+				}
+				return setImmediate(cb);
+			});
+		}, function (err) {
+			if(err){
+				return setImmediate(cb, err);
+			}
+			if(skimmedtransactions.length>0){
+				library.bus.message("addTransactionsToPool", skimmedtransactions, cb);
+			}
+			else{
+				return setImmediate(cb);
+			}
+		});
+	}
+	else {
+		library.logger.error("Unknown sourced transactions", source);
+		setImmediate(cb, "Rejecting unknown sourced transactions", transactions);
+	}
 
 };
 

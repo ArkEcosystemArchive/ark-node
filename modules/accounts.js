@@ -329,7 +329,7 @@ shared.addDelegates = function (req, cb) {
 							return setImmediate(cb, e.toString());
 						}
 
-						modules.transactions.receiveTransactions([transaction], cb);
+						library.bus.message("transactionsReceived", [transaction], "api", cb);
 					});
 				});
 			} else {
@@ -366,7 +366,7 @@ shared.addDelegates = function (req, cb) {
 						return setImmediate(cb, e.toString());
 					}
 
-					modules.transactions.receiveTransactions([transaction], cb);
+					library.bus.message("transactionsReceived", [transaction], "api", cb);
 				});
 			}
 		}, function (err, transaction) {

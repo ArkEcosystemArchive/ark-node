@@ -139,7 +139,7 @@ describe('POST /peer/transactions', function () {
 
 		postVote(transaction, function (err, res) {
 			node.expect(res.body).to.have.property('success').to.be.not.ok;
-			node.expect(res.body).to.have.property('message').to.equal("Invalid transaction body detected");
+			node.expect(res.body).to.have.property('message').to.equal("Invalid transaction detected");
 			done();
 		});
 	});

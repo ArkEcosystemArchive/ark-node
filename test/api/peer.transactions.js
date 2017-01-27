@@ -128,10 +128,10 @@ describe('POST /peer/transactions', function () {
 		});
 	});
 
-	it('using invalid passphrase should fail', function (done) {
+	it('tampering with recipient should fail', function (done) {
 		var transaction = node.ark.transaction.createTransaction('AacRfTLtxAkR3Mind1XdPCddj1uDkHtwzD', 1, null, node.gAccount.password);
 		transaction.id = node.ark.crypto.getId(transaction);
-		transaction.recipientId = '1A';
+		transaction.recipientId = 'Ab5zZfCC7ig3kS83VhsQscEeZLj12qLfGW';
 
 		postTransaction(transaction, function (err, res) {
 			node.expect(res.body).to.have.property('success').to.be.not.ok;

@@ -119,6 +119,10 @@
     "verifyOnLoading": false,
     "loadPerIteration": 5000
   },
+  "mempool":{
+    "intervalInSeconds": 10000,
+    "maximumAgeInMinutes": 1
+  },
   "ssl": {
     "enabled": false,
     "options": {

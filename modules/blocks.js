@@ -696,7 +696,7 @@ Blocks.prototype.removeSomeBlocks = function(numbers, cb){
 			// Rewind any unconfirmed transactions before removing blocks.
 			// We won't apply them again since we will have to resync blocks back from network
 			undoUnconfirmedList: function (seriesCb) {
-				modules.transactions.undoUnconfirmedList([],function (err, transactions) {
+				modules.transactionPool.undoUnconfirmedList([],function (err, transactions) {
 					if (err) {
 						// TODO: Send a numbered signal to be caught by forever to trigger a rebuild.
 						return setImmediate(seriesCb, err);
@@ -758,7 +758,7 @@ Blocks.prototype.removeLastBlock = function(cb){
 			// Rewind any unconfirmed transactions before removing blocks.
 			// We won't apply them again since we will have to resync blocks back from network
 			undoUnconfirmedList: function (seriesCb) {
-				modules.transactions.undoUnconfirmedList([],function (err, transactions) {
+				modules.transactionPool.undoUnconfirmedList([],function (err, transactions) {
 					return setImmediate(seriesCb, err);
 
 				});
@@ -983,7 +983,7 @@ __private.applyBlock = function (block, cb) {
 		// TODO: It should be possible to remove this call if we can guarantee that only this function is processing transactions atomically. Then speed should be improved further.
 		// TODO: Other possibility, when we rebuild from block chain this action should be moved out of the rebuild function.
 		undoUnconfirmedList: function (seriesCb) {
-			modules.transactions.undoUnconfirmedList(block.transactions, function (err, removedTransactionsIds, keptTransactionsIds) {
+			modules.transactionPool.undoUnconfirmedList(block.transactions, function (err, removedTransactionsIds, keptTransactionsIds) {
 				if (err) {
 					return setImmediate(seriesCb, err);
 				} else {
@@ -1045,7 +1045,7 @@ __private.applyBlock = function (block, cb) {
 						return setImmediate(eachSeriesCb, err);
 					}
 					// Transaction applied, removed from the unconfirmed list.
-					modules.transactions.removeUnconfirmedTransaction(transaction.id);
+					modules.transactionPool.removeUnconfirmedTransaction(transaction.id);
 					return setImmediate(eachSeriesCb);
 				});
 			}, function (err) {
@@ -1366,7 +1366,7 @@ Blocks.prototype.deleteBlocksBefore = function (block, cb) {
 };
 
 Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
-	var transactions = modules.transactions.getUnconfirmedTransactionList(false, constants.maxTxsPerBlock);
+	var transactions = modules.transactionPool.getUnconfirmedTransactionList(false, constants.maxTxsPerBlock);
 	var ready = [];
 	async.eachSeries(transactions, function (transaction, cb) {
 
@@ -1377,7 +1377,7 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 		// Check if tx id is already in blockchain
 		library.db.query(sql.getTransactionId, { id: transaction.id }).then(function (rows) {
 			if (rows.length > 0) {
-				modules.transactions.removeUnconfirmedTransaction(transaction.id);
+				modules.transactionPool.removeUnconfirmedTransaction(transaction.id);
 				library.logger.debug('removing tx from unconfirmed', transaction.id);
 				return setImmediate(cb, 'Transaction ID is already in blockchain - ' + transaction.id);
 			}

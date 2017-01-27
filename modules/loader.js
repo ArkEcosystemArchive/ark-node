@@ -124,47 +124,11 @@ __private.loadUnconfirmedTransactions = function (cb) {
 		}
 
 		var peer = modules.peers.inspect(res.peer);
+
 		var transactions = res.body.transactions;
-		var skimmedtransactions = [];
 
-		async.eachSeries(transactions, function (transaction, cb) {
-			var id = transaction.id;
-			try {
-				transaction = library.logic.transaction.objectNormalize(transaction);
-			} catch (e) {
-				library.logger.error(['Transaction', id].join(' '), e.toString());
-				if (transaction) { library.logger.error('Transaction', transaction); }
+		library.bus.message("transactionsReceived", transactions, "network", cb);
 
-				library.logger.warn(['Transaction', id, 'is not valid, ban 60 min'].join(' '), peer.string);
-				modules.peers.state(peer.ip, peer.port, 0, 3600);
-
-				return setImmediate(cb, e);
-			}
-
-			library.db.query(sql.getTransactionId, { id: transaction.id }).then(function (rows) {
-				if (rows.length > 0) {
-					library.logger.debug('Transaction ID is already in blockchain', transaction.id);
-				}
-				else{
-					transaction.bundled = true;
-					skimmedtransactions.push(transaction);
-				}
-				return setImmediate(cb);
-			});
-		}, function (err) {
-			if(err){
-				return setImmediate(cb, err);
-			}
-			if(skimmedtransactions.length>0){
-				library.balancesSequence.add(function (cb) {
-					library.logger.debug('Loading '+skimmedtransactions.length+' new transactions from peer '+peer.ip+':'+peer.port);
-					modules.transactions.receiveTransactions(skimmedtransactions, cb);
-				}, cb);
-			}
-			else{
-				return setImmediate(cb);
-			}
-		});
 	});
 };
 
@@ -467,14 +431,14 @@ __private.syncFromNetwork = function (cb) {
 	async.series({
 		undoUnconfirmedList: function (seriesCb) {
 			library.logger.debug('Undoing unconfirmed transactions before sync');
-			return modules.transactions.undoUnconfirmedList([], seriesCb);
+			return modules.transactionPool.undoUnconfirmedList([], seriesCb);
 		},
 		loadBlocksFromNetwork: function (seriesCb) {
 			return __private.loadBlocksFromNetwork(seriesCb);
 		},
 		applyUnconfirmedList: function (seriesCb) {
 			library.logger.debug('Applying unconfirmed transactions after sync');
-			return modules.transactions.applyUnconfirmedList(seriesCb);
+			return modules.transactionPool.applyUnconfirmedList(seriesCb);
 		}
 	}, function (err) {
 		__private.syncFromNetworkTrigger(false);

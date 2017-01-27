@@ -91,6 +91,7 @@ var config = {
 		delegates: './modules/delegates.js',
 		rounds: './modules/rounds.js',
 		multisignatures: './modules/multisignatures.js',
+		transactionPool: './modules/transactionPool.js',
 		nodeManager: './modules/nodeManager.js'
 	}
 };

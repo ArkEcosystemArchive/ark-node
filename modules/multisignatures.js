@@ -139,7 +139,7 @@ shared.pending = function (req, cb) {
 			});
 		},
 		getTransactionList: function (seriesCb) {
-			scope.transactions = modules.transactions.getMultisignatureTransactionList(false, false);
+			scope.transactions = modules.transactionPool.getMultisignatureTransactionList(false, false);
 			scope.transactions = scope.transactions.filter(function (transaction) {
 				return transaction.senderPublicKey === req.body.publicKey;
 			});
@@ -273,7 +273,7 @@ shared.sign = function (req, cb) {
 				});
 			},
 			signTransaction: function (seriesCb) {
-				scope.transaction = modules.transactions.getMultisignatureTransaction(req.body.transactionId);
+				scope.transaction = modules.transactionPool.getMultisignatureTransaction(req.body.transactionId);
 
 				if (!scope.transaction) {
 					return setImmediate(seriesCb, 'Transaction not found');
@@ -316,7 +316,7 @@ shared.sign = function (req, cb) {
 				return setImmediate(cb, err);
 			}
 
-			var transaction = modules.transactions.getMultisignatureTransaction(req.body.transactionId);
+			var transaction = modules.transactionPool.getMultisignatureTransaction(req.body.transactionId);
 
 			if (!transaction) {
 				return setImmediate(cb, 'Transaction not found');
@@ -335,11 +335,11 @@ shared.sign = function (req, cb) {
 };
 
 Multisignatures.prototype.processSignature = function (tx, cb) {
-	var transaction = modules.transactions.getUnconfirmedTransaction(tx.transaction);
+	var transaction = modules.transactionPool.getUnconfirmedTransaction(tx.transaction);
 
 	function done (cb) {
 		library.balancesSequence.add(function (cb) {
-			var transaction = modules.transactions.getUnconfirmedTransaction(tx.transaction);
+			var transaction = modules.transactionPool.getUnconfirmedTransaction(tx.transaction);
 
 			if (!transaction) {
 				return setImmediate(cb, 'Transaction not found');
@@ -476,7 +476,7 @@ shared.addMultisignature = function (req, cb) {
 					return setImmediate(cb, e.toString());
 				}
 
-				modules.transactions.receiveTransactions([transaction], cb);
+				library.bus.message("transactionsReceived", [transaction], "api", cb);
 			});
 		}, function (err, transaction) {
 			if (err) {

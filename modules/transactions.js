@@ -11,7 +11,7 @@ var Router = require('../helpers/router.js');
 var schema = require('../schema/transactions.js');
 var slots = require('../helpers/slots.js');
 var sql = require('../sql/transactions.js');
-var TransactionPool = require('../logic/transactionPool.js');
+var Transfer = require('../logic/transfer.js');
 var transactionTypes = require('../helpers/transactionTypes.js');
 
 // Private fields
@@ -25,9 +25,6 @@ function Transactions (cb, scope) {
 	genesisblock = library.genesisblock;
 	self = this;
 
-	__private.transactionPool = new TransactionPool(library);
-
-	var Transfer = require('../logic/transfer.js');
 	__private.assetTypes[transactionTypes.SEND] = library.logic.transaction.attachAssetType(
 		transactionTypes.SEND, new Transfer()
 	);
@@ -210,66 +207,6 @@ __private.getVotesById = function (transaction, cb) {
 
 // Public methods
 
-Transactions.prototype.getMissingTransactions = function(ids, cb){
-	return __private.transactionPool.getMissingTransactions(ids, cb);
-}
-
-Transactions.prototype.transactionInPool = function (id) {
-	return __private.transactionPool.transactionInPool(id);
-};
-
-Transactions.prototype.getUnconfirmedTransaction = function (id) {
-	return __private.transactionPool.getUnconfirmedTransaction(id);
-};
-
-Transactions.prototype.getQueuedTransaction = function (id) {
-	return __private.transactionPool.getQueuedTransaction(id);
-};
-
-Transactions.prototype.getMultisignatureTransaction = function (id) {
-	return __private.transactionPool.getMultisignatureTransaction(id);
-};
-
-Transactions.prototype.getUnconfirmedTransactionList = function (reverse, limit) {
-	return __private.transactionPool.getUnconfirmedTransactionList(reverse, limit);
-};
-
-Transactions.prototype.getQueuedTransactionList = function (reverse, limit) {
-	return __private.transactionPool.getQueuedTransactionList(reverse, limit);
-};
-
-Transactions.prototype.getMultisignatureTransactionList = function (reverse, limit) {
-	return __private.transactionPool.getMultisignatureTransactionList(reverse, limit);
-};
-
-Transactions.prototype.getMergedTransactionList = function (reverse, limit) {
-	return __private.transactionPool.getMergedTransactionList(reverse, limit);
-};
-
-Transactions.prototype.removeUnconfirmedTransaction = function (id) {
-	return __private.transactionPool.removeUnconfirmedTransaction(id);
-};
-
-Transactions.prototype.processUnconfirmedTransaction = function (transaction, broadcast, cb) {
-	return __private.transactionPool.processUnconfirmedTransaction(transaction, broadcast, cb);
-};
-
-// Useless with the fillPool method
-// TODO: To remove?
-Transactions.prototype.applyUnconfirmedList = function (cb) {
-	return __private.transactionPool.applyUnconfirmedList(cb);
-};
-
-// Useless with the fillPool method
-// TODO: To remove?
-Transactions.prototype.applyUnconfirmedIds = function (ids, cb) {
-	return __private.transactionPool.applyUnconfirmedIds(ids, cb);
-};
-
-Transactions.prototype.undoUnconfirmedList = function (keepUnconfirmedTransactions, cb) {
-	return __private.transactionPool.undoUnconfirmedList(keepUnconfirmedTransactions, cb);
-};
-
 Transactions.prototype.apply = function (transaction, block, cb) {
 	library.logger.debug('Applying confirmed transaction', transaction.id);
 	library.transactionSequence.add(function (cb){
@@ -328,24 +265,15 @@ Transactions.prototype.undoUnconfirmed = function (transaction, cb) {
 	}, cb);
 };
 
-Transactions.prototype.receiveTransactions = function (transactions, cb) {
-	return __private.transactionPool.receiveTransactions(transactions, true, cb);
-};
-
 // Events
 Transactions.prototype.onBind = function (scope) {
 	modules = scope;
-
-	__private.transactionPool.bind(modules);
 
 	__private.assetTypes[transactionTypes.SEND].bind({
 		modules: modules, library: library
 	});
 };
 
-Transactions.prototype.onStartTransactionPool = function () {
-	__private.transactionPool.start();
-};
 
 Transactions.prototype.onAttachPublicApi = function () {
  	__private.attachApi();
@@ -521,7 +449,7 @@ shared.addTransactions = function (req, cb) {
 								return setImmediate(cb, e.toString());
 							}
 
-							modules.transactions.receiveTransactions([transaction], cb);
+							library.bus.message("transactionsReceived", [transaction], "api", cb);
 						});
 					});
 				} else {
@@ -560,7 +488,7 @@ shared.addTransactions = function (req, cb) {
 							return setImmediate(cb, e.toString());
 						}
 
-						modules.transactions.receiveTransactions([transaction], cb);
+						library.bus.message("transactionsReceived", [transaction], "api", cb);
 					});
 				}
 			});

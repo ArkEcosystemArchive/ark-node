@@ -661,7 +661,7 @@ Delegates.prototype.onAttachPublicApi = function () {
 //
 // 		async.series([
 // 			__private.forge,
-// 			modules.transactions.fillPool
+// 			modules.transactionPool.fillPool
 // 		], function (debug) {
 // 			if(debug && Math.random()<0.1){
 // 				library.logger.debug(debug);
@@ -1002,7 +1002,8 @@ shared.addDelegate = function (req, cb) {
 						} catch (e) {
 							return setImmediate(cb, e.toString());
 						}
-						modules.transactions.receiveTransactions([transaction], cb);
+
+						library.bus.message("transactionsReceived", [transaction], "api", cb);
 					});
 				});
 			} else {
@@ -1038,7 +1039,8 @@ shared.addDelegate = function (req, cb) {
 					} catch (e) {
 						return setImmediate(cb, e.toString());
 					}
-					modules.transactions.receiveTransactions([transaction], cb);
+
+					library.bus.message("transactionsReceived", [transaction], "api", cb);
 				});
 			}
 		}, function (err, transaction) {
