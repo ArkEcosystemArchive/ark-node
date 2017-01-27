@@ -1,5 +1,5 @@
 'use strict';
-// process.env.SILENT='true';
+process.env.SILENT='true';
 // Root object
 var node = {};
 

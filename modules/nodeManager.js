@@ -16,6 +16,16 @@ function NodeManager (cb, scope) {
 	setImmediate(cb, null, self);
 }
 
+NodeManager.prototype.onBind = function (scope) {
+	modules = scope;
+};
+
+//Main entry point of the node app
+NodeManager.prototype.startApp = function(){
+	library.logger.info("# Starting App");
+  library.bus.message('loadDatabase');
+}
+
 NodeManager.prototype.updateBlock = function(block, cb){
   var error = null;
   if(!__private.blockchain[block.height]){
@@ -37,7 +47,6 @@ NodeManager.prototype.addToBlockchain = function(block, cb){
     error = "addToBlockchain - Block has been replaced in the blockchain";
   }
   return cb && setImmediate(cb, error, __private.blockchain[block.height]);
-
 };
 
 NodeManager.prototype.removeFromBlockchain = function(block, cb){
@@ -49,7 +58,11 @@ NodeManager.prototype.removeFromBlockchain = function(block, cb){
   } else {
     delete __private.blockchain[block.height];
   }
-  return setImmediate(cb, error, __private.blockchain[block.height]);
+  return setImmediate(cb, error, block);
+};
+
+NodeManager.prototype.getBlockAtHeight = function(height){
+  return __private.blockchain[height];
 };
 
 NodeManager.prototype.getLastBlock = function(){
@@ -92,23 +105,13 @@ NodeManager.prototype.getLastIncludedBlock = function(){
 };
 
 
-//Main entry point of the node app
-NodeManager.prototype.onBind = function (scope) {
-	modules = scope;
-};
-
-NodeManager.prototype.startApp = function(){
-	library.logger.info("# Starting App");
-  library.bus.message('loadDatabase');
-}
-
 NodeManager.prototype.onDatabaseLoaded = function(lastBlock) {
 	lastBlock.processed = true;
 	lastBlock.verified = true;
 	self.addToBlockchain(lastBlock);
-  library.bus.message('attachNetworkApi');
   library.bus.message('loadDelegates');
 	library.bus.message('startTransactionPool');
+  library.bus.message('attachNetworkApi');
 };
 
 NodeManager.prototype.onNetworkApiAttached = function(){
@@ -147,7 +150,7 @@ NodeManager.prototype.onBlocksDownloaded = function(lastBlock) {
       library.logger.error(err, block);
     }
     else{
-      library.logger.debug("Last block downloaded", block);
+      library.logger.debug("Last block height downloaded", block.height);
     }
   });
 	// listening to internal state
@@ -157,13 +160,6 @@ NodeManager.prototype.onBlocksDownloaded = function(lastBlock) {
 
 
 NodeManager.prototype.onReceiveBlock = function (block, peer) {
-	// When client is not loaded, is syncing or round is ticking
-	// Do not receive new blocks as client is not ready
-	if (modules.loader.syncing() || modules.rounds.ticking()) {
-		library.logger.debug('Client not ready to receive block', block.id);
-		return;
-	}
-
 	//we make sure we process one block at a time
 	library.sequence.add(function (cb) {
 		var lastBlock = modules.nodeManager.getLastBlock();
@@ -260,7 +256,7 @@ NodeManager.prototype.onReceiveBlock = function (block, peer) {
 	});
 };
 
-NodeManager.prototype.onBlocksReceived = function(blocks, peer) {
+NodeManager.prototype.onBlocksReceived = function(blocks, peer, cb) {
 	async.eachSeries(blocks, function (block, cb) {
 		block.reward=parseInt(block.reward);
 		block.totalAmount=parseInt(block.totalAmount);
@@ -284,9 +280,14 @@ NodeManager.prototype.onBlocksReceived = function(blocks, peer) {
 		}
 		else{
 			library.bus.message("downloadBlocks");
+			cb && setImmediate(cb, null, block);
 		}
 	});
 }
+
+NodeManager.prototype.onBlockRemoved = function(block, cb) {
+	self.removeFromBlockchain(block, cb);
+};
 
 NodeManager.prototype.onBlockReceived = function(block, peer) {
 	var lastBlock = self.getLastBlock();
@@ -313,7 +314,7 @@ NodeManager.prototype.onBlockReceived = function(block, peer) {
       }
     }
 		else{
-			library.logger.debug("Block already in Blochain", block.id);
+			library.logger.debug("Block already in Blockchain", block.id);
 		}
 
   } else if(block.previousBlock == lastBlock.id){ //all clear
@@ -408,7 +409,7 @@ NodeManager.prototype.onBlockForged = function(block) {
       library.logger.error(err, block);
     }
     else{
-      library.logger.info("Forged block added to blockchain", block);
+      library.logger.info("Forged block added to blockchain", block.id);
       library.bus.message('processBlock', block);
       library.bus.message('broadcastBlock', block);
     }

@@ -30,8 +30,8 @@ Round.prototype.updateMissedBlocks = function () {
 	return this.t.none(sql.updateMissedBlocks(this.scope.backwards), [this.scope.outsiders]);
 };
 
-Round.prototype.getVotes = function () {
-	return this.t.query(sql.getVotes, { round: this.scope.round });
+Round.prototype.getVotes = function (round) {
+	return this.t.query(sql.getVotes, { round: round });
 };
 
 Round.prototype.updateVotes = function () {
@@ -104,7 +104,6 @@ Round.prototype.applyRound = function () {
 };
 
 Round.prototype.land = function () {
-	this.scope.__private.ticking = true;
 	return this.updateVotes()
 		.then(this.updateMissedBlocks.bind(this))
 		.then(this.flushRound.bind(this))
@@ -112,7 +111,6 @@ Round.prototype.land = function () {
 		.then(this.updateVotes.bind(this))
 		.then(this.flushRound.bind(this))
 		.then(function () {
-			this.scope.__private.ticking = false;
 			return this.t;
 		}.bind(this));
 };

@@ -9,9 +9,6 @@ var sql = require('../sql/rounds.js');
 // Private fields
 var modules, library, self, __private = {}, shared = {};
 
-__private.loaded = false;
-__private.ticking = false;
-
 __private.feesByRound = {};
 __private.rewardsByRound = {};
 __private.delegatesByRound = {};
@@ -26,15 +23,6 @@ function Rounds (cb, scope) {
 
 	setImmediate(cb, null, self);
 }
-
-// Public methods
-Rounds.prototype.loaded = function () {
-	return __private.loaded;
-};
-
-Rounds.prototype.ticking = function () {
-	return __private.ticking;
-};
 
 Rounds.prototype.calc = function (height) {
 	return Math.floor(height / slots.delegates) + (height % slots.delegates > 0 ? 1 : 0);
@@ -204,7 +192,8 @@ Rounds.prototype.tick = function (block, done) {
 		}
 	], function (err) {
 		if (scope.finishSnapshot) {
-			return done('Snapshot finished');
+			library.logger.info('Snapshot finished');
+			process.emit('SIGTERM');
 		} else {
 			return done(err);
 		}
@@ -216,12 +205,12 @@ Rounds.prototype.onBind = function (scope) {
 	modules = scope;
 };
 
-Rounds.prototype.onBlockchainReady = function () {
-	var round = self.calc(modules.blocks.getLastBlock().height);
+Rounds.prototype.onDatabaseLoaded = function (lastBlock) {
+	var round = self.calc(lastBlock.height);
 
 	__private.sumRound(round, function (err) {
  		if (!err) {
- 			__private.loaded = true;
+
  		}
 	});
 };
@@ -251,7 +240,6 @@ Rounds.prototype.onFinishRound = function (round) {
 };
 
 Rounds.prototype.cleanup = function (cb) {
-	__private.loaded = false;
 	return setImmediate(cb);
 };
 

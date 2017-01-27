@@ -18,7 +18,6 @@ var transactionTypes = require('../helpers/transactionTypes.js');
 var modules, library, self, __private = {}, shared = {};
 
 __private.assetTypes = {};
-__private.unconfirmedList = {};
 
 // Constructor
 function Transactions (cb, scope) {
@@ -255,27 +254,31 @@ Transactions.prototype.processUnconfirmedTransaction = function (transaction, br
 	return __private.transactionPool.processUnconfirmedTransaction(transaction, broadcast, cb);
 };
 
+// Useless with the fillPool method
+// TODO: To remove?
 Transactions.prototype.applyUnconfirmedList = function (cb) {
 	return __private.transactionPool.applyUnconfirmedList(cb);
 };
 
+// Useless with the fillPool method
+// TODO: To remove?
 Transactions.prototype.applyUnconfirmedIds = function (ids, cb) {
 	return __private.transactionPool.applyUnconfirmedIds(ids, cb);
 };
 
-Transactions.prototype.undoUnconfirmedList = function (cb) {
-	if(Object.keys(__private.unconfirmedList).length>0){
-		return __private.transactionPool.undoUnconfirmedList(cb);
-	}
-	else {
-		return setImmediate(cb, null, []);
-	}
+Transactions.prototype.undoUnconfirmedList = function (keepUnconfirmedTransactions, cb) {
+	return __private.transactionPool.undoUnconfirmedList(keepUnconfirmedTransactions, cb);
 };
 
-Transactions.prototype.apply = function (transaction, block, sender, cb) {
+Transactions.prototype.apply = function (transaction, block, cb) {
 	library.logger.debug('Applying confirmed transaction', transaction.id);
 	library.transactionSequence.add(function (cb){
-		library.logic.transaction.apply(transaction, block, sender, cb);
+		modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, function (err, sender) {
+			if (err) {
+				return setImmediate(eachSeriesCb, err);
+			}
+			library.logic.transaction.apply(transaction, block, sender, cb);
+		});
 	}, cb);
 };
 
@@ -286,29 +289,31 @@ Transactions.prototype.undo = function (transaction, block, sender, cb) {
 	}, cb);
 };
 
-Transactions.prototype.applyUnconfirmed = function (transaction, sender, cb) {
+Transactions.prototype.applyUnconfirmed = function (transaction, cb) {
 	library.logger.debug('Applying unconfirmed transaction', transaction.id);
-	if (!sender && transaction.blockId !== genesisblock.block.id) {
-		return setImmediate(cb, 'Invalid block id');
-	} else {
-		library.transactionSequence.add(function (cb){
-			if (transaction.requesterPublicKey) {
-				modules.accounts.getAccount({publicKey: transaction.requesterPublicKey}, function (err, requester) {
-					if (err) {
-						return setImmediate(cb, err);
-					}
+	modules.accounts.setAccountAndGet({publicKey: transaction.senderPublicKey}, function (err, sender) {
+		if (!sender && transaction.blockId !== genesisblock.block.id) {
+			return setImmediate(cb, 'Invalid block id');
+		} else {
+			library.transactionSequence.add(function (cb){
+				if (transaction.requesterPublicKey) {
+					modules.accounts.getAccount({publicKey: transaction.requesterPublicKey}, function (err, requester) {
+						if (err) {
+							return setImmediate(cb, err);
+						}
 
-					if (!requester) {
-						return setImmediate(cb, 'Requester not found');
-					}
+						if (!requester) {
+							return setImmediate(cb, 'Requester not found');
+						}
 
-					library.logic.transaction.applyUnconfirmed(transaction, sender, requester, cb);
-				});
-			} else {
-				library.logic.transaction.applyUnconfirmed(transaction, sender, cb);
-			}
-		}, cb);
-	}
+						library.logic.transaction.applyUnconfirmed(transaction, sender, requester, cb);
+					});
+				} else {
+					library.logic.transaction.applyUnconfirmed(transaction, sender, cb);
+				}
+			}, cb);
+		}
+	});
 };
 
 Transactions.prototype.undoUnconfirmed = function (transaction, cb) {
@@ -323,14 +328,8 @@ Transactions.prototype.undoUnconfirmed = function (transaction, cb) {
 	}, cb);
 };
 
-
-
 Transactions.prototype.receiveTransactions = function (transactions, cb) {
 	return __private.transactionPool.receiveTransactions(transactions, true, cb);
-};
-
-Transactions.prototype.fillPool = function (cb) {
-	return __private.transactionPool.fillPool(cb);
 };
 
 // Events

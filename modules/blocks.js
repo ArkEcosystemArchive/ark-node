@@ -320,23 +320,39 @@ __private.afterSave = function (block, cb) {
 	});
 };
 
+__private.getPreviousBlock = function(block, cb){
+	var previousBlock = modules.nodeManager.getBlockAtHeight(block.height - 1);
+	if(previousBlock && previousBlock.id == block.previousBlock){
+		setImmediate(cb, null, previousBlock);
+	}
+	else { //let's get from database
+		library.db.query(sql.getBlockById, {
+			id: block.previousBlock
+		}).then(function (rows) {
+			previousBlock = rows[0];
+
+			//TODO: get this right without tthis cleaning
+			previousBlock.reward = parseInt(previousBlock.reward);
+			previousBlock.totalAmount = parseInt(previousBlock.totalAmount);
+			previousBlock.totalFee = parseInt(previousBlock.totalFee);
+			setImmediate(cb, null, previousBlock);
+		}).catch(function (err) {
+			setImmediate(cb, err);
+		});
+	}
+}
+
 __private.popLastBlock = function (oldLastBlock, cb) {
 	library.balancesSequence.add(function (cb) {
-		self.loadBlocksPart({ id: oldLastBlock.previousBlock }, function (err, previousBlock) {
-			if (err || !previousBlock.length) {
+		__private.getPreviousBlock(oldLastBlock, function (err, previousBlock) {
+			if (err || !previousBlock) {
 				return setImmediate(cb, err || 'previousBlock is null');
 			}
-			previousBlock = previousBlock[0];
 
 			async.eachSeries(oldLastBlock.transactions.reverse(), function (transaction, cb) {
 				async.series([
 					function (cb) {
-						modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, function (err, sender) {
-							if (err) {
-								return setImmediate(cb, err);
-							}
-							modules.transactions.undo(transaction, oldLastBlock, sender, cb);
-						});
+						modules.transactions.undo(transaction, oldLastBlock, cb);
 					}, function (cb) {
 						modules.transactions.undoUnconfirmed(transaction, cb);
 					}, function (cb) {
@@ -346,7 +362,7 @@ __private.popLastBlock = function (oldLastBlock, cb) {
 			}, function (err) {
 				modules.rounds.backwardTick(oldLastBlock, previousBlock, function () {
 					__private.deleteBlock(oldLastBlock.id, function (err) {
-						return setImmediate(cb, err, previousBlock);
+						library.bus.message("blockRemoved", oldLastBlock, cb);
 					});
 				});
 			});
@@ -434,8 +450,8 @@ __private.readDbRows = function (rows) {
 	return blocks;
 };
 
-__private.applyTransaction = function (block, transaction, sender, cb) {
-	modules.transactions.applyUnconfirmed(transaction, sender, function (err) {
+__private.applyGenesisTransaction = function (block, transaction, sender, cb) {
+	modules.transactions.applyUnconfirmed(transaction, function (err) {
 		if (err) {
 			return setImmediate(cb, {
 				message: err,
@@ -444,7 +460,7 @@ __private.applyTransaction = function (block, transaction, sender, cb) {
 			});
 		}
 
-		modules.transactions.apply(transaction, block, sender, function (err) {
+		modules.transactions.apply(transaction, block, function (err) {
 			if (err) {
 				return setImmediate(cb, {
 					message: 'Failed to apply transaction: ' + transaction.id,
@@ -644,7 +660,12 @@ Blocks.prototype.loadBlocksOffset = function (limit, offset, verify, cb) {
 				else {
 					async.waterfall([
 						function(cb){
-							__private.applyBlock(block, cb);
+							if(block.numberOfTransactions>0){
+								__private.applyBlock(block, cb);
+							}
+							else{
+								setImmediate(cb);
+							}
 						},
 						function(cb){
 							modules.rounds.tick(block, cb);
@@ -675,7 +696,7 @@ Blocks.prototype.removeSomeBlocks = function(numbers, cb){
 			// Rewind any unconfirmed transactions before removing blocks.
 			// We won't apply them again since we will have to resync blocks back from network
 			undoUnconfirmedList: function (seriesCb) {
-				modules.transactions.undoUnconfirmedList(function (err, transactions) {
+				modules.transactions.undoUnconfirmedList([],function (err, transactions) {
 					if (err) {
 						// TODO: Send a numbered signal to be caught by forever to trigger a rebuild.
 						return setImmediate(seriesCb, err);
@@ -737,7 +758,7 @@ Blocks.prototype.removeLastBlock = function(cb){
 			// Rewind any unconfirmed transactions before removing blocks.
 			// We won't apply them again since we will have to resync blocks back from network
 			undoUnconfirmedList: function (seriesCb) {
-				modules.transactions.undoUnconfirmedList(function (err, transactions) {
+				modules.transactions.undoUnconfirmedList([],function (err, transactions) {
 					return setImmediate(seriesCb, err);
 
 				});
@@ -824,19 +845,16 @@ Blocks.prototype.onVerifyBlock = function (block, cb) {
 // skipLastBlockCheck: to check any block, and not check if we have the next block of the internal chain
 Blocks.prototype.verifyBlock = function (block, lastBlock) {
 	var result = { verified: false, errors: [] };
-	if(!block.id){
-		try {
-			block.id = library.logic.block.getId(block);
-		} catch (e) {
-			result.errors.push(e.toString());
-		}
+
+	try {
+		block = library.logic.block.objectNormalize(block);
+	} catch (err) {
+		result.errors.push(err);
 	}
 
-	// Removed because height has been added to block.getBytes
-	// if(!block.height){
-	//  	block.height = lastBlock.height + 1;
-	// }
-
+	if(!block.id){
+		result.errors.push("No block id");
+	}
 
 	if (!block.previousBlock && block.height !== 1) {
 		result.errors.push('Invalid previous block');
@@ -956,8 +974,8 @@ __private.applyBlock = function (block, cb) {
 	// Transactions to rewind in case of error.
 	var appliedTransactions = {};
 
-	// List of currrently unconfirmed transactions.
-	var unconfirmedTransactionsIds;
+	// List of currrently unconfirmed transactions that have been popped and unconfirmed transactions from the block already present in the node
+	var removedTransactionsIds, keptTransactions;
 
 
 	async.series({
@@ -965,57 +983,46 @@ __private.applyBlock = function (block, cb) {
 		// TODO: It should be possible to remove this call if we can guarantee that only this function is processing transactions atomically. Then speed should be improved further.
 		// TODO: Other possibility, when we rebuild from block chain this action should be moved out of the rebuild function.
 		undoUnconfirmedList: function (seriesCb) {
-			modules.transactions.undoUnconfirmedList(function (err, transactions) {
+			modules.transactions.undoUnconfirmedList(block.transactions, function (err, removedTransactionsIds, keptTransactionsIds) {
 				if (err) {
 					return setImmediate(seriesCb, err);
 				} else {
-					unconfirmedTransactionsIds = transactions;
+					removedTransactionsIds = removedTransactionsIds;
+					keptTransactions = block.transactions.filter(function(tx){
+						return keptTransactionsIds.indexOf(tx.id) == -1;
+					});
 					return setImmediate(seriesCb);
 				}
 			});
 		},
 		// Apply transactions to unconfirmed mem_accounts fields.
 		applyUnconfirmed: function (seriesCb) {
-			async.eachSeries(block.transactions, function (transaction, eachSeriesCb) {
-				// DATABASE read most of the time
-				modules.accounts.setAccountAndGet({publicKey: transaction.senderPublicKey}, function (err, sender) {
-					// DATABASE: write
-					modules.transactions.applyUnconfirmed(transaction, sender, function (err) {
-						if (err) {
-							err = ['Failed to apply transaction:', transaction.id, '-', err].join(' ');
-							library.logger.error(err);
-							library.logger.error('Transaction', transaction);
-							return setImmediate(eachSeriesCb, err);
-						}
+			async.eachSeries(keptTransactions, function (transaction, eachSeriesCb) {
+				// DATABASE: write
+				modules.transactions.applyUnconfirmed(transaction, function (err) {
+					if (err) {
+						err = ['Failed to apply transaction:', transaction.id, '-', err].join(' ');
+						library.logger.error(err);
+						library.logger.error('Transaction', transaction);
+						return setImmediate(eachSeriesCb, err);
+					}
 
-						appliedTransactions[transaction.id] = transaction;
+					appliedTransactions[transaction.id] = transaction;
 
-						// Remove the transaction from the node queue, if it was present.
-						var index = unconfirmedTransactionsIds.indexOf(transaction.id);
-						if (index >= 0) {
-							unconfirmedTransactionsIds.splice(index, 1);
-						}
-
-						return setImmediate(eachSeriesCb);
-					});
+					return setImmediate(eachSeriesCb);
 				});
 			}, function (err) {
 				if (err) {
 					// Rewind any already applied unconfirmed transactions.
 					// Leaves the database state as per the previous block.
 					async.eachSeries(block.transactions, function (transaction, eachSeriesCb) {
-						modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, function (err, sender) {
-							if (err) {
-								return setImmediate(eachSeriesCb, err);
-							}
-							// The transaction has been applied?
-							if (appliedTransactions[transaction.id]) {
-								// DATABASE: write
-								library.logic.transaction.undoUnconfirmed(transaction, sender, eachSeriesCb);
-							} else {
-								return setImmediate(eachSeriesCb);
-							}
-						});
+						// The transaction has been applied?
+						if (appliedTransactions[transaction.id]) {
+							// DATABASE: write
+							modules.transactions.undoUnconfirmed(transaction, eachSeriesCb);
+						} else {
+							return setImmediate(eachSeriesCb);
+						}
 					}, function (err) {
 						return setImmediate(seriesCb, err);
 					});
@@ -1028,7 +1035,8 @@ __private.applyBlock = function (block, cb) {
 		// Apply transactions to confirmed mem_accounts fields.
 		applyConfirmed: function (seriesCb) {
 			async.eachSeries(block.transactions, function (transaction, eachSeriesCb) {
-				modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, function (err, sender) {
+				// DATABASE: write
+				modules.transactions.apply(transaction, block, function (err) {
 					if (err) {
 						err = ['Failed to apply transaction:', transaction.id, '-', err].join(' ');
 						library.logger.error(err);
@@ -1036,51 +1044,21 @@ __private.applyBlock = function (block, cb) {
 						// TODO: Send a numbered signal to be caught by forever to trigger a rebuild.
 						return setImmediate(eachSeriesCb, err);
 					}
-					// DATABASE: write
-					modules.transactions.apply(transaction, block, sender, function (err) {
-						if (err) {
-							err = ['Failed to apply transaction:', transaction.id, '-', err].join(' ');
-							library.logger.error(err);
-							library.logger.error('Transaction', transaction);
-							// TODO: Send a numbered signal to be caught by forever to trigger a rebuild.
-							return setImmediate(eachSeriesCb, err);
-						}
-						// Transaction applied, removed from the unconfirmed list.
-						modules.transactions.removeUnconfirmedTransaction(transaction.id);
-						return setImmediate(eachSeriesCb);
-					});
+					// Transaction applied, removed from the unconfirmed list.
+					modules.transactions.removeUnconfirmedTransaction(transaction.id);
+					return setImmediate(eachSeriesCb);
 				});
 			}, function (err) {
 				return setImmediate(seriesCb, err);
 			});
-		},
-		// Push back unconfirmed transactions list (minus the one that were on the block if applied correctly).
-		// TODO: See undoUnconfirmedList discussion above.
-		applyUnconfirmedIds: function (seriesCb) {
-			// Don't apply unconfirmed transactions if we are syncing....
-			if(modules.loader.syncing()){
-				return setImmediate(seriesCb, null);
-			}
-			else{
-				// DATABASE write
-				modules.transactions.applyUnconfirmedIds(unconfirmedTransactionsIds, function (err) {
-					return setImmediate(seriesCb, err);
-				});
-			}
-		},
+		}
 	}, function (err) {
 		// Allow shutdown, database writes are finished.
 		__private.noShutdownRequired = false;
 
 		// Nullify large objects.
 		// Prevents memory leak during synchronisation.
-		appliedTransactions = unconfirmedTransactionsIds = block = null;
-
-		// Finish here if snapshotting.
-		if (err === 'Snapshot finished') {
-			library.logger.info(err);
-			process.emit('SIGTERM');
-		}
+		keptTransactions = appliedTransactions = removedTransactionsIds = block = null;
 
 		return setImmediate(cb, err);
 	});
@@ -1105,7 +1083,7 @@ __private.applyGenesisBlock = function (block, cb) {
 						block: block
 					});
 				}
-				__private.applyTransaction(block, transaction, sender, cb);
+				__private.applyGenesisTransaction(block, transaction, sender, cb);
 			});
 	}, function (err) {
 		if (err) {
@@ -1118,8 +1096,7 @@ __private.applyGenesisBlock = function (block, cb) {
 	});
 };
 
-// Main function to process a Block.
-// * Verify the block looks ok
+// Main function to process a Verified Block.
 // * Verify the block is compatible with database state (DATABASE readonly)
 // * Apply the block to database if both verifications are ok
 Blocks.prototype.processBlock = function (block, cb) {
@@ -1130,21 +1107,17 @@ Blocks.prototype.processBlock = function (block, cb) {
 	// be sure to apply only one block after the other
 	library.blockSequence.add(function (cb){
 
-		try {
-			block = library.logic.block.objectNormalize(block);
-		} catch (err) {
-			return setImmediate(cb, err);
-		}
+
 
 		// Sanity check of the block, if values are coherent.
 		// No access to database
-		var check = self.verifyBlock(block);
+		// var check = self.verifyBlock(block);
 
-		if (!check.verified) {
-			library.logger.error(['Block', block.id, 'verification failed'].join(' '), check.errors.join(', '));
-			library.logger.debug("block", block);
-			return setImmediate(cb, check.errors[0]);
-		}
+		// if (!check.verified) {
+		// 	library.logger.error(['Block', block.id, 'verification failed'].join(' '), check.errors.join(', '));
+		// 	library.logger.debug("block", block);
+		// 	return setImmediate(cb, check.errors[0]);
+		// }
 
 
 		// Check if block id is already in the database (very low probability of hash collision).
@@ -1241,6 +1214,46 @@ Blocks.prototype.processBlock = function (block, cb) {
 	}, cb);
 };
 
+Blocks.prototype.processEmptyBlock = function (block, cb) {
+	if (__private.cleanup) {
+		return setImmediate(cb, 'Cleaning up');
+	}
+	if(block.numberOfTransactions>0){
+		return setImmediate(cb, 'Not an empty block');
+	}
+
+	// be sure to apply only one block after the other
+	library.blockSequence.add(function (cb){
+
+		// Check if block id is already in the database (very low probability of hash collision).
+		// TODO: In case of hash-collision, to me it would be a special autofork...
+		// DATABASE: read only
+		library.db.query(sql.getBlockId, { id: block.id }).then(function (rows) {
+			if (rows.length > 0) {
+				return setImmediate(cb, ['Block', block.id, 'already exists'].join(' '));
+			}
+
+			// Check if block was generated by the right active delagate. Otherwise, fork 3.
+			// DATABASE: Read only to mem_accounts to extract active delegate list
+			modules.delegates.validateBlockSlot(block, function (err) {
+				if (err) {
+					library.bus.message("fork",block, 3);
+					return setImmediate(cb, err);
+				}
+
+				async.waterfall([
+					function(cb){
+						__private.saveBlock(block, cb);
+					},
+					function(cb){
+						modules.rounds.tick(block, cb);
+					},
+				],cb);
+			});
+		});
+	}, cb);
+};
+
 Blocks.prototype.simpleDeleteAfterBlock = function (blockId, cb) {
 	library.db.query(sql.simpleDeleteAfterBlock, {id: blockId}).then(function (res) {
 		return setImmediate(cb, null, res);
@@ -1280,8 +1293,8 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, cb) {
 		if (blocks.length === 0) {
 			return setImmediate(cb, null, lastValidBlock);
 		} else {
-			library.bus.message("blocksReceived", blocks, peer);
-			return setImmediate(cb);
+			library.bus.message("blocksReceived", blocks, peer, cb);
+
 			// async.eachSeries(blocks, function (block, cb) {
 			// 	if (__private.cleanup) {
 			// 		return setImmediate(cb);
@@ -1408,14 +1421,26 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 
 // Events
 Blocks.prototype.onProcessBlock = function (block, cb) {
-	self.processBlock(block, function(err){
-		if (err) {
-			setImmediate(cb, err, block);
-		}
-		else{
-			library.bus.message("blockProcessed", block, cb);
-		}
-	})
+	if(block.numberOfTransactions == 0){
+		self.processEmptyBlock(block, function(err){
+			if (err) {
+				cb && setImmediate(cb, err, block);
+			}
+			else{
+				library.bus.message("blockProcessed", block, cb);
+			}
+		});
+	}
+	else{
+		self.processBlock(block, function(err){
+			if (err) {
+				cb && setImmediate(cb, err, block);
+			}
+			else{
+				library.bus.message("blockProcessed", block, cb);
+			}
+		});
+	}
 };
 
 

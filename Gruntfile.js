@@ -19,7 +19,7 @@ module.exports = function (grunt) {
 	var config = require('./config.json');
 
 	var release_dir = __dirname + '/release/',
-	    version_dir = release_dir + 'ark-' + config.version;
+	    version_dir = release_dir + config.version;
 
 	grunt.initConfig({
 		obfuscator: {
@@ -43,7 +43,7 @@ module.exports = function (grunt) {
 						util.format('cp %s/genesisBlock.json %s', __dirname, version_dir),
 						util.format('mkdir -p %s/sql/migrations', version_dir),
 						util.format('cp %s/sql/*.sql %s/sql/', __dirname, version_dir),
-						util.format('cp %s/sql/migrations/*.sql %s/sql/migrations/', __dirname, version_dir),
+						util.format('cp %s/sql/migrations/*.sql %s/sql/migrations/', __dirname, version_dir)
 					].join(' && ');
 				}
 			},
@@ -97,6 +97,19 @@ module.exports = function (grunt) {
 				'test/api/**/*.js',
 				'test/unit/**/*.js'
 			]
+		},
+
+		mochaTest: {
+			test: {
+				options: {
+					reporter: 'spec',
+					quiet: false,
+					clearRequireCache: false,
+					noFail: false,
+					timeout: '250s'
+				},
+				src: ['test']
+			}
 		}
 	});
 
@@ -107,7 +120,9 @@ module.exports = function (grunt) {
 	grunt.loadNpmTasks('grunt-exec');
 	grunt.loadNpmTasks('grunt-contrib-compress');
 	grunt.loadNpmTasks('grunt-contrib-jshint');
+	grunt.loadNpmTasks('grunt-mocha-test');
 
 	grunt.registerTask('default', ['release']);
 	grunt.registerTask('release', ['exec:folder', 'obfuscator', 'exec:package', 'exec:build', 'compress']);
+	grunt.registerTask('travis', ['jshint', 'mochaTest']);
 };

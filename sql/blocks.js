@@ -73,6 +73,8 @@ var BlocksSql = {
 
   getBlockId: 'SELECT "id" FROM blocks WHERE "id" = ${id}',
 
+  getBlockById: 'SELECT id, version, height, timestamp, "previousBlock", "numberOfTransactions" ,"totalAmount", "totalFee", reward, "payloadLength", encode("payloadHash", \'hex\') as "payloadHash", encode("generatorPublicKey", \'hex\') as "generatorPublicKey",  encode("blockSignature", \'hex\') as "blockSignature", rawtxs::json as transactions from blocks WHERE id = ${id}',
+
   getTransactionId: 'SELECT "id" FROM trs WHERE "id" = ${id}',
 
   simpleDeleteAfterBlock: 'DELETE FROM blocks WHERE "height" >= (SELECT "height" FROM blocks WHERE "id" = ${id});'

@@ -317,12 +317,14 @@ TransactionPool.prototype.applyUnconfirmedIds = function (ids, cb) {
 	return __private.applyUnconfirmedList(ids, cb);
 };
 
-TransactionPool.prototype.undoUnconfirmedList = function (cb) {
-	var ids = [];
+TransactionPool.prototype.undoUnconfirmedList = function (keepUnconfirmedTransactions, cb) {
+	var removedIds = [], keptIds = [];
+	var keepIds = keepUnconfirmedTransactions.map(function(tx){return tx.id});
 
 	async.eachSeries(self.getUnconfirmedTransactionList(false), function (transaction, eachSeriesCb) {
-		if (transaction) {
-			ids.push(transaction.id);
+
+		if (transaction && (keepIds.indexOf(transaction.id) == -1)) {
+			removedIds.push(transaction.id);
 			modules.transactions.undoUnconfirmed(transaction, function (err) {
 				if (err) {
 					library.logger.error('Failed to undo unconfirmed transaction: ' + transaction.id, err);
@@ -331,10 +333,11 @@ TransactionPool.prototype.undoUnconfirmedList = function (cb) {
 				return setImmediate(eachSeriesCb);
 			});
 		} else {
+			keptIds.push(transaction.id);
 			return setImmediate(eachSeriesCb);
 		}
 	}, function (err) {
-		return setImmediate(cb, err, ids);
+		return setImmediate(cb, err, removedIds, keptIds);
 	});
 };
 
@@ -357,7 +360,6 @@ TransactionPool.prototype.expireTransactions = function (cb) {
 };
 
 TransactionPool.prototype.fillPool = function (cb) {
-	if (modules.loader.syncing()) { return setImmediate(cb); }
 
 	var unconfirmedCount = self.countUnconfirmed();
 	library.logger.debug('Transaction pool size: ' + unconfirmedCount);
@@ -475,7 +477,7 @@ __private.applyUnconfirmedList = function (transactions, cb) {
 				self.removeUnconfirmedTransaction(transaction.id);
 				return setImmediate(eachSeriesCb);
 			}
-			modules.transactions.applyUnconfirmed(transaction, sender, function (err) {
+			modules.transactions.applyUnconfirmed(transaction, function (err) {
 				if (err) {
 					library.logger.error('Failed to apply unconfirmed transaction: ' + transaction.id, err);
 					self.removeUnconfirmedTransaction(transaction.id);

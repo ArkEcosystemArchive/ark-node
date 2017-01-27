@@ -467,7 +467,7 @@ __private.syncFromNetwork = function (cb) {
 	async.series({
 		undoUnconfirmedList: function (seriesCb) {
 			library.logger.debug('Undoing unconfirmed transactions before sync');
-			return modules.transactions.undoUnconfirmedList(seriesCb);
+			return modules.transactions.undoUnconfirmedList([], seriesCb);
 		},
 		loadBlocksFromNetwork: function (seriesCb) {
 			return __private.loadBlocksFromNetwork(seriesCb);
