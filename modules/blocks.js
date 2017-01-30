@@ -321,8 +321,8 @@ __private.afterSave = function (block, cb) {
 };
 
 __private.getPreviousBlock = function(block, cb){
-	var previousBlock = modules.nodeManager.getBlockAtHeight(block.height - 1);
-	if(previousBlock && previousBlock.id == block.previousBlock){
+	var previousBlock = modules.nodeManager.getPreviousBlock(block);
+	if(previousBlock){
 		setImmediate(cb, null, previousBlock);
 	}
 	else { //let's get from database
@@ -331,7 +331,7 @@ __private.getPreviousBlock = function(block, cb){
 		}).then(function (rows) {
 			previousBlock = rows[0];
 
-			//TODO: get this right without tthis cleaning
+			//TODO: get this right without this cleaning
 			previousBlock.reward = parseInt(previousBlock.reward);
 			previousBlock.totalAmount = parseInt(previousBlock.totalAmount);
 			previousBlock.totalFee = parseInt(previousBlock.totalFee);
@@ -645,7 +645,7 @@ Blocks.prototype.loadBlocksOffset = function (limit, offset, verify, cb) {
 				if (verify && block.id !== genesisblock.block.id) {
 					// Sanity check of the block, if values are coherent.
 					// No access to database.
-					var check = self.verifyBlock(block, lastBlock);
+					var check = self.verifyBlock(block, true);
 
 					if (!check.verified) {
 						library.logger.error(['loadBlocksOffset: Block ', block.id, 'verification failed'].join(' '), check.errors.join(', '));
@@ -843,7 +843,7 @@ Blocks.prototype.onVerifyBlock = function (block, cb) {
 // Will return all possible errors that are intrinsic to the block.
 // NO DATABASE access
 // skipLastBlockCheck: to check any block, and not check if we have the next block of the internal chain
-Blocks.prototype.verifyBlock = function (block, lastBlock) {
+Blocks.prototype.verifyBlock = function (block, checkPreviousBlock) {
 	var result = { verified: false, errors: [] };
 
 	try {
@@ -856,12 +856,18 @@ Blocks.prototype.verifyBlock = function (block, lastBlock) {
 		result.errors.push("No block id");
 	}
 
-	if (!block.previousBlock && block.height !== 1) {
-		result.errors.push('Invalid previous block');
-	} else if (lastBlock && block.previousBlock !== lastBlock.id) {
-		// Fork: Same height but different previous block id.
-		library.bus.message("fork",block, 1);
-		result.errors.push(['Invalid previous block:', block.previousBlock, 'expected:', lastBlock.id].join(' '));
+	var previousBlock = null;
+
+	if(block.height !== 1){
+		if (!block.previousBlock) {
+			result.errors.push('Invalid previous block');
+		} else if (checkPreviousBlock){
+			previousBlock = modules.nodeManager.getPreviousBlock(block);
+			if(!previousBlock) {
+				library.bus.message("fork",block, 1);
+				result.errors.push(['Invalid previous block:', block.previousBlock, 'expected:', lastBlock.id].join(' '));
+			}
+		}
 	}
 
 	var expectedReward = __private.blockReward.calcReward(block.height);
@@ -892,13 +898,14 @@ Blocks.prototype.verifyBlock = function (block, lastBlock) {
 	if (blockSlotNumber > slots.getSlotNumber()){
 		result.errors.push('Invalid block timestamp');
 	}
-	if(lastBlock){
-		var lastBlockSlotNumber = slots.getSlotNumber(lastBlock.timestamp);
-		if(blockSlotNumber <= lastBlockSlotNumber) {
-		 	result.errors.push('Invalid block timestamp');
-		}
-	}
 
+	// Disabling to allow orphanedBlocks
+	// if(checkPreviousBlock){
+	// 	var lastBlockSlotNumber = slots.getSlotNumber(lastBlock.timestamp);
+	// 	if(blockSlotNumber <= lastBlockSlotNumber) {
+	// 	 	result.errors.push('Invalid block timestamp');
+	// 	}
+	// }
 
 	if (block.payloadLength > constants.maxPayloadLength) {
 		result.errors.push('Payload length is too high');
@@ -937,13 +944,22 @@ Blocks.prototype.verifyBlock = function (block, lastBlock) {
 
 		size += bytes.length;
 
+		if(!transaction.id){
+			transaction.id = library.logic.transaction.getId(transaction);
+		}
+
 		if (appliedTransactions[transaction.id]) {
 			result.errors.push('Encountered duplicate transaction: ' + transaction.id);
 		}
 
 		appliedTransactions[transaction.id] = transaction;
-		if (bytes) { payloadHash.update(bytes); }
+
+		if (bytes) {
+			payloadHash.update(bytes);
+		}
+
 		totalAmount += transaction.amount;
+
 		totalFee += transaction.fee;
 	}
 
@@ -987,8 +1003,9 @@ __private.applyBlock = function (block, cb) {
 					return setImmediate(seriesCb, err);
 				} else {
 					removedTransactionsIds = removedTransactionsIds;
+					// just filter out tx that have been already applied as unconfirmed, or applied in a previous block
 					keptTransactions = block.transactions.filter(function(tx){
-						return keptTransactionsIds.indexOf(tx.id) == -1;
+						return keptTransactionsIds.indexOf(tx.id) == -1 || !tx.applied;
 					});
 					return setImmediate(seriesCb);
 				}
@@ -997,7 +1014,6 @@ __private.applyBlock = function (block, cb) {
 		// Apply transactions to unconfirmed mem_accounts fields.
 		applyUnconfirmed: function (seriesCb) {
 			async.eachSeries(keptTransactions, function (transaction, eachSeriesCb) {
-				// DATABASE: write
 				modules.transactions.applyUnconfirmed(transaction, function (err) {
 					if (err) {
 						err = ['Failed to apply transaction:', transaction.id, '-', err].join(' ');
@@ -1014,7 +1030,7 @@ __private.applyBlock = function (block, cb) {
 				if (err) {
 					// Rewind any already applied unconfirmed transactions.
 					// Leaves the database state as per the previous block.
-					async.eachSeries(block.transactions, function (transaction, eachSeriesCb) {
+					async.eachSeries(keptTransactions, function (transaction, eachSeriesCb) {
 						// The transaction has been applied?
 						if (appliedTransactions[transaction.id]) {
 							// DATABASE: write
@@ -1033,7 +1049,12 @@ __private.applyBlock = function (block, cb) {
 		// Block and transactions are ok.
 		// Apply transactions to confirmed mem_accounts fields.
 		applyConfirmed: function (seriesCb) {
-			async.eachSeries(block.transactions, function (transaction, eachSeriesCb) {
+			// filter out all tx processed in previous block
+			// but keep this time tx that are applied unconfirmed previously
+			keptTransactions = block.transactions.filter(function(tx){
+				return !tx.applied;
+			});
+			async.eachSeries(keptTransactions, function (transaction, eachSeriesCb) {
 				// DATABASE: write
 				modules.transactions.apply(transaction, block, function (err) {
 					if (err) {
@@ -1106,8 +1127,6 @@ Blocks.prototype.processBlock = function (block, cb) {
 	// be sure to apply only one block after the other
 	library.blockSequence.add(function (cb){
 
-
-
 		// Sanity check of the block, if values are coherent.
 		// No access to database
 		// var check = self.verifyBlock(block);
@@ -1149,17 +1168,17 @@ Blocks.prototype.processBlock = function (block, cb) {
 							// Check if transaction is already in database, otherwise fork 2.
 							// TODO: Uncle forging: Double inclusion is allowed.
 							// DATABASE: read only
+
 							library.db.query(sql.getTransactionId, { id: transaction.id }).then(function (rows) {
 								if (rows.length > 0) {
-									library.bus.message("fork",block, 2);
-									library.logger.error("error existing tx", block);
-									library.logger.error("error existing tx", rows);
-									return setImmediate(cb, ['Transaction', transaction.id, 'already exists'].join(' '));
-								} else {
-									// Get account from database if any (otherwise cold wallet).
-									// DATABASE: read only
-									modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, cb);
+									library.bus.message("fork",block, 0);
+									transaction.processed = true;
+									//we just don't process tx
+									return setImmediate(cb);
 								}
+								// Get account from database if any (otherwise cold wallet).
+								// DATABASE: read only
+								modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, cb);
 							}).catch(function (err) {
 								library.logger.error("stack", err.stack);
 								return setImmediate(cb, 'Blocks#processBlock error');
@@ -1168,18 +1187,16 @@ Blocks.prototype.processBlock = function (block, cb) {
 						function (sender, cb) {
 							// Check if transaction id valid against database state (mem_* tables).
 							// DATABASE: read only
+
 							if(block.height!=1){
+								if(transaction.processed){
+									return setImmediate(cb);
+								}
 								library.logic.transaction.verify(transaction, sender, cb);
 							}
 							else{
 								// Don't verify transaction in Genesis block unless there is a signature
-								if(transaction.signature){
-									library.logic.transaction.verify(transaction, sender, cb);
-								}
-								else {
-									return setImmediate(cb);
-								}
-
+								return setImmediate(cb);
 							}
 						}
 					],

@@ -9,7 +9,12 @@ var sql = require('../sql/nodeManager.js');
 var self, library, modules;
 
 var __private = {};
+
+// indexed by height
 __private.blockchain = {};
+
+// indexed by id all blocks considered as orphaned
+__private.orphanedBlocks = {};
 
 
 // Constructor
@@ -17,7 +22,7 @@ function NodeManager (cb, scope) {
 	library = scope;
 	self = this;
 	if(library.config.maxhop){
-		__private.maxhop = ibrary.config.maxhop;
+		__private.maxhop = library.config.maxhop;
 	}
 	else{
 		__private.maxhop = 10;
@@ -52,11 +57,22 @@ NodeManager.prototype.addToBlockchain = function(block, cb){
   if(!__private.blockchain[block.height]){
     __private.blockchain[block.height]=block;
   }
-  else if(__private.blockchain[block.height].id != block.id){
+  else if(__private.blockchain[block.height] != block.id){
+
     error = "addToBlockchain - Block has been replaced in the blockchain";
   }
   return cb && setImmediate(cb, error, __private.blockchain[block.height]);
 };
+
+// return the previousBlock even if orphaned.
+// return null if no previous Block found. Likely a fork.
+NodeManager.prototype.getPreviousBlock = function(block){
+	var previousBlock = __private.blockchain[block.height - 1];
+	if(!previousBlock || previousBlock.id !== block.previousBlock){
+		previousBlock = __private.orphanedBlocks[block.previousBlock];
+	}
+	return previousBlock;
+}
 
 NodeManager.prototype.removeFromBlockchain = function(block, cb){
   var error = null;
@@ -309,9 +325,11 @@ NodeManager.prototype.onBlockReceived = function(block, peer) {
 	    block.broadcast=true;
 	    self.addToBlockchain(block);
 		}
+		return;
   }
 
   var myblock = __private.blockchain[block.height];
+	var previousBlock = self.getPreviousBlock(block);
   if(myblock){
     // FORK
     if(block.id != myblock.id){
@@ -326,7 +344,7 @@ NodeManager.prototype.onBlockReceived = function(block, peer) {
 			library.logger.debug("Block already in Blockchain", block.id);
 		}
 
-  } else if(block.previousBlock == lastBlock.id){ //all clear
+  } else if(previousBlock && block.previousBlock == previousBlock.id){ //all clear
     block.verified=false;
     block.processed=false;
     block.broadcast=true;
