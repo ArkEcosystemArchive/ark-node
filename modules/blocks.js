@@ -998,14 +998,14 @@ __private.applyBlock = function (block, cb) {
 		// TODO: It should be possible to remove this call if we can guarantee that only this function is processing transactions atomically. Then speed should be improved further.
 		// TODO: Other possibility, when we rebuild from block chain this action should be moved out of the rebuild function.
 		undoUnconfirmedList: function (seriesCb) {
-			modules.transactionPool.undoUnconfirmedList(block.transactions, function (err, removedTransactionsIds, keptTransactionsIds) {
+			modules.transactionPool.undoUnconfirmedList(block.transactions, function (err, removedTransactionsIds, alreadyUnconfirmedTransactionIds) {
 				if (err) {
 					return setImmediate(seriesCb, err);
 				} else {
 					removedTransactionsIds = removedTransactionsIds;
-					// just filter out tx that have been already applied as unconfirmed, or applied in a previous block
+					// filter out tx that have been already applied as unconfirmed, or applied in a previous block
 					keptTransactions = block.transactions.filter(function(tx){
-						return keptTransactionsIds.indexOf(tx.id) == -1 || !tx.applied;
+						return alreadyUnconfirmedTransactionIds.indexOf(tx.id) == -1 && !tx.applied;
 					});
 					return setImmediate(seriesCb);
 				}
@@ -1050,7 +1050,7 @@ __private.applyBlock = function (block, cb) {
 		// Apply transactions to confirmed mem_accounts fields.
 		applyConfirmed: function (seriesCb) {
 			// filter out all tx processed in previous block
-			// but keep this time tx that are applied unconfirmed previously
+			// but keep this time tx that were already unconfirmed previously
 			keptTransactions = block.transactions.filter(function(tx){
 				return !tx.applied;
 			});
