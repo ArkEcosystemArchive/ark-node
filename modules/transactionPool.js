@@ -130,7 +130,7 @@ TransactionPool.prototype.transactionInPool = function (id) {
 	].filter(Boolean).length > 0;
 };
 
-TransactionPool.prototype.transactionInMempool = function (id) {
+TransactionPool.prototype.getTransactionFromMempool = function (id) {
 	return __private.mempool[id];
 };
 
@@ -233,12 +233,19 @@ TransactionPool.prototype.countMultisignature = function () {
 };
 
 TransactionPool.prototype.receiveTransactions = function (transactions, cb) {
+	//console.log(transactions);
 	var expirationdate=slots.getTime()-__private.mempoolConfig.maximumAgeInMinutes*60;
 	async.eachSeries(transactions, function (transaction, cb) {
-		if(__private.mempool[transaction.id]){
-			setImmediate(cb);
+		var memtx=__private.mempool[transaction.id];
+		if(memtx){
+			if(memtx.error){ // sounds like already rejected.
+				setImmediate(cb, memtx.error);
+			}
+			else{ // already verified
+				setImmediate(cb);
+			}
 		}
-		else if(transaction.timestamp < expirationdate){
+		else if(transaction.timestamp < expirationdate){ // too old, ignore
 			// ignore
 			setImmediate(cb);
 		}
@@ -246,13 +253,14 @@ TransactionPool.prototype.receiveTransactions = function (transactions, cb) {
 			// we add transaction in mempool but still can be a spam.
 			// be sure to remove if there is an error in processing
 			__private.mempool[transaction.id]=transaction;
-
 			__private.processVerifyTransaction(transaction, function (err) {
 				if (!err) {
 					return self.queueTransaction(transaction, cb);
 				} else {
 					// TODO: do we want to remove from mempool if somebody is spamming?
 					// we delete the tx in 1 min, so max 1 verification per spammy tx
+					// we keep the error in memory.
+					transaction.error=err;
 					setTimeout(function(){
 						delete __private.mempool[transaction.id];
 					}, 60000);
@@ -270,6 +278,8 @@ TransactionPool.prototype.receiveTransactions = function (transactions, cb) {
 
 TransactionPool.prototype.queueTransaction = function (transaction, cb) {
 	delete transaction.receivedAt;
+
+	//console.log(transaction);
 
   if (transaction.type === transactionTypes.MULTI || Array.isArray(transaction.signatures)) {
 		if (self.countMultisignature() >= constants.maxTxsPerQueue) {
@@ -342,7 +352,6 @@ TransactionPool.prototype.expireTransactions = function (cb) {
 TransactionPool.prototype.fillPool = function (cb) {
 
 	var unconfirmedCount = self.countUnconfirmed();
-	library.logger.debug('Transaction pool size: ' + unconfirmedCount);
 
 	if (unconfirmedCount >= constants.maxTxsPerBlock) {
 		return setImmediate(cb);
@@ -351,6 +360,8 @@ TransactionPool.prototype.fillPool = function (cb) {
 		var multisignatures;
 		var multisignaturesLimit = 5;
 		var transactions;
+
+		//console.log(self.queued);
 
 		spare = (constants.maxTxsPerBlock - unconfirmedCount);
 		spareMulti = (spare >= multisignaturesLimit) ? multisignaturesLimit : 0;
@@ -362,6 +373,10 @@ TransactionPool.prototype.fillPool = function (cb) {
 		transactions.forEach(function (transaction)  {
 			self.addUnconfirmedTransaction(transaction);
 		});
+
+		if(transactions.length>0){
+			library.logger.debug('Transaction pool size: ' + self.countUnconfirmed());
+		}
 
 		return __private.applyUnconfirmedList(transactions, cb);
 	}
@@ -448,6 +463,7 @@ __private.applyUnconfirmedList = function (transactions, cb) {
 		if (!transaction) {
 			return setImmediate(eachSeriesCb);
 		}
+		//console.log(transaction);
 		__private.processVerifyTransaction(transaction, function (err, sender) {
 			if (err) {
 				library.logger.error('Failed to process / verify unconfirmed transaction: ' + transaction.id, err);

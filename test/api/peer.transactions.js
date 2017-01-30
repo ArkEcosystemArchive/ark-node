@@ -11,22 +11,38 @@ function postTransaction (transaction, done) {
 	}, done);
 }
 
+function getTransactionsFromIds (transactionids, done) {
+	node.get("/peer/transactionsFromIds?ids='"+transactionids.join(",")+"'", done);
+}
+
 function getAddress (address, done) {
 	node.get('/api/accounts?address=' + address, done);
 }
 
 describe('GET /peer/transactions', function () {
 
+	var memtx;
+
 	it('using vendorField should be ok', function (done) {
 		var transaction = node.ark.transaction.createTransaction('AacRfTLtxAkR3Mind1XdPCddj1uDkHtwzD', 1, "this is a test vendorfield", node.gAccount.password);
-		console.log(transaction);
+		memtx=transaction;
 		postTransaction(transaction, function (err, res) {
 			node.expect(res.body).to.have.property('success').to.be.ok;
 			node.expect(res.body).to.have.property('transactionIds');
-			node.expect(res.body.transactionIds[0]).to.equal(transaction.id);
+			node.expect(res.body.transactionIds[0]).to.equal(memtx.id);
 			done();
 		});
 	});
+
+	it('getting previous transaction from mempool should be ok', function (done) {
+		getTransactionsFromIds([memtx.id, memtx.id], function (err, res) {
+			node.expect(res.body).to.have.property('success').to.be.ok;
+			node.expect(res.body).to.have.property('transactions');
+			node.expect(res.body.transactions[0].signature).to.equal(memtx.signature);
+			done();
+		});
+	});
+
 
 	it('using incorrect nethash in headers should fail', function (done) {
 		node.get('/peer/transactions')
@@ -74,22 +90,22 @@ describe('POST /peer/transactions', function () {
 		});
 	});
 
-	it('using already processed transaction should be not ok (preventing spam)', function (done) {
-		var transaction = node.ark.transaction.createTransaction('AacRfTLtxAkR3Mind1XdPCddj1uDkHtwzD', 2, null, node.gAccount.password);
+	// it('using already processed transaction should be not ok (preventing spam)', function (done) {
+	// 	var transaction = node.ark.transaction.createTransaction('AacRfTLtxAkR3Mind1XdPCddj1uDkHtwzD', 2, null, node.gAccount.password);
+	//
+	// 	postTransaction(transaction, function (err, res) {
+	// 		node.expect(res.body).to.have.property('success').to.be.ok;
+	// 		node.expect(res.body).to.have.property('transactionIds');
+	// 		node.expect(res.body.transactionIds[0]).to.equal(transaction.id);
+	//
+	// 		postTransaction(transaction, function (err, res) {
+	// 			node.expect(res.body).to.have.property('success').to.be.not.ok;
+	// 			done();
+	// 		});
+	// 	});
+	// });
 
-		postTransaction(transaction, function (err, res) {
-			node.expect(res.body).to.have.property('success').to.be.ok;
-			node.expect(res.body).to.have.property('transactionIds');
-			node.expect(res.body.transactionIds[0]).to.equal(transaction.id);
-
-			postTransaction(transaction, function (err, res) {
-				node.expect(res.body).to.have.property('success').to.be.not.ok;
-				done();
-			});
-		});
-	});
-
-	it('using already confirmed transaction should be not ok', function (done) {
+	it('using already confirmed transaction should succeed but return empty transactionIds property', function (done) {
 		var transaction = node.ark.transaction.createTransaction('AacRfTLtxAkR3Mind1XdPCddj1uDkHtwzD', 3, null, node.gAccount.password);
 
 		postTransaction(transaction, function (err, res) {
@@ -99,11 +115,43 @@ describe('POST /peer/transactions', function () {
 
 			node.onNewBlock(function (err) {
 				postTransaction(transaction, function (err, res) {
-					console.log(res.body);
-					node.expect(res.body).to.have.property('success').to.be.not.ok;
+					//console.log(res.body);
+					node.expect(res.body).to.have.property('success').to.ok;
+					node.expect(res.body).to.have.property('transactionIds');
+					node.expect(res.body.transactionIds.length).to.equal(0);
 					done();
 				});
 			});
+		});
+	});
+
+	it('using fees too low should fail', function (done) {
+		var transaction = node.ark.transaction.createTransaction('AacRfTLtxAkR3Mind1XdPCddj1uDkHtwzD', 1, null, node.gAccount.password);
+		transaction.fee = 5000000;
+		delete transaction.signature;
+		node.ark.crypto.sign(transaction, node.ark.crypto.getKeys(node.gAccount.password));
+		transaction.id = node.ark.crypto.getId(transaction);
+
+		postTransaction(transaction, function (err, res) {
+			node.expect(res.body).to.have.property('success').to.be.not.ok;
+			node.expect(res.body).to.have.property('message').to.equal("Invalid transaction detected");
+			node.expect(res.body).to.have.property('error').to.equal("Transaction fee is too low");
+			done();
+		});
+	});
+
+	it('using fees too high should be ok', function (done) {
+		var transaction = node.ark.transaction.createTransaction('AacRfTLtxAkR3Mind1XdPCddj1uDkHtwzD', 1, null, node.gAccount.password);
+		transaction.fee = 50000000;
+		delete transaction.signature;
+		node.ark.crypto.sign(transaction, node.ark.crypto.getKeys(node.gAccount.password));
+		transaction.id = node.ark.crypto.getId(transaction);
+
+		postTransaction(transaction, function (err, res) {
+			node.expect(res.body).to.have.property('success').to.be.ok;
+			node.expect(res.body).to.have.property('transactionIds');
+			node.expect(res.body.transactionIds[0]).to.equal(transaction.id);
+			done();
 		});
 	});
 
@@ -145,7 +193,7 @@ describe('POST /peer/transactions', function () {
 
 		postTransaction(transaction, function (err, res) {
 			node.expect(res.body).to.have.property('success').to.be.not.ok;
-			node.expect(res.body).to.have.property('message').to.match(/Account does not have enough ARK: [a-zA-Z0-9]+ balance: 0/);
+			node.expect(res.body).to.have.property('error').to.match(/Account does not have enough ARK: [a-zA-Z0-9]+ balance: 0/);
 			done();
 		});
 	});
@@ -166,7 +214,7 @@ describe('POST /peer/transactions', function () {
 				node.async.doUntil(function (next) {
 					postTransaction(transaction2, function (err, res) {
 						node.expect(res.body).to.have.property('success').to.be.not.ok;
-						node.expect(res.body).to.have.property('message').to.match(/Account does not have enough ARK: [a-zA-Z0-9]+ balance: 1e-8/);
+						node.expect(res.body).to.have.property('error').to.match(/Account does not have enough ARK: [a-zA-Z0-9]+ balance: 1e-8/);
 						count++;
 						return next();
 					});

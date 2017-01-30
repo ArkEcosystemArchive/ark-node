@@ -47,7 +47,7 @@ Block.prototype.create = function (data) {
 
 	for (var i = 0; i < transactions.length; i++) {
 		var transaction = transactions[i];
-		var bytes = this.scope.transaction.getBytes(transaction);
+		var bytes = new Buffer(transaction.id, "hex");
 
 		if (size + bytes.length > constants.maxPayloadLength) {
 			break;

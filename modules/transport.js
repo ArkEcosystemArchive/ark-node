@@ -114,9 +114,9 @@ __private.attachApi = function () {
 				.replace(/['"]+/g, '') //'
 				// Separate by comma into an array
 				.split(',')
-				// Reject any non-numeric values
+				// Reject any non-byte values
 				.filter(function (id) {
-					return /^[0-9]+$/.test(id);
+					return /^[0-9a-f]+$/.test(id);
 				});
 
 			if (!escapedIds.length) {
@@ -128,7 +128,7 @@ __private.attachApi = function () {
 			library.db.query(sql.getCommonBlock, escapedIds).then(function (rows) {
 				return res.json({ success: true, common: rows[0] || null });
 			}).catch(function (err) {
-				library.logger.error(err.stack);
+				library.logger.error("error",err.stack);
 				return res.json({success: false, error: 'Failed to get common block'});
 			});
 		});
@@ -255,22 +255,31 @@ __private.attachApi = function () {
 
 	router.get('/transactionsFromIds', function (req, res) {
 		res.set(__private.headers);
-		var escapedIds = query.ids
-			// Remove quotes
-			.replace(/['"]+/g, '') //'
-			// Separate by comma into an array
-			.split(',')
-			// Reject any non-numeric values
-			.filter(function (id) {
-				return /^[0-9]+$/.test(id);
-			});
-		modules.blocks.getTransactionsFromIds(query.blockid,escapedIds,function(err, transactions){
-			if(err){
-				res.status(200).json({success: false, message: err.toString()});
+		req.sanitize(req.query, schema.transactionsFromIds, function (err, report, query) {
+			if (err) { return next(err); }
+			if (!report.isValid) { return res.json({success: false, error: report.issues}); }
+			var escapedIds = req.query.ids
+				// Remove quotes
+				.replace(/['"]+/g, '') //'
+				// Separate by comma into an array
+				.split(',')
+				// Reject any non-byte values
+				.filter(function (id) {
+					return /^[0-9a-f]+$/.test(id);
+				});
+
+			for(var i in escapedIds){
+				escapedIds[i]=modules.transactionPool.getTransactionFromMempool(escapedIds[i]);
 			}
-			else{
-				res.status(200).json({success: true, transactions: transactions});
-			}
+			res.status(200).json({success: true, transactions: escapedIds});
+			// modules.blocks.getTransactionsFromIds(query.blockid,escapedIds,function(err, transactions){
+			// 	if(err){
+			// 		res.status(200).json({success: false, message: err.toString()});
+			// 	}
+			// 	else{
+			// 		res.status(200).json({success: true, transactions: transactions});
+			// 	}
+			// });
 		});
 	});
 
@@ -284,6 +293,9 @@ __private.attachApi = function () {
 				return res.status(200).json({success: false, message: 'Invalid transaction detected', error: error.toString()});
 			}
 			else{
+				if(!receivedtransactions){
+					receivedtransactions=[];
+				}
 				res.status(200).json({success: true, transactionIds: receivedtransactions.map(function(t){return t.id;})});
 			}
 		});
@@ -518,6 +530,13 @@ Transport.prototype.onAttachNetworkApi = function () {
 // };
 
 Transport.prototype.onBroadcastTransaction = function (transaction) {
+	// clone as we don't want to send all object
+	transaction=JSON.parse(JSON.stringify(transaction));
+	delete transaction.id;
+	delete transaction.broadcast;
+	delete transaction.verified;
+	delete transaction.processed;
+
 	__private.broadcastTransactions.push(transaction);
 };
 

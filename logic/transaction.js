@@ -56,6 +56,7 @@ Transaction.prototype.create = function (data) {
 	};
 
 	trs = __private.types[trs.type].create.call(this, data, trs);
+	trs.fee = __private.types[trs.type].calculateFee.call(this, trs, data.sender);
 	trs.signature = this.sign(data.keypair, trs);
 
 	if (data.sender.secondSignature && data.secondKeypair) {
@@ -63,8 +64,6 @@ Transaction.prototype.create = function (data) {
 	}
 
 	trs.id = this.getId(trs);
-
-	trs.fee = __private.types[trs.type].calculateFee.call(this, trs, data.sender) || false;
 
 	return trs;
 };
@@ -96,14 +95,7 @@ Transaction.prototype.multisign = function (keypair, trs) {
 };
 
 Transaction.prototype.getId = function (trs) {
-	var hash = this.getHash(trs);
-	var temp = new Buffer(8);
-	for (var i = 0; i < 8; i++) {
-		temp[i] = hash[7 - i];
-	}
-
-	var id = bignum.fromBuffer(temp).toString();
-	return id;
+	return this.getHash(trs).toString('hex');
 };
 
 Transaction.prototype.getHash = function (trs) {
@@ -166,6 +158,7 @@ Transaction.prototype.getBytes = function (trs, skipSignature, skipSecondSignatu
 		}
 
 		bb.writeLong(trs.amount);
+		bb.writeLong(trs.fee);
 
 		if (assetSize > 0) {
 			for (i = 0; i < assetSize; i++) {
@@ -476,12 +469,6 @@ Transaction.prototype.verify = function (trs, sender, requester, cb) {
 		}
 	}
 
-	// Calculate fee
-	var fee = __private.types[trs.type].calculateFee.call(this, trs, sender) || false;
-	if (!fee || trs.fee !== fee) {
-		return setImmediate(cb, 'Invalid transaction fee');
-	}
-
 	// Check amount
 	if (trs.amount < 0 || trs.amount > constants.totalAmount || String(trs.amount).indexOf('.') >= 0 || trs.amount.toString().indexOf('e') >= 0) {
 		return setImmediate(cb, 'Invalid transaction amount');
@@ -500,6 +487,11 @@ Transaction.prototype.verify = function (trs, sender, requester, cb) {
 		return setImmediate(cb, 'Invalid transaction timestamp');
 	}
 
+	// Check fee
+	if(!trs.fee || trs.fee < 1) {
+		return setImmediate(cb, 'Invalid transaction fee');
+	}
+
 	// Call verify on transaction type
 	__private.types[trs.type].verify.call(this, trs, sender, function (err) {
 		if (err) {
@@ -510,6 +502,24 @@ Transaction.prototype.verify = function (trs, sender, requester, cb) {
 		}
 	});
 };
+
+
+Transaction.prototype.verifyFee = function (trs) {
+  // Calculate fee
+	if(!trs.fee || trs.fee < 1) {
+		return false;
+	}
+
+	var fee = __private.types[trs.type].calculateFee.call(this, trs);
+
+	if (!fee || trs.fee < fee) {
+		return false;
+	}
+
+	else {
+		return true;
+	}
+}
 
 Transaction.prototype.verifySignature = function (trs, publicKey, signature) {
 	if (!__private.types[trs.type]) {

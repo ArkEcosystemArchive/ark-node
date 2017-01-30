@@ -21,7 +21,7 @@ Transfer.prototype.create = function (data, trs) {
 	return trs;
 };
 
-Transfer.prototype.calculateFee = function (trs, sender) {
+Transfer.prototype.calculateFee = function (trs) {
 	return constants.fees.send;
 };
 

@@ -332,7 +332,7 @@ NodeManager.prototype.onBlockReceived = function(block, peer) {
     block.broadcast=true;
 		//RECEIVED full block?
 		if(block.numberOfTransactions==0){
-			library.logger.debug("processing full block", block.id);
+			library.logger.debug("processing empty block", block.id);
 	    self.addToBlockchain(block, function(err, block){
 				if(!err){
 					library.bus.message('verifyBlock', block);
@@ -357,7 +357,7 @@ NodeManager.prototype.onBlockReceived = function(block, peer) {
 				else{
 					modules.transport.getFromPeer(peer, {
 						 method: 'GET',
-						api: '/transactionsFromIds?blockid=' + block.id + "&ids="+missingTransactionIds.join(",")
+						api: '/transactionsFromIds?blockid=' + block.id + "&ids='"+missingTransactionIds.join(",")+"'"
 					}, function (err, missingTransactions) {
 						 if (err || res.body.error || !res.body.success) {
 							 library.logger.debug('Cannot transactions', block.id);
@@ -413,6 +413,7 @@ NodeManager.prototype.onBlockForged = function(block) {
   block.verified = true;
 	block.forged = true;
   block.processed = false;
+	block.broadcast = true;
   self.addToBlockchain(block, function(err, block){
     if(err){
       library.logger.error(err, block);
@@ -420,7 +421,6 @@ NodeManager.prototype.onBlockForged = function(block) {
     else{
       library.logger.info("Forged block added to blockchain", block.id);
       library.bus.message('processBlock', block);
-      library.bus.message('broadcastBlock', block);
     }
   });
 }
@@ -434,22 +434,22 @@ NodeManager.prototype.onBlockVerified = function(block, cb) {
 		}
 		else{
       library.bus.message('processBlock', block, cb);
-      if(block.broadcast){
-        library.bus.message('broadcastBlock', block, cb);
-      }
     }
   });
 }
 
 NodeManager.prototype.onBlockProcessed = function(block, cb) {
-  block.processed = true;
-  self.updateBlock(block, function(error, block){
+	block.processed = true;
+	if(block.broadcast){
+		block.broadcast = false;
+		library.bus.message('broadcastBlock', block, cb);
+	}
+	self.updateBlock(block, function(error, block){
     if(error){
 			//very bad!
     }
 		else{
 			__private.timestampState(new Date());
-
 			//Maybe we already got the next block
 			// var nextblock = __private.blockchain[""+(block.height+1)];
 			// if(nextblock && !nextblock.verified && !nextblock.processed){
@@ -479,12 +479,14 @@ NodeManager.prototype.onTransactionsReceived = function(transactions, source, cb
 	if(!source || typeof source !== "string"){
 		cb && setImmediate(cb, "Rejecting not sourced transactions", transactions);
 	}
-	// node created the transaction so it is safe include it
+	// node created the transaction so it is safe include it (data integrity and fee is assumed to be correct)
 	if(source.toLowerCase() == "api"){
 		transactions.forEach(function(tx){
+			tx.id = library.logic.transaction.getId(tx);
 			tx.broadcast = true;
 			tx.hop = 0;
 		});
+		//console.log(transactions);
 		library.bus.message("addTransactionsToPool", transactions, cb);
 	}
 	// we need sanity check of the transaction list
@@ -498,11 +500,16 @@ NodeManager.prototype.onTransactionsReceived = function(transactions, source, cb
 		var skimmedtransactions = [];
 
 		async.eachSeries(transactions, function (transaction, cb) {
-			var id = transaction.id;
 			try {
 				transaction = library.logic.transaction.objectNormalize(transaction);
+				transaction.id = library.logic.transaction.getId(transaction);
 			} catch (e) {
 				return setImmediate(cb, e);
+			}
+
+
+			if(!library.logic.transaction.verifyFee(transaction)){
+				return setImmediate(cb, "Transaction fee is too low");
 			}
 
 			library.db.query(sql.getTransactionId, { id: transaction.id }).then(function (rows) {

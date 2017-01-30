@@ -40,6 +40,17 @@ module.exports = {
 		},
 		required: ['ids']
 	},
+	transactionsFromIds: {
+		id: 'transport.transactionsFromIds',
+		type: 'object',
+		properties: {
+			ids: {
+				type: 'string',
+				format: 'csv'
+			}
+		},
+		required: ['ids']
+	},
 	blocks: {
 		id: 'transport.blocks',
 		type: 'object',

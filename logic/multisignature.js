@@ -31,7 +31,7 @@ Multisignature.prototype.create = function (data, trs) {
 	return trs;
 };
 
-Multisignature.prototype.calculateFee = function (trs, sender) {
+Multisignature.prototype.calculateFee = function (trs) {
 	return (trs.asset.multisignature.keysgroup.length + 1) * constants.fees.multisignature;
 };
 
@@ -80,7 +80,7 @@ Multisignature.prototype.verify = function (trs, sender, cb) {
 				}
 			}
 		} catch (e) {
-			library.logger.error(e.stack);
+			library.logger.error("stack", e.stack);
 			return setImmediate(cb, 'Failed to verify signature in multisignature keysgroup');
 		}
 	}
@@ -103,7 +103,7 @@ Multisignature.prototype.verify = function (trs, sender, cb) {
 				return setImmediate(cb, 'Invalid public key in multisignature keysgroup');
 			}
 		} catch (e) {
-			library.logger.error(e.stack);
+			library.logger.error("stack", e.stack);
 			return setImmediate(cb, 'Invalid public key in multisignature keysgroup');
 		}
 

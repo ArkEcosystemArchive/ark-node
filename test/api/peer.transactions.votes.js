@@ -127,7 +127,7 @@ describe('POST /peer/transactions', function () {
 	it('using undefined transaction', function (done) {
 		postVote(undefined, function (err, res) {
 			node.expect(res.body).to.have.property('success').to.be.not.ok;
-			node.expect(res.body).to.have.property('error').to.equal("API error: Cannot read property 'id' of null");
+			node.expect(res.body).to.have.property('error').to.equal("TypeError: Cannot read property 'type' of null");
 			done();
 		});
 	});
@@ -249,7 +249,7 @@ describe('POST /peer/transactions', function () {
 
 			postVote(transaction, function (err, res) {
 				node.expect(res.body).to.have.property('success').to.be.not.ok;
-				node.expect(res.body).to.have.property('message').to.equal('Voting limit exceeded. Maximum is 33 votes per transaction');
+				node.expect(res.body).to.have.property('error').to.equal('Voting limit exceeded. Maximum is 33 votes per transaction');
 				done();
 			});
 		});
@@ -277,7 +277,7 @@ describe('POST /peer/transactions', function () {
 
 			postVote(transaction, function (err, res) {
 				node.expect(res.body).to.have.property('success').to.be.not.ok;
-				node.expect(res.body).to.have.property('message').to.equal('Voting limit exceeded. Maximum is 33 votes per transaction');
+				node.expect(res.body).to.have.property('error').to.equal('Voting limit exceeded. Maximum is 33 votes per transaction');
 				done();
 			});
 		});
@@ -358,7 +358,7 @@ describe('POST /peer/transactions after registering a new delegate', function ()
 
 				postVote(transaction, function (err, res) {
 					node.expect(res.body).to.have.property('success').to.be.not.ok;
-					node.expect(res.body).to.have.property('message').to.equal('Maximum number of 51 votes exceeded (1 too many)');
+					node.expect(res.body).to.have.property('error').to.equal('Maximum number of 51 votes exceeded (1 too many)');
 					seriesCb();
 				});
 			}

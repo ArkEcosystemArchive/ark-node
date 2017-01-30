@@ -58,12 +58,15 @@ module.exports = function (config) {
 			if (message instanceof Error) {
 				log.message = message.stack;
 			} else {
-				if(message.startsWith("# ")){
-					var head="#".repeat(message.length+2);
-					log.message="\n";
-					log.message+=head+"\n";
-					log.message+=message+" #\n";
-					log.message+=head;
+
+				if(message){
+					log.message = message.toString();
+					if(log.message.startsWith("# ")){
+						var head="#".repeat(message.length+2);
+						log.message=head+"\n";
+						log.message+=message+" #\n";
+						log.message+=head;
+					}
 				}
 				else {
 					log.message = message;
@@ -79,19 +82,23 @@ module.exports = function (config) {
 			log.symbol = config.level_abbr[log.level] ? config.level_abbr[log.level] : '???';
 
 			if (config.levels[config.errorLevel] <= config.levels[log.level]) {
-				if (log.data) {
-					log_file.write(util.format('[%s] %s | %s - %s\n', log.symbol, log.timestamp, log.message, log.data));
-				} else {
-					log_file.write(util.format('[%s] %s | %s\n', log.symbol, log.timestamp, log.message));
-				}
+				log.message.split("\n").forEach(function(m){
+					if (log.data) {
+						log_file.write(util.format('[%s] %s | %s - %s\n', log.symbol, log.timestamp, m, log.data));
+					} else {
+						log_file.write(util.format('[%s] %s | %s\n', log.symbol, log.timestamp, m));
+					}
+				});
 			}
 
 			if (config.echo && config.levels[config.echo] <= config.levels[log.level]) {
-				if (log.data) {
-					console.log('['+log.symbol.bgYellow.black+']', log.timestamp.grey, '|', log.message, '-', log.data);
-				} else {
-					console.log('['+log.symbol.bgYellow.black+']', log.timestamp.grey, '|', log.message);
-				}
+				log.message.split("\n").forEach(function(m){
+					if (log.data) {
+						console.log('['+log.symbol.bgYellow.black+']', log.timestamp.grey, '|', m, '-', log.data);
+					} else {
+						console.log('['+log.symbol.bgYellow.black+']', log.timestamp.grey, '|', m);
+					}
+				});
 			}
 		}
 

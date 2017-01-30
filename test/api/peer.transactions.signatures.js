@@ -33,7 +33,7 @@ describe('POST /peer/transactions', function () {
 		it('using undefined transaction', function (done) {
 			postTransaction(undefined, function (err, res) {
 				node.expect(res.body).to.have.property('success').to.be.not.ok;
-				node.expect(res.body).to.have.property('error').to.equal("API error: Cannot read property 'id' of null");
+				node.expect(res.body).to.have.property('error').to.equal("TypeError: Cannot read property 'type' of null");
 				done();
 			});
 		});
@@ -57,7 +57,7 @@ describe('POST /peer/transactions', function () {
 
 				postTransaction(transaction, function (err, res) {
 					node.expect(res.body).to.have.property('success').to.be.not.ok;
-					node.expect(res.body).to.have.property('message').to.match(/Account does not have enough ARK: [a-zA-Z0-9]+ balance: 0/);
+					node.expect(res.body).to.have.property('error').to.match(/Account does not have enough ARK: [a-zA-Z0-9]+ balance: 0/);
 					done();
 				});
 			});

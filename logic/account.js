@@ -361,7 +361,7 @@ Account.prototype.createTables = function (cb) {
 	db.query(sql).then(function () {
 		return setImmediate(cb);
 	}).catch(function (err) {
-		library.logger.error(err.stack);
+		library.logger.error("stack", err.stack);
 		return setImmediate(cb, 'Account#createTables error');
 	});
 };
@@ -385,7 +385,7 @@ Account.prototype.removeTables = function (cb) {
 	db.query(sqles.join('')).then(function () {
 		return setImmediate(cb);
 	}).catch(function (err) {
-		library.logger.error(err.stack);
+		library.logger.error("stack", err.stack);
 		return setImmediate(cb, 'Account#removeTables error');
 	});
 };
@@ -498,7 +498,7 @@ Account.prototype.getAll = function (filter, fields, cb) {
 	db.query(sql.query, sql.values).then(function (rows) {
 		return setImmediate(cb, null, rows);
 	}).catch(function (err) {
-		library.logger.error(err.stack);
+		library.logger.error("stack", err.stack);
 		return setImmediate(cb, 'Account#getAll error');
 	});
 };
@@ -520,7 +520,7 @@ Account.prototype.set = function (address, fields, cb) {
 	db.none(sql.query, sql.values).then(function () {
 		return setImmediate(cb);
 	}).catch(function (err) {
-		library.logger.error(err.stack);
+		library.logger.error("stack", err.stack);
 		return setImmediate(cb, 'Account#set error');
 	});
 };
@@ -754,7 +754,7 @@ Account.prototype.merge = function (address, diff, cb) {
 	db.none(queries).then(function () {
 		return done();
 	}).catch(function (err) {
-		library.logger.error(err.stack);
+		library.logger.error("stack", err.stack);
 		return done('Account#merge error');
 	});
 };
@@ -770,7 +770,7 @@ Account.prototype.remove = function (address, cb) {
 	db.none(sql.query, sql.values).then(function () {
 		return setImmediate(cb, null, address);
 	}).catch(function (err) {
-		library.logger.error(err.stack);
+		library.logger.error("stack", err.stack);
 		return setImmediate(cb, 'Account#remove error');
 	});
 };

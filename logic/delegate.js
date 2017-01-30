@@ -29,7 +29,7 @@ Delegate.prototype.create = function (data, trs) {
 	return trs;
 };
 
-Delegate.prototype.calculateFee = function (trs, sender) {
+Delegate.prototype.calculateFee = function (trs) {
 	return constants.fees.delegate;
 };
 

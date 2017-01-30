@@ -154,11 +154,11 @@ __private.list = function (filter, cb) {
 
 			return setImmediate(cb, null, data);
 		}).catch(function (err) {
-			library.logger.error(err.stack);
+			library.logger.error("stack", err.stack);
 			return setImmediate(cb, 'Transactions#list error');
 		});
 	}).catch(function (err) {
-		library.logger.error(err.stack);
+		library.logger.error("stack", err.stack);
 		return setImmediate(cb, 'Transactions#list error');
 	});
 };
@@ -173,7 +173,7 @@ __private.getById = function (id, cb) {
 
 		return setImmediate(cb, null, transacton);
 	}).catch(function (err) {
-		library.logger.error(err.stack);
+		library.logger.error("stack", err.stack);
 		return setImmediate(cb, 'Transactions#getById error');
 	});
 };
@@ -200,7 +200,7 @@ __private.getVotesById = function (transaction, cb) {
 
 		return setImmediate(cb, null, transaction);
 	}).catch(function (err) {
-		library.logger.error(err.stack);
+		library.logger.error("stack", err.stack);
 		return setImmediate(cb, 'Transactions#getVotesById error');
 	});
 };
@@ -326,7 +326,7 @@ shared.getUnconfirmedTransaction = function (req, cb) {
 			return setImmediate(cb, err[0].message);
 		}
 
-		var unconfirmedTransaction = self.getUnconfirmedTransaction(req.body.id);
+		var unconfirmedTransaction = modules.transactionPool.getUnconfirmedTransaction(req.body.id);
 
 		if (!unconfirmedTransaction) {
 			return setImmediate(cb, 'Transaction not found');
@@ -342,7 +342,7 @@ shared.getUnconfirmedTransactions = function (req, cb) {
 			return setImmediate(cb, err[0].message);
 		}
 
-		var transactions = self.getUnconfirmedTransactionList(true);
+		var transactions = modules.transactionPool.getUnconfirmedTransactionList(true);
 		var i, toSend = [];
 
 		if (req.body.senderPublicKey || req.body.address) {
@@ -443,6 +443,8 @@ shared.addTransactions = function (req, cb) {
 									secondKeypair: secondKeypair
 								});
 
+								transaction.id=library.logic.transaction.getId(transaction);
+
 								//library.logger.log('trs ', transaction);
 
 							} catch (e) {
@@ -484,6 +486,9 @@ shared.addTransactions = function (req, cb) {
 								keypair: keypair,
 								secondKeypair: secondKeypair
 							});
+
+							transaction.id=library.logic.transaction.getId(transaction);
+							
 						} catch (e) {
 							return setImmediate(cb, e.toString());
 						}

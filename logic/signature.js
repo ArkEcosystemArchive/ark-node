@@ -24,7 +24,7 @@ Signature.prototype.create = function (data, trs) {
 	return trs;
 };
 
-Signature.prototype.calculateFee = function (trs, sender) {
+Signature.prototype.calculateFee = function (trs) {
 	return constants.fees.secondsignature;
 };
 
@@ -42,7 +42,7 @@ Signature.prototype.verify = function (trs, sender, cb) {
 			return setImmediate(cb, 'Invalid public key');
 		}
 	} catch (e) {
-		library.logger.error(e.stack);
+		library.logger.error("stack", e.stack);
 		return setImmediate(cb, 'Invalid public key');
 	}
 

@@ -167,7 +167,7 @@ __private.loadBlockChain = function () {
 								});
 							}, function (err) {
 								if (err) {
-									library.logger.error(err);
+									library.logger.error("error:",err);
 									if (err.block) {
 										library.logger.error('Blockchain failed at: ' + err.block.height);
 										modules.blocks.simpleDeleteAfterBlock(err.block.id, function (err, res) {
@@ -276,7 +276,7 @@ __private.loadBlockChain = function () {
 			});
 		});
 	}).catch(function (err) {
-		library.logger.error(err);
+		library.logger.error("error:",err);
 		return process.exit(0);
 	});
 };
@@ -562,7 +562,7 @@ Loader.prototype.getNetwork = function (force, cb) {
 						method: 'GET'
 					}, function (err, res) {
 						if (err) {
-							library.logger.error(err);
+							library.logger.error("error:",err);
 							library.logger.warn('Failed to get height from peer', peer.string);
 							return setImmediate(cb);
 						}
@@ -576,7 +576,7 @@ Loader.prototype.getNetwork = function (force, cb) {
 							// or maybe only the ones claiming height > current node height
 							valid = (res.body.header.height == 1) || library.logic.block.verifySignature(res.body.header);
 						} catch (e) {
-							library.logger.error(e);
+							library.logger.error("error:",e);
 						}
 						if(!valid){
 							library.logger.warn('# Received invalid block header from peer. Can be a tentative to attack the network!', peer.string);

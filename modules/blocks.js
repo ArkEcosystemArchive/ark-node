@@ -128,7 +128,7 @@ __private.saveGenesisBlock = function (cb) {
 			return setImmediate(cb);
 		}
 	}).catch(function (err) {
-		library.logger.error(err.stack);
+		library.logger.error("stack", err.stack);
 		return setImmediate(cb, 'Blocks#saveGenesisBlock error');
 	});
 };
@@ -137,7 +137,7 @@ __private.deleteBlock = function (blockId, cb) {
 	library.db.none(sql.deleteBlock, {id: blockId}).then(function () {
 		return setImmediate(cb);
 	}).catch(function (err) {
-		library.logger.error(err.stack);
+		library.logger.error("stack", err.stack);
 		return setImmediate(cb, 'Blocks#deleteBlock error');
 	});
 };
@@ -230,11 +230,11 @@ __private.list = function (filter, cb) {
 
 			return setImmediate(cb, null, data);
 		}).catch(function (err) {
-			library.logger.error(err.stack);
+			library.logger.error("stack", err.stack);
 			return setImmediate(cb, 'Blocks#list error');
 		});
 	}).catch(function (err) {
-		library.logger.error(err.stack);
+		library.logger.error("stack", err.stack);
 		return setImmediate(cb, 'Blocks#list error');
 	});
 };
@@ -249,7 +249,7 @@ __private.getById = function (id, cb) {
 
 		return setImmediate(cb, null, block);
 	}).catch(function (err) {
-		library.logger.error(err.stack);
+		library.logger.error("stack", err.stack);
 		return setImmediate(cb, 'Blocks#getById error');
 	});
 };
@@ -268,7 +268,7 @@ __private.saveBlock = function (block, cb) {
 	}).then(function () {
 		return __private.afterSave(block, cb);
 	}).catch(function (err) {
-		library.logger.error(err.stack);
+		library.logger.error("stack", err.stack);
 		return setImmediate(cb, 'Blocks#saveBlock error');
 	});
 };
@@ -407,7 +407,7 @@ __private.getIdSequence = function (height, cb) {
 
 		return setImmediate(cb, null, { firstHeight: rows[0].height, ids: ids.join(',') });
 	}).catch(function (err) {
-		library.logger.error(err.stack);
+		library.logger.error("stack", err.stack);
 		return setImmediate(cb, 'Blocks#getIdSequence error');
 	});
 };
@@ -555,7 +555,7 @@ Blocks.prototype.getCommonBlock = function (peer, height, cb) {
 					return setImmediate(waterCb, null, res.body.common);
 				}
 			}).catch(function (err) {
-				library.logger.error(err.stack);
+				library.logger.error("stack", err.stack);
 				return setImmediate(waterCb, 'Blocks#getCommonBlock error');
 			});
 		}
@@ -570,7 +570,7 @@ Blocks.prototype.count = function (cb) {
 
 		return setImmediate(cb, null, res);
 	}).catch(function (err) {
-		library.logger.error(err.stack);
+		library.logger.error("stack", err.stack);
 		return setImmediate(cb, 'Blocks#count error');
 	});
 };
@@ -608,7 +608,7 @@ Blocks.prototype.loadBlocksData = function (filter, options, cb) {
 				return setImmediate(cb, null, rows);
 			});
 		}).catch(function (err ) {
-			library.logger.error(err.stack);
+			library.logger.error("stack", err.stack);
 			return setImmediate(cb, 'Blocks#loadBlockData error');
 		});
 	}, cb);
@@ -677,7 +677,7 @@ Blocks.prototype.loadBlocksOffset = function (limit, offset, verify, cb) {
 				return setImmediate(cb, err, lastBlock);
 			});
 		}).catch(function (err) {
-			library.logger.error(err.stack);
+			library.logger.error("stack", err.stack);
 			return setImmediate(cb, 'Blocks#loadBlocksOffset error');
 		});
 	}, cb);
@@ -809,7 +809,7 @@ Blocks.prototype.loadLastBlock = function (cb) {
 			});
 			return setImmediate(cb, null, block);
 		}).catch(function (err) {
-			library.logger.error(err.stack);
+			library.logger.error("stack", err.stack);
 			return setImmediate(cb, 'Blocks#loadLastBlock error');
 		});
 	}, cb);
@@ -947,7 +947,6 @@ Blocks.prototype.verifyBlock = function (block, lastBlock) {
 		totalFee += transaction.fee;
 	}
 
-
 	var calculatedHash=payloadHash.digest().toString('hex');
 	if (calculatedHash !== block.payloadHash) {
 		result.errors.push('Invalid payload hash');
@@ -1002,7 +1001,7 @@ __private.applyBlock = function (block, cb) {
 				modules.transactions.applyUnconfirmed(transaction, function (err) {
 					if (err) {
 						err = ['Failed to apply transaction:', transaction.id, '-', err].join(' ');
-						library.logger.error(err);
+						library.logger.error("error:",err);
 						library.logger.error('Transaction', transaction);
 						return setImmediate(eachSeriesCb, err);
 					}
@@ -1039,7 +1038,7 @@ __private.applyBlock = function (block, cb) {
 				modules.transactions.apply(transaction, block, function (err) {
 					if (err) {
 						err = ['Failed to apply transaction:', transaction.id, '-', err].join(' ');
-						library.logger.error(err);
+						library.logger.error("error:",err);
 						library.logger.error('Transaction', transaction);
 						// TODO: Send a numbered signal to be caught by forever to trigger a rebuild.
 						return setImmediate(eachSeriesCb, err);
@@ -1088,7 +1087,7 @@ __private.applyGenesisBlock = function (block, cb) {
 	}, function (err) {
 		if (err) {
 			// If genesis block is invalid, kill the node...
-			library.logger.error(err);
+			library.logger.error("error:",err);
 			return process.exit(0);
 		} else {
 			modules.rounds.tick(block, cb);
@@ -1162,7 +1161,7 @@ Blocks.prototype.processBlock = function (block, cb) {
 									modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, cb);
 								}
 							}).catch(function (err) {
-								library.logger.error(err.stack);
+								library.logger.error("stack", err.stack);
 								return setImmediate(cb, 'Blocks#processBlock error');
 							});
 						},
@@ -1258,7 +1257,7 @@ Blocks.prototype.simpleDeleteAfterBlock = function (blockId, cb) {
 	library.db.query(sql.simpleDeleteAfterBlock, {id: blockId}).then(function (res) {
 		return setImmediate(cb, null, res);
 	}).catch(function (err) {
-		library.logger.error(err.stack);
+		library.logger.error("stack", err.stack);
 		return setImmediate(cb, 'Blocks#simpleDeleteAfterBlock error');
 	});
 };
@@ -1408,7 +1407,7 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 				transactions: ready
 			});
 		} catch (e) {
-			library.logger.error(e.stack);
+			library.logger.error("stack", e.stack);
 			return setImmediate(cb, e);
 		}
 

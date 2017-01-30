@@ -134,7 +134,7 @@ __private.banManager = function (cb) {
 	// library.db.query(sql.banManager, { now: Date.now() }).then(function (res) {
 	// 	return setImmediate(cb, null, res);
 	// }).catch(function (err) {
-	// 	library.logger.error(err.stack);
+	// 	library.logger.error("stack", err.stack);
 	// 	return setImmediate(cb, 'Peers#banManager error');
 	// });
 };
@@ -203,7 +203,7 @@ __private.getByFilter = function (filter, cb) {
 	// }), params).then(function (rows) {
 	// 	return setImmediate(cb, null, rows);
 	// }).catch(function (err) {
-	// 	library.logger.error(err.stack);
+	// 	library.logger.error("stack", err.stack);
 	// 	return setImmediate(cb, 'Peers#getByFilter error');
 	// });
 };
@@ -260,7 +260,7 @@ Peers.prototype.list = function (options, cb) {
 	// library.db.query(sql.randomList(options), options).then(function (rows) {
 	// 	return setImmediate(cb, null, rows);
 	// }).catch(function (err) {
-	// 	library.logger.error(err.stack);
+	// 	library.logger.error("stack", err.stack);
 	// 	return setImmediate(cb, 'Peers#list error');
 	// });
 };
@@ -289,7 +289,7 @@ Peers.prototype.state = function (pip, port, state, timeoutSeconds, cb) {
 		library.logger.debug('Updated peer state', params);
 		return cb && setImmediate(cb, null, res);
 	}).catch(function (err) {
-		library.logger.error(err.stack);
+		library.logger.error("stack", err.stack);
 		return cb && setImmediate(cb);
 	});
 };
@@ -312,7 +312,7 @@ Peers.prototype.remove = function (pip, port, cb) {
 	// 	library.logger.debug('Removed peer', params);
 	// 	return cb && setImmediate(cb, null, res);
 	// }).catch(function (err) {
-	// 	library.logger.error(err.stack);
+	// 	library.logger.error("stack", err.stack);
 	// 	return cb && setImmediate(cb);
 	// });
 };
@@ -352,7 +352,7 @@ Peers.prototype.update = function (peer, cb) {
 	// 	library.logger.debug('Upserted peer', params);
 	// 	return setImmediate(cb);
 	// }).catch(function (err) {
-	// 	library.logger.error(err.stack);
+	// 	library.logger.error("stack", err.stack);
 	// 	return setImmediate(cb, 'Peers#update error');
 	// });
 };
