@@ -287,6 +287,7 @@ __private.loadBlocksFromNetwork = function (cb) {
 
 	var network = __private.network;
 
+
 	var peers=network.peers.sort(function(p1, p2){
 		if(p1.blockheader.height==p2.blockheader.height){
 			return p1.blockheader.id<p2.blockheader.id;
@@ -301,13 +302,12 @@ __private.loadBlocksFromNetwork = function (cb) {
 		function () {
 			 //console.log(loaded);
 			 //console.log(errorCount);
-			return !loaded && (errorCount < 5) && (peers.length > errorCount+1);
+			return !loaded && (errorCount < 5) && (peers.length > errorCount);
 		},
 		function (next) {
 
 			var peer = peers[errorCount];
 			var lastBlock = modules.nodeManager.getLastBlock();
-			//console.log(lastBlock);
 
 			async.waterfall([
 				function getCommonBlock (seriesCb) {
@@ -321,6 +321,7 @@ __private.loadBlocksFromNetwork = function (cb) {
 						//console.log(commonBlock);
 						if (err) {
 							errorCount += 1;
+							library.logger.error(err);
 							return setImmediate(seriesCb, err);
 						}
 						else if (!commonBlock) {
@@ -826,7 +827,7 @@ Loader.prototype.onAttachPublicApi = function () {
 Loader.prototype.onDownloadBlocks = function () {
 	__private.loadBlocksFromNetwork(function(err, lastBlock){
 		if(err){
-
+			library.logger.error(err, lastBlock);
 		}
 		library.bus.message("blocksDownloaded", lastBlock);
 	});

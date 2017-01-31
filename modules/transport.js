@@ -188,6 +188,7 @@ __private.attachApi = function () {
 
 		var block = req.body.block;
 
+
 		try {
 			block = library.logic.block.objectNormalize(block);
 		} catch (e) {
@@ -205,9 +206,14 @@ __private.attachApi = function () {
 
 		modules.peers.update(req.peer, function(){});
 
-		library.bus.message('blockReceived', block, req.peer);
+		library.bus.message('blockReceived', block, req.peer, function(error, data){
+			if(error){
+				library.logger.error(error, data);
+			}
+		});
 
 		return res.status(200).json({success: true, blockId: block.id});
+
 	});
 
 	// router.post('/signatures', function (req, res) {
@@ -442,6 +448,7 @@ Transport.prototype.getFromPeer = function (peer, options, cb) {
 	.then(function (res) {
 		if (res.status !== 200) {
 			// Remove peer
+			console.log(res);
 			__private.removePeer({peer: peer, code: 'ERESPONSE ' + res.status, req: req});
 
 			return setImmediate(cb, ['Received bad response code', res.status, req.method, req.url].join(' '));
@@ -565,12 +572,14 @@ Transport.prototype.onBroadcastBlock = function (block) {
 		// I increase the reach if i am an active delegate;
 		limitbroadcast=30;
 	}
-	else if(block.numberOfTransactions>0){//i send only ids, because nodes likely have already transactions in mempool.
+	if(block.numberOfTransactions>0){//i send only ids, because nodes likely have already transactions in mempool.
 		blockheaders.transactionIds=block.transactions.map(function(t){return t.id});
+		//console.log(block.transactions.map(function(t){return t.id}));
 	}
 
+
+
 	self.broadcast({all: block.forged, limit: limitbroadcast}, {api: '/blocks', data: {block: blockheaders}, method: 'POST'});
-	//library.network.io.sockets.emit('blocks/change', {});
 };
 
 

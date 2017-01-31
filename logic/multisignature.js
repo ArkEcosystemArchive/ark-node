@@ -52,7 +52,7 @@ Multisignature.prototype.verify = function (trs, sender, cb) {
 		return setImmediate(cb, 'Invalid multisignature min. Must be between 1 and 16');
 	}
 
-	if (trs.asset.multisignature.min > trs.asset.multisignature.keysgroup.length + 1) {
+	if (trs.asset.multisignature.min > trs.asset.multisignature.keysgroup.length) {
 		return setImmediate(cb, 'Invalid multisignature min. Must be less than keysgroup size');
 	}
 
@@ -306,6 +306,8 @@ Multisignature.prototype.afterSave = function (trs, cb) {
 };
 
 Multisignature.prototype.ready = function (trs, sender) {
+	//console.log(trs);
+	//console.log(sender);
 	if (!Array.isArray(trs.signatures)) {
 		return false;
 	}

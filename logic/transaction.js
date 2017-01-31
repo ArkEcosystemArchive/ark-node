@@ -84,14 +84,25 @@ Transaction.prototype.attachAssetType = function (typeId, instance) {
 };
 
 Transaction.prototype.sign = function (keypair, trs) {
-	var hash = this.getHash(trs);
-	return this.scope.ed.sign(hash, keypair).toString('hex');
+	var sign;
+	try {
+		sign = this.scope.ed.sign(this.getHash(trs), keypair).toString('hex');
+	} catch (e) {
+		return "";
+	}
+	return sign;
 };
 
 Transaction.prototype.multisign = function (keypair, trs) {
 	var bytes = this.getBytes(trs, true, true);
 	var hash = crypto.createHash('sha256').update(bytes).digest();
-	return this.scope.ed.sign(hash, keypair).toString('hex');
+	var sign;
+	try {
+		sign = this.scope.ed.sign(hash, keypair).toString('hex');
+	} catch (e) {
+		return "";
+	}
+	return sign;
 };
 
 Transaction.prototype.getId = function (trs) {
@@ -190,11 +201,11 @@ Transaction.prototype.getBytes = function (trs, skipSignature, skipSecondSignatu
 
 Transaction.prototype.ready = function (trs, sender) {
 	if (!__private.types[trs.type]) {
-		throw 'Unknown transaction type ' + trs.type;
+		throw 'Unknown transaction type :' + trs.type;
 	}
 
 	if (!sender) {
-		return false;
+		throw 'Unknown sender :' + sender;
 	}
 
 	return __private.types[trs.type].ready.call(this, trs, sender);

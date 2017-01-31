@@ -654,6 +654,7 @@ Blocks.prototype.loadBlocksOffset = function (limit, offset, verify, cb) {
 				}
 				block.verified = true;
 				block.processed = true;
+				modules.nodeManager.addToBlockchain(block);
 				if (block.id === genesisblock.block.id) {
 					__private.applyGenesisBlock(block, cb);
 				}
@@ -831,12 +832,14 @@ Blocks.prototype.getLastBlock = function () {
 };
 
 Blocks.prototype.onVerifyBlock = function (block, cb) {
+
 	var result = self.verifyBlock(block, false);
+	//console.log(result);
 	if(result.verified){
 		library.bus.message("blockVerified",block, cb);
 	}
 	else{
-		setImmediate(cb, result.errors.join(" - "), block);
+		cb && setImmediate(cb, result.errors.join(" - "), block);
 	}
 }
 
@@ -869,6 +872,8 @@ Blocks.prototype.verifyBlock = function (block, checkPreviousBlock) {
 			}
 		}
 	}
+
+
 
 	var expectedReward = __private.blockReward.calcReward(block.height);
 
@@ -930,10 +935,15 @@ Blocks.prototype.verifyBlock = function (block, checkPreviousBlock) {
 
 	for (var i in transactions) {
 		var transaction = transactions[i];
+
+		if(!transaction.id){
+			transaction.id = library.logic.transaction.getId(transaction);
+		}
+
 		var bytes;
 
 		try {
-			bytes = library.logic.transaction.getBytes(transaction);
+			bytes = new Buffer(transaction.id, "hex");
 		} catch (e) {
 			result.errors.push(e.toString());
 		}
@@ -944,9 +954,6 @@ Blocks.prototype.verifyBlock = function (block, checkPreviousBlock) {
 
 		size += bytes.length;
 
-		if(!transaction.id){
-			transaction.id = library.logic.transaction.getId(transaction);
-		}
 
 		if (appliedTransactions[transaction.id]) {
 			result.errors.push('Encountered duplicate transaction: ' + transaction.id);
@@ -954,14 +961,14 @@ Blocks.prototype.verifyBlock = function (block, checkPreviousBlock) {
 
 		appliedTransactions[transaction.id] = transaction;
 
-		if (bytes) {
-			payloadHash.update(bytes);
-		}
+		payloadHash.update(bytes);
 
 		totalAmount += transaction.amount;
 
 		totalFee += transaction.fee;
 	}
+
+
 
 	var calculatedHash=payloadHash.digest().toString('hex');
 	if (calculatedHash !== block.payloadHash) {
@@ -1391,6 +1398,7 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 			return setImmediate(cb);
 		}
 		// Check if tx id is already in blockchain
+		// TODO: to remove.
 		library.db.query(sql.getTransactionId, { id: transaction.id }).then(function (rows) {
 			if (rows.length > 0) {
 				modules.transactionPool.removeUnconfirmedTransaction(transaction.id);

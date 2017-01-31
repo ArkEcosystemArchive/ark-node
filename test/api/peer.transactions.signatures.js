@@ -28,6 +28,7 @@ function sendArk (params, done) {
 
 describe('POST /peer/transactions', function () {
 
+
 	describe('enabling second signature', function () {
 
 		it('using undefined transaction', function (done) {

@@ -403,6 +403,29 @@ __private.getTransactionList = function (transactions, reverse, limit) {
 	return a;
 };
 
+__private.getMissingTransactions = function(ids, cb){
+	var missingtransactionsids=[];
+	// copy of ids
+	var transactions = JSON.parse(JSON.stringify(ids));
+	for(var i in ids){
+		var tx=__private.mempool[ids[i]];
+		if(tx){
+			if(tx.type == 4 || tx.signatures){ // dirty dirty, but multi is broken: we need to fetch fresh version of tx from remote.
+				transactions[i]={id:ids[i]};
+				missingtransactionsids.push(ids[i]);
+			}
+			else{
+				transactions[i]=tx;
+			}
+		}
+		else{
+			transactions[i]={id:ids[i]};
+			missingtransactionsids.push(ids[i]);
+		}
+	}
+	setImmediate(cb, null, missingtransactionsids, transactions);
+}
+
 __private.processVerifyTransaction = function (transaction, cb) {
 	async.waterfall([
 		function setAccountAndGet (waterCb) {

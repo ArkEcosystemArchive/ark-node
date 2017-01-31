@@ -1,7 +1,6 @@
 'use strict';
 
 var async = require('async');
-var Sequence = require('../helpers/sequence.js');
 var schema = require('../schema/nodeManager.js');
 var sql = require('../sql/nodeManager.js');
 
@@ -40,12 +39,12 @@ NodeManager.prototype.startApp = function(){
   library.bus.message('loadDatabase');
 }
 
-NodeManager.prototype.updateBlock = function(block, cb){
+NodeManager.prototype.upsertBlock = function(block, cb){
   var error = null;
   if(!__private.blockchain[block.height]){
-    error = "updateBlock - Block already removed from blockchain"
+    __private.blockchain[block.height]=block;
   } else if(__private.blockchain[block.height].id!=block.id){
-    error = "updateBlock - Block has been replaced in the blockchain";
+    error = "upsertBlock - Block has been replaced in the blockchain";
   } else {
     __private.blockchain[block.height]=block;
   }
@@ -57,8 +56,7 @@ NodeManager.prototype.addToBlockchain = function(block, cb){
   if(!__private.blockchain[block.height]){
     __private.blockchain[block.height]=block;
   }
-  else if(__private.blockchain[block.height] != block.id){
-
+  else if(__private.blockchain[block.height].id != block.id){
     error = "addToBlockchain - Block has been replaced in the blockchain";
   }
   return cb && setImmediate(cb, error, __private.blockchain[block.height]);
@@ -67,7 +65,9 @@ NodeManager.prototype.addToBlockchain = function(block, cb){
 // return the previousBlock even if orphaned.
 // return null if no previous Block found. Likely a fork.
 NodeManager.prototype.getPreviousBlock = function(block){
-	var previousBlock = __private.blockchain[block.height - 1];
+	var previousBlock = __private.blockchain[""+(block.height - 1)];
+	//console.log(block.height);
+	//console.log(__private.blockchain);
 	if(!previousBlock || previousBlock.id !== block.previousBlock){
 		previousBlock = __private.orphanedBlocks[block.previousBlock];
 	}
@@ -136,7 +136,6 @@ NodeManager.prototype.onDatabaseLoaded = function(lastBlock) {
 	self.addToBlockchain(lastBlock);
   library.bus.message('loadDelegates');
 	library.bus.message('startTransactionPool');
-  library.bus.message('attachNetworkApi');
 };
 
 NodeManager.prototype.onNetworkApiAttached = function(){
@@ -149,16 +148,17 @@ NodeManager.prototype.onDelegatesLoaded = function(keypairs) {
     __private.keypairs=keypairs;
     library.logger.info("# Loaded "+numberOfDelegates+" delegate(s). Started as a forging node");
     library.bus.message('startForging');
-    if(library.config.api.mount){
-      library.bus.message('attachPublicApi');
-    }
   }
   else{
     library.logger.info("# Started as a relay node");
-		if(library.config.api.mount){
-      library.bus.message('attachPublicApi');
-    }
   }
+
+	library.logger.info("# Mounting Network API");
+	library.bus.message('attachNetworkApi');
+	if(library.config.api.mount){
+		library.logger.info("# Mounting Public API");
+		library.bus.message('attachPublicApi');
+	}
 };
 
 NodeManager.prototype.onPeersUpdated = function() {
@@ -288,9 +288,9 @@ NodeManager.prototype.onBlocksReceived = function(blocks, peer, cb) {
 		block.totalFee=parseInt(block.totalFee);
 		block.verified = false;
 	  block.processed = false;
-		if(block.height%1000 == 0){
+		//if(block.height%1000 == 0){
 			library.logger.info("Processsing block height", block.height);
-		}
+		//}
 		self.addToBlockchain(block, function(err, block){
 			if(err){
 				setImmediate(cb, err, block);
@@ -314,22 +314,25 @@ NodeManager.prototype.onBlockRemoved = function(block, cb) {
 	self.removeFromBlockchain(block, cb);
 };
 
-NodeManager.prototype.onBlockReceived = function(block, peer) {
+NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 	var lastBlock = self.getLastBlock();
-  if(!__private.blockchain[""+(block.height-1)]){
+	//console.log(block);
+	var previousBlock = self.getPreviousBlock(block);
+	//console.log(previousBlock);
+  if(!previousBlock){
     library.logger.info("Blockchain is not complete", block);
 		// to prevent from spam we accept only blocks close to top of blockchain
 		if((lastBlock.height < block.height) && (block.height-lastBlock.height < 5)){
 	    block.verified=false;
 	    block.processed=false;
 	    block.broadcast=true;
-	    self.addToBlockchain(block);
+	    //self.addToBlockchain(block);
 		}
-		return;
+		return cb && setImmediate(cb, null, block);
   }
 
   var myblock = __private.blockchain[block.height];
-	var previousBlock = self.getPreviousBlock(block);
+
   if(myblock){
     // FORK
     if(block.id != myblock.id){
@@ -342,56 +345,67 @@ NodeManager.prototype.onBlockReceived = function(block, peer) {
     }
 		else{
 			library.logger.debug("Block already in Blockchain", block.id);
+			cb && setImmediate(cb, null, block)
 		}
 
   } else if(previousBlock && block.previousBlock == previousBlock.id){ //all clear
     block.verified=false;
     block.processed=false;
     block.broadcast=true;
-		//RECEIVED full block?
+
+		//RECEIVED empty block?
 		if(block.numberOfTransactions==0){
 			library.logger.debug("processing empty block", block.id);
 	    self.addToBlockchain(block, function(err, block){
 				if(!err){
-					library.bus.message('verifyBlock', block);
+					library.bus.message('verifyBlock', block, cb);
 				}
 			});
 		}
 		// lets download transactions
 		// carefully since order is important to validate block
-		else if(transactions.length == 0){
+		else if(block.transactions.length == 0){
+
 			var transactionIds = block.transactionIds;
 
-			modules.transactionPool.getMissingTransactions(transactionIds, function(err, missingTransactionIds, transactions){
+			modules.transactionPool.getMissingTransactions(transactionIds, function(err, missingTransactionIds, foundTransactions){
 				if(err){
-					return setImmediate(cb, "Cannot process block.", err);
+					return cb && setImmediate(cb, "Cannot process block.", err);
 				}
 				if(missingTransactionIds.length==0){
+					//console.log(foundTransactions);
+					//console.log(block.transactionIds);
 					// Great everything is here lets go
-					block.transactions=transactions;
-					library.bus.message('verifyBlock', block);
+					block.transactions=foundTransactions;
+					self.addToBlockchain(block, function(err, block){
+						if(!err){
+							library.bus.message('verifyBlock', block, cb);
+						}
+					});
 				}
 				// lets download the missing ones
 				else{
 					modules.transport.getFromPeer(peer, {
 						 method: 'GET',
 						api: '/transactionsFromIds?blockid=' + block.id + "&ids='"+missingTransactionIds.join(",")+"'"
-					}, function (err, missingTransactions) {
-						 if (err || res.body.error || !res.body.success) {
-							 library.logger.debug('Cannot transactions', block.id);
-							 return setImmediate(cb, err || error);
+					}, function (err, res) {
+						library.logger.debug("called "+res.peer.ip+":"+res.peer.port+"/peer/transactionsFromIds");
+						 if (err) {
+							 library.logger.debug('Cannot get transactions for block', block.id);
+							 return setImmediate(cb, err);
 						 }
-						 library.logger.debug("calling "+peer.ip+":"+peer.port+"/peer/transactionsFromIds");
-						 library.logger.debug("received transactions",res.body.transactions);
 
+						 var receivedTransactions = res.body.transactions;
+
+						 library.logger.debug("received transactions",receivedTransactions);
 						 for(var i=0;i<transactionIds.length;i++){
 							 var id=transactionIds[i]
-							 var tx=transactions.find(function(tx){return tx.id==id});
+							 var tx=receivedTransactions.find(function(tx){return tx.id==id});
 							 if(tx){
 								 transactionIds[i]=tx;
 							 }
 							 else{
-								 tx=missingTransactions.find(function(tx){return tx.id==id});
+								 tx=foundTransactions.find(function(tx){return tx.id==id});
 								 if(tx){
 									 transactionIds[i]=tx;
 								 }
@@ -408,13 +422,13 @@ NodeManager.prototype.onBlockReceived = function(block, peer) {
 							 delete block.transactionIds;
 							 self.addToBlockchain(block, function(error, block){
 				 				if(!error){
-				 					library.bus.message('verifyBlock', block);
+				 					library.bus.message('verifyBlock', block, cb);
 				 				}
 				 			});
-							return setImmediate(cb);
+							return cb && setImmediate(cb);
 						 }
 						 else{
-							 return setImmediate(cb, "Block transactions are inconsistant.");
+							 return cb && setImmediate(cb, "Block transactions are inconsistant.");
 						 }
 					 }
 				 );
@@ -422,7 +436,11 @@ NodeManager.prototype.onBlockReceived = function(block, peer) {
 			});
 		}
 		else{ //block complete
-			library.bus.message('verifyBlock', block);
+			self.addToBlockchain(block, function(err, block){
+				if(!err){
+					library.bus.message('verifyBlock', block, cb);
+				}
+			});
 		}
   }
 };
@@ -446,7 +464,7 @@ NodeManager.prototype.onBlockForged = function(block) {
 NodeManager.prototype.onBlockVerified = function(block, cb) {
   block.verified = true;
   block.processed = false;
-  self.updateBlock(block, function(error, block){
+  self.upsertBlock(block, function(error, block){
     if(error){
 			cb && setImmediate(cb, error, block);
 		}
@@ -462,7 +480,7 @@ NodeManager.prototype.onBlockProcessed = function(block, cb) {
 		block.broadcast = false;
 		library.bus.message('broadcastBlock', block, cb);
 	}
-	self.updateBlock(block, function(error, block){
+	self.upsertBlock(block, function(error, block){
     if(error){
 			//very bad!
     }

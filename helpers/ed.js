@@ -5,7 +5,6 @@ var network = arkjs.networks.ark;
 var ed = {};
 
 ed.makeKeypair = function (seed) {
-	//console.log(arkjs.ecpair);
 	return arkjs.crypto.getKeys(seed);
 };
 
@@ -15,8 +14,8 @@ ed.sign = function (hash, keypair) {
 
 ed.verify = function (hash, signatureBuffer, publicKeyBuffer) {
 	try {
-		var ecsignature = arkjs.ecsignature.fromDER(signatureBuffer);
-		var ecpair = arkjs.ecpair.fromPublicKeyBuffer(publicKeyBuffer, network);
+		var ecsignature = arkjs.ECSignature.fromDER(signatureBuffer);
+		var ecpair = arkjs.ECPair.fromPublicKeyBuffer(publicKeyBuffer, network);
 		return ecpair.verify(hash, ecsignature);
 	} catch (error){
 		return false;
