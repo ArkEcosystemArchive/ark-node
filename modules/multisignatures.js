@@ -337,19 +337,24 @@ shared.sign = function (req, cb) {
 Multisignatures.prototype.processSignature = function (tx, cb) {
 	var transaction = modules.transactionPool.getUnconfirmedTransaction(tx.transaction);
 
-	function done (cb) {
+	function done (transaction, cb) {
 		library.balancesSequence.add(function (cb) {
-			var transaction = modules.transactionPool.getUnconfirmedTransaction(tx.transaction);
 
-			if (!transaction) {
-				return setImmediate(cb, 'Transaction not found');
-			}
-
-			transaction.signatures = transaction.signatures || [];
-			transaction.signatures.push(tx.signature);
-			library.bus.message('signature', transaction, true);
-
-			return setImmediate(cb);
+			modules.accounts.getAccount({
+				address: transaction.senderId
+			}, function (err, sender) {
+				if (err) {
+					return setImmediate(cb, err);
+				} else if (!sender) {
+					return setImmediate(cb, 'Sender not found');
+				} else {
+					transaction.signatures = transaction.signatures || [];
+					transaction.signatures.push(tx.signature);
+					transaction.ready = Multisignature.prototype.ready(transaction, sender);
+					library.bus.message('signature', {transaction: tx.transaction, signature: tx.signature}, true);
+					return setImmediate(cb);
+				}
+			});
 		}, cb);
 	}
 
@@ -381,7 +386,7 @@ Multisignatures.prototype.processSignature = function (tx, cb) {
 			return setImmediate(cb, 'Failed to verify signature');
 		}
 
-		return done(cb);
+		return done(transaction, cb);
 	} else {
 		modules.accounts.getAccount({
 			address: transaction.senderId

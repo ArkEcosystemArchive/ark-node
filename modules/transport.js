@@ -30,7 +30,7 @@ function Transport (cb, scope) {
 			__private.broadcastTransactions=[];
 			self.broadcast({limit: 10}, {api: '/transactions', data: {transactions: transactions}, method: 'POST'});
 		}
-	}, 2*1000);
+	}, 1000);
 
 	setImmediate(cb, null, self);
 }
@@ -448,7 +448,7 @@ Transport.prototype.getFromPeer = function (peer, options, cb) {
 	.then(function (res) {
 		if (res.status !== 200) {
 			// Remove peer
-			console.log(res);
+			//console.log(res);
 			__private.removePeer({peer: peer, code: 'ERESPONSE ' + res.status, req: req});
 
 			return setImmediate(cb, ['Received bad response code', res.status, req.method, req.url].join(' '));

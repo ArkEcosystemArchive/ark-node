@@ -92,6 +92,7 @@ var config = {
 		rounds: './modules/rounds.js',
 		multisignatures: './modules/multisignatures.js',
 		transactionPool: './modules/transactionPool.js',
+		blockchain: './modules/blockchain.js',
 		nodeManager: './modules/nodeManager.js'
 	}
 };

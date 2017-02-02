@@ -321,7 +321,7 @@ __private.afterSave = function (block, cb) {
 };
 
 __private.getPreviousBlock = function(block, cb){
-	var previousBlock = modules.nodeManager.getPreviousBlock(block);
+	var previousBlock = modules.blockchain.getPreviousBlock(block);
 	if(previousBlock){
 		setImmediate(cb, null, previousBlock);
 	}
@@ -335,6 +335,10 @@ __private.getPreviousBlock = function(block, cb){
 			previousBlock.reward = parseInt(previousBlock.reward);
 			previousBlock.totalAmount = parseInt(previousBlock.totalAmount);
 			previousBlock.totalFee = parseInt(previousBlock.totalFee);
+
+			// we add this previous block in the mem blockchain
+			modules.blockchain.upsertBlock(previousBlock);
+
 			setImmediate(cb, null, previousBlock);
 		}).catch(function (err) {
 			setImmediate(cb, err);
@@ -362,7 +366,8 @@ __private.popLastBlock = function (oldLastBlock, cb) {
 			}, function (err) {
 				modules.rounds.backwardTick(oldLastBlock, previousBlock, function () {
 					__private.deleteBlock(oldLastBlock.id, function (err) {
-						library.bus.message("blockRemoved", oldLastBlock, cb);
+						library.logger.warn("removing block", oldLastBlock.height);
+						modules.blockchain.removeBlock(oldLastBlock, cb);
 					});
 				});
 			});
@@ -390,7 +395,7 @@ __private.getIdSequence = function (height, cb) {
 		}
 
 		// multithread will eat you
-		var lastBlock = modules.nodeManager.getLastBlock();
+		var lastBlock = modules.blockchain.getLastBlock();
 
 		if (lastBlock && !_.includes(rows, lastBlock.id)) {
 			rows.unshift({
@@ -641,7 +646,9 @@ Blocks.prototype.loadBlocksOffset = function (limit, offset, verify, cb) {
 					return setImmediate(cb);
 				}
 
-				library.logger.debug('Processing block', block.height);
+				if(block.height%100 == 0){
+					library.logger.info("Processing block height", block.height);
+				}
 				if (verify && block.id !== genesisblock.block.id) {
 					// Sanity check of the block, if values are coherent.
 					// No access to database.
@@ -654,7 +661,7 @@ Blocks.prototype.loadBlocksOffset = function (limit, offset, verify, cb) {
 				}
 				block.verified = true;
 				block.processed = true;
-				modules.nodeManager.addToBlockchain(block);
+				modules.blockchain.upsertBlock(block);
 				if (block.id === genesisblock.block.id) {
 					__private.applyGenesisBlock(block, cb);
 				}
@@ -685,7 +692,7 @@ Blocks.prototype.loadBlocksOffset = function (limit, offset, verify, cb) {
 };
 
 Blocks.prototype.removeSomeBlocks = function(numbers, cb){
-	if (modules.nodeManager.getLastBlock().height === 1) {
+	if (modules.blockchain.getLastBlock().height === 1) {
 		return setImmediate(cb);
 	}
 
@@ -716,7 +723,7 @@ Blocks.prototype.removeSomeBlocks = function(numbers, cb){
 						return (Math.random() > 1/(numbers+1));
 					},
 					function (next) {
-						var block = modules.nodeManager.getLastBlock();
+						var block = modules.blockchain.getLastBlock();
 						__private.popLastBlock(block, function (err, newLastBlock) {
 			   			if (err) {
 			   				library.logger.error('Error deleting last block', block);
@@ -731,7 +738,7 @@ Blocks.prototype.removeSomeBlocks = function(numbers, cb){
 				);
 	   	},
 			forwardSwap: function (seriesCb) {
-			 	modules.rounds.directionSwap('forward', modules.nodeManager.getLastBlock(), seriesCb);
+			 	modules.rounds.directionSwap('forward', modules.blockchain.getLastBlock(), seriesCb);
 			}
 		}, function (err) {
 			// Reset the last receipt
@@ -746,7 +753,7 @@ Blocks.prototype.removeSomeBlocks = function(numbers, cb){
 
 
 Blocks.prototype.removeLastBlock = function(cb){
-	if (modules.nodeManager.getLastBlock().height === 1) {
+	if (modules.blockchain.getLastBlock().height === 1) {
 		return setImmediate(cb);
 	}
 	// one block after the other
@@ -768,7 +775,7 @@ Blocks.prototype.removeLastBlock = function(cb){
 				modules.rounds.directionSwap('backward', null, seriesCb);
 			},
 	   	popLastBlock: function (seriesCb) {
-				var block = modules.nodeManager.getLastBlock();
+				var block = modules.blockchain.getLastBlock();
 				__private.popLastBlock(block, function (err, newLastBlock) {
 					if (err) {
 						library.logger.error('Error deleting last block', block);
@@ -778,7 +785,7 @@ Blocks.prototype.removeLastBlock = function(cb){
 				});
 	   	},
 			forwardSwap: function (seriesCb) {
-			 	modules.rounds.directionSwap('forward', modules.nodeManager.getLastBlock(), seriesCb);
+			 	modules.rounds.directionSwap('forward', modules.blockchain.getLastBlock(), seriesCb);
 			}
 		}, function (err) {
 			// Reset the last receipt
@@ -817,7 +824,7 @@ Blocks.prototype.loadLastBlock = function (cb) {
 };
 
 Blocks.prototype.getLastBlock = function () {
-	var lastBlock = modules.nodeManager.getLastBlock();
+	var lastBlock = modules.blockchain.getLastBlock();
 
 	if (lastBlock) {
 		var epoch = constants.epochTime / 1000;
@@ -832,14 +839,13 @@ Blocks.prototype.getLastBlock = function () {
 };
 
 Blocks.prototype.onVerifyBlock = function (block, cb) {
-
 	var result = self.verifyBlock(block, false);
 	//console.log(result);
 	if(result.verified){
-		library.bus.message("blockVerified",block, cb);
+		return library.bus.message("blockVerified", block, cb);
 	}
 	else{
-		cb && setImmediate(cb, result.errors.join(" - "), block);
+		return cb && setImmediate(cb, result.errors.join(" - "), block);
 	}
 }
 
@@ -865,7 +871,7 @@ Blocks.prototype.verifyBlock = function (block, checkPreviousBlock) {
 		if (!block.previousBlock) {
 			result.errors.push('Invalid previous block');
 		} else if (checkPreviousBlock){
-			previousBlock = modules.nodeManager.getPreviousBlock(block);
+			previousBlock = modules.blockchain.getPreviousBlock(block);
 			if(!previousBlock) {
 				library.bus.message("fork",block, 1);
 				result.errors.push(['Invalid previous block:', block.previousBlock, 'expected:', lastBlock.id].join(' '));
@@ -1132,7 +1138,6 @@ Blocks.prototype.processBlock = function (block, cb) {
 	}
 
 	// be sure to apply only one block after the other
-	library.blockSequence.add(function (cb){
 
 		// Sanity check of the block, if values are coherent.
 		// No access to database
@@ -1229,12 +1234,18 @@ Blocks.prototype.processBlock = function (block, cb) {
 							function(cb){
 								modules.rounds.tick(block, cb);
 							}
-						],cb);
+						],function(error, errblock){
+							if(error){
+								return setImmediate(cb, error, errblock);
+							}
+							else{
+								return library.bus.message("blockProcessed", block, cb)
+							}
+						});
 					}
 				});
 			});
 		});
-	}, cb);
 };
 
 Blocks.prototype.processEmptyBlock = function (block, cb) {
@@ -1242,39 +1253,72 @@ Blocks.prototype.processEmptyBlock = function (block, cb) {
 		return setImmediate(cb, 'Cleaning up');
 	}
 	if(block.numberOfTransactions>0){
-		return setImmediate(cb, 'Not an empty block');
+		return setImmediate(cb, 'Not an empty block', block);
 	}
 
-	// be sure to apply only one block after the other
-	library.blockSequence.add(function (cb){
-
-		// Check if block id is already in the database (very low probability of hash collision).
-		// TODO: In case of hash-collision, to me it would be a special autofork...
-		// DATABASE: read only
-		library.db.query(sql.getBlockId, { id: block.id }).then(function (rows) {
-			if (rows.length > 0) {
-				return setImmediate(cb, ['Block', block.id, 'already exists'].join(' '));
-			}
-
-			// Check if block was generated by the right active delagate. Otherwise, fork 3.
-			// DATABASE: Read only to mem_accounts to extract active delegate list
-			modules.delegates.validateBlockSlot(block, function (err) {
-				if (err) {
-					library.bus.message("fork",block, 3);
-					return setImmediate(cb, err);
+	//console.log("processEmptyBlock - "+ block.height);
+	return async.applyEachSeries([
+		function(block, applycb){
+			library.db.query(sql.getBlockId, { id: block.id }).then(function (rows) {
+				//console.log("getBlockId " + block.height);
+				if (rows.length > 0) {
+					return setImmediate(applycb,['Block', block.id, 'already exists'].join(' '));
 				}
-
-				async.waterfall([
-					function(cb){
-						__private.saveBlock(block, cb);
-					},
-					function(cb){
-						modules.rounds.tick(block, cb);
-					},
-				],cb);
+				return setImmediate(applycb);
 			});
-		});
-	}, cb);
+		},
+		function(block, applycb){
+			//console.log("validateBlockSlot " + block.height);
+			modules.delegates.validateBlockSlot(block, applycb);
+		},
+		function(block, applycb){
+			//console.log("saveBlock " + block.height);
+			return __private.saveBlock(block, applycb);
+		},
+		function(block, applycb){
+			//console.log("tick " + block.height);
+			return modules.rounds.tick(block, applycb);
+		}
+	],
+	block,
+	function(error, errblock){
+		if(error){
+			return setImmediate(cb, error, errblock);
+		}
+		else{
+			return library.bus.message("blockProcessed", block, cb)
+		}
+	});
+
+
+	// Check if block id is already in the database (very low probability of hash collision).
+	// TODO: In case of hash-collision, to me it would be a special autofork...
+	// DATABASE: read only
+	// library.db.query(sql.getBlockId, { id: block.id }).then(function (rows) {
+	// 	console.log("getBlockId " + block.height);
+	// 	if (rows.length > 0) {
+	// 		return setImmediate(cb, ['Block', block.id, 'already exists'].join(' '));
+	// 	}
+	//
+	// 	// Check if block was generated by the right active delagate. Otherwise, fork 3.
+	// 	// DATABASE: Read only to mem_accounts to extract active delegate list
+	// 	modules.delegates.validateBlockSlot(block, function (err) {
+	// 		if (err) {
+	// 			library.bus.message("fork",block, 3);
+	// 			return setImmediate(cb, err);
+	// 		}
+	//
+	//
+	// 		async.waterfall([
+	// 			function(cb){
+	// 				__private.saveBlock(block, cb);
+	// 			},
+	// 			function(cb){
+	// 				modules.rounds.tick(block, cb);
+	// 			},
+	// 		],cb);
+	// 	});
+	// });
 };
 
 Blocks.prototype.simpleDeleteAfterBlock = function (blockId, cb) {
@@ -1287,7 +1331,7 @@ Blocks.prototype.simpleDeleteAfterBlock = function (blockId, cb) {
 };
 
 Blocks.prototype.loadBlocksFromPeer = function (peer, cb) {
-	var lastValidBlock = modules.nodeManager.getLastBlock();
+	var lastValidBlock = modules.blockchain.getLastBlock();
 
 	peer = modules.peers.inspect(peer);
 	library.logger.info('Loading blocks from: ' + peer.string);
@@ -1316,8 +1360,7 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, cb) {
 		if (blocks.length === 0) {
 			return setImmediate(cb, null, lastValidBlock);
 		} else {
-			library.bus.message("blocksReceived", blocks, peer, cb);
-
+			return library.bus.message("blocksReceived", blocks, peer, cb);
 			// async.eachSeries(blocks, function (block, cb) {
 			// 	if (__private.cleanup) {
 			// 		return setImmediate(cb);
@@ -1370,7 +1413,7 @@ Blocks.prototype.deleteBlocksBefore = function (block, cb) {
 		},
 		function (next) {
 			blocks.unshift(lastBlock);
-			__private.popLastBlock(modules.nodeManager.getLastBlock(), function (err, newLastBlock) {
+			__private.popLastBlock(modules.blockchain.getLastBlock(), function (err, newLastBlock) {
 				if(err){
 					library.logger.error('error removing block', block);
 					library.logger.error('error removing block', err);
@@ -1428,7 +1471,7 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 				keypair: keypair,
 				timestamp: timestamp,
 				//TODO: fireworks!
-				previousBlock: modules.nodeManager.getLastBlock(),
+				previousBlock: modules.blockchain.getLastBlock(),
 				transactions: ready
 			});
 		} catch (e) {
@@ -1446,24 +1489,11 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 // Events
 Blocks.prototype.onProcessBlock = function (block, cb) {
 	if(block.numberOfTransactions == 0){
-		self.processEmptyBlock(block, function(err){
-			if (err) {
-				cb && setImmediate(cb, err, block);
-			}
-			else{
-				library.bus.message("blockProcessed", block, cb);
-			}
-		});
+		//console.log("onProcessBlock - "+ block.height);
+		self.processEmptyBlock(block,cb);
 	}
 	else{
-		self.processBlock(block, function(err){
-			if (err) {
-				cb && setImmediate(cb, err, block);
-			}
-			else{
-				library.bus.message("blockProcessed", block, cb);
-			}
-		});
+		self.processBlock(block,cb);
 	}
 };
 
@@ -1538,7 +1568,7 @@ shared.getEpoch = function (req, cb) {
 };
 
 shared.getHeight = function (req, cb) {
-	var block=modules.nodeManager.getLastBlock();
+	var block=modules.blockchain.getLastBlock();
 
 	return setImmediate(cb, null, {height: block.height, id:block.id});
 };
@@ -1559,20 +1589,20 @@ shared.getNethash = function (req, cb) {
 };
 
 shared.getMilestone = function (req, cb) {
-	return setImmediate(cb, null, {milestone: __private.blockReward.calcMilestone(modules.nodeManager.getLastBlock().height)});
+	return setImmediate(cb, null, {milestone: __private.blockReward.calcMilestone(modules.blockchain.getLastBlock().height)});
 };
 
 shared.getReward = function (req, cb) {
-	return setImmediate(cb, null, {reward: __private.blockReward.calcReward(modules.nodeManager.getLastBlock().height)});
+	return setImmediate(cb, null, {reward: __private.blockReward.calcReward(modules.blockchain.getLastBlock().height)});
 };
 
 shared.getSupply = function (req, cb) {
-	return setImmediate(cb, null, {supply: __private.blockReward.calcSupply(modules.nodeManager.getLastBlock().height)});
+	return setImmediate(cb, null, {supply: __private.blockReward.calcSupply(modules.blockchain.getLastBlock().height)});
 };
 
 shared.getStatus = function (req, cb) {
 
-	var block = modules.nodeManager.getLastBlock();
+	var block = modules.blockchain.getLastBlock();
 
 	return setImmediate(cb, null, {
 		epoch:     constants.epochTime,

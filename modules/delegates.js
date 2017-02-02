@@ -253,7 +253,7 @@ __private.forge = function (cb) {
 
 	var currentSlot = slots.getSlotNumber();
 	// If we are supposed to forge now, be sure we got the very last block
-	var lastBlock = modules.blocks.getLastBlock();
+	var lastBlock = modules.blockchain.getLastBlock();
 	if (currentSlot === slots.getSlotNumber(lastBlock.timestamp)) {
 		err = 'Last block within same delegate slot';
 		return setImmediate(cb, err);

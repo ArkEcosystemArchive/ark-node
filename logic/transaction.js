@@ -84,24 +84,14 @@ Transaction.prototype.attachAssetType = function (typeId, instance) {
 };
 
 Transaction.prototype.sign = function (keypair, trs) {
-	var sign;
-	try {
-		sign = this.scope.ed.sign(this.getHash(trs), keypair).toString('hex');
-	} catch (e) {
-		return "";
-	}
+	var sign = this.scope.ed.sign(this.getHash(trs), keypair).toString('hex');
 	return sign;
 };
 
 Transaction.prototype.multisign = function (keypair, trs) {
 	var bytes = this.getBytes(trs, true, true);
 	var hash = crypto.createHash('sha256').update(bytes).digest();
-	var sign;
-	try {
-		sign = this.scope.ed.sign(hash, keypair).toString('hex');
-	} catch (e) {
-		return "";
-	}
+	var sign = this.scope.ed.sign(hash, keypair).toString('hex');
 	return sign;
 };
 

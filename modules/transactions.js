@@ -219,10 +219,15 @@ Transactions.prototype.apply = function (transaction, block, cb) {
 	}, cb);
 };
 
-Transactions.prototype.undo = function (transaction, block, sender, cb) {
+Transactions.prototype.undo = function (transaction, block, cb) {
 	library.logger.debug('Undoing confirmed transaction', transaction.id);
 	library.transactionSequence.add(function (cb){
-		library.logic.transaction.undo(transaction, block, sender, cb);
+		modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, function (err, sender) {
+			if (err) {
+				return setImmediate(eachSeriesCb, err);
+			}
+			library.logic.transaction.undo(transaction, block, sender, cb);
+		});
 	}, cb);
 };
 
@@ -399,7 +404,7 @@ shared.addTransactions = function (req, cb) {
 							return setImmediate(cb, 'Multisignature account not found');
 						}
 
-						if (!account.multisignatures || !account.multisignatures) {
+						if (!Array.isArray(account.multisignatures)) {
 							return setImmediate(cb, 'Account does not have multisignatures enabled');
 						}
 
@@ -488,7 +493,7 @@ shared.addTransactions = function (req, cb) {
 							});
 
 							transaction.id=library.logic.transaction.getId(transaction);
-							
+
 						} catch (e) {
 							return setImmediate(cb, e.toString());
 						}

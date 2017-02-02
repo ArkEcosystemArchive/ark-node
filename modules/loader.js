@@ -307,7 +307,7 @@ __private.loadBlocksFromNetwork = function (cb) {
 		function (next) {
 
 			var peer = peers[errorCount];
-			var lastBlock = modules.nodeManager.getLastBlock();
+			var lastBlock = modules.blockchain.getLastBlock();
 
 			async.waterfall([
 				function getCommonBlock (seriesCb) {
@@ -824,13 +824,8 @@ Loader.prototype.onAttachPublicApi = function () {
 
 
 // Blockchain loaded from database and ready to accept blocks from network
-Loader.prototype.onDownloadBlocks = function () {
-	__private.loadBlocksFromNetwork(function(err, lastBlock){
-		if(err){
-			library.logger.error(err, lastBlock);
-		}
-		library.bus.message("blocksDownloaded", lastBlock);
-	});
+Loader.prototype.onDownloadBlocks = function (cb) {
+	__private.loadBlocksFromNetwork(cb);
 };
 
 // Shutdown asked.
