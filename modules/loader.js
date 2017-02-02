@@ -321,7 +321,7 @@ __private.loadBlocksFromNetwork = function (cb) {
 						//console.log(commonBlock);
 						if (err) {
 							errorCount += 1;
-							library.logger.error(err);
+							library.logger.error("stack", err);
 							return setImmediate(seriesCb, err);
 						}
 						else if (!commonBlock) {
@@ -580,7 +580,10 @@ Loader.prototype.getNetwork = function (force, cb) {
 							library.logger.error("error:",e);
 						}
 						if(!valid){
-							library.logger.warn('# Received invalid block header from peer. Can be a tentative to attack the network!', peer.string);
+							library.logger.warn('# Received invalid block header from peer. Can be a tentative to attack the network!');
+							library.logger.warn(peer.string + " sent header",res.body.header);
+							//library.logger.debug("verify", library.logic.block.verifySignature(res.body.header));
+
 							return setImmediate(cb);
 						}
 						if(heightIsValid) {

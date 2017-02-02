@@ -28,21 +28,25 @@ Blockchain.prototype.onBind = function (scope) {
 };
 
 Blockchain.prototype.onStartBlockchain = function(){
-	setImmediate(function detectFork(){
+	setImmediate(function listenBlockchainState(){
 		var state = __private.timestampState();
-		if(state.stale){
-			library.logger.debug("Blockchain state", state);
-			library.logger.debug("mem blockchain size", Object.keys(__private.blockchain).length);
-		}
-
 		if(state.rebuild){
 			library.logger.warn("Blockchain rebuild triggered", state);
-			library.bus.message("rebuildBlockchain", 5, state, function(err,block){
-				setTimeout(detectFork, 1000);
+			library.bus.message("rebuildBlockchain", 10, state, function(err,block){
+				setTimeout(listenBlockchainState, 1000);
 			});
 		}
+		else if(state.stale){
+			library.logger.debug("Blockchain state", state);
+			//library.logger.debug("mem blockchain size", Object.keys(__private.blockchain).length);
+			library.bus.message("downloadBlocks", function(err, lastblock){
+				// TODO: see how the download went for further action
+			});
+			// ok let's try in one more blocktime if still stale
+			setTimeout(listenBlockchainState, 8000);
+		}
 		else{
-			setTimeout(detectFork, 1000);
+			setTimeout(listenBlockchainState, 1000);
 		}
 	});
 
@@ -70,7 +74,17 @@ Blockchain.prototype.upsertBlock = function(block, cb){
 }
 
 Blockchain.prototype.isOrphaned = function(block){
-	return __private.blockchain[block.height] && __private.blockchain[block.height].id != block.id;
+	if(__private.blockchain[block.height] && __private.blockchain[block.height].id != block.id){
+		if(__private.blockchain[block.height] && __private.blockchain[block.height].generatorPublicKey == block.generatorPublicKey){
+			modules.accounts.getAccount({publicKey:block.generatorPublicKey}, function(err, delegate){
+				library.logger.warn("Double forgery", {id: block.id, generator:block.generatorPublicKey, username: delegate.username, height:block.height});
+			});
+		}
+		return true;
+	}
+	else {
+		return false;
+	}
 }
 
 Blockchain.prototype.isForked = function(block){
@@ -269,36 +283,37 @@ Blockchain.prototype.onDatabaseLoaded = function(lastBlock) {
 	lastBlock.processed = true;
 	lastBlock.verified = true;
 	self.upsertBlock(lastBlock);
+	__private.timestampState(new Date());
 	__private.lastBlock = lastBlock;
 };
 
-Blockchain.prototype.onBlockRemoved = function(block, cb) {
+Blockchain.prototype.onBlockRemoved = function(block) {
 	return self.removeBlock(block);
 }
 
-Blockchain.prototype.onBlockReceived = function(block, peer, cb) {
+Blockchain.prototype.onBlockReceived = function(block, peer) {
 	if(self.isPresent(block)){
 		library.logger.info("Block already received", {id: block.id, height:block.height, peer:peer.string});
-		return cb && setImmediate(cb, null, block);
+		return;
 	}
 
 	if(self.isOrphaned(block)){
 		__private.orphanedBlocks[block.height]?__private.orphanedBlocks[block.height].push(block):[block];
 		library.logger.info("Orphaned block received", {id: block.id, height:block.height, peer:peer.string});
-		return cb && setImmediate(cb, null, block);
+		return;
 	}
 
 	if(self.isForked(block)){
 		__private.orphanedBlocks[block.height]?__private.orphanedBlocks[block.height].push(block):[block];
 		var previousBlock = self.getPreviousBlock(block);
 		library.logger.info("Forked block received", {id: block.id, height:block.height, previousBlock: block.previousBlock, previousBlockchainBlock: previousBlock.id, peer:peer.string});
-		return cb && setImmediate(cb, null, block);
+		return;
 	}
 
 	if(!self.isReady(block)){
 		var lastBlock = self.getLastBlock();
 		library.logger.info("Blockchain not ready to receive block", {id: block.id, height:block.height, lastBlockHeight: lastBlock.height, peer:peer.string});
-		return cb && setImmediate(cb, null, block);
+		return;
 	}
 
 	block.ready = true;
@@ -307,21 +322,27 @@ Blockchain.prototype.onBlockReceived = function(block, peer, cb) {
 
 };
 
-Blockchain.prototype.onBlockForged = function(block, cb) {
+Blockchain.prototype.onBlockForged = function(block) {
 	if(self.isPresent(block)){
-		library.logger.warn("Double forgery", {id: block.id, generator:block.generatorPublicKey, height:block.height});
-		return cb && setImmediate(cb, null, block);
+		modules.accounts.getAccount({publicKey:block.generatorPublicKey}, function(err, delegate){
+			library.logger.error("Double forgery - Same block - please disable delegate on one node", {id: block.id, generator:block.generatorPublicKey, username: delegate.username, height:block.height});
+		});
+		return;
 	}
 
 	if(self.isOrphaned(block)){
-		library.logger.warn("Double forgery - Orphaned block", {id: block.id, generator:block.generatorPublicKey, height:block.height});
-		return cb && setImmediate(cb, null, block);
+		modules.accounts.getAccount({publicKey:block.generatorPublicKey}, function(err, delegate){
+			library.logger.error("Double forgery - Orphaned block - please disable delegate on one node", {id: block.id, generator:block.generatorPublicKey, username: delegate.username, height:block.height});
+		});
+		return;
 	}
 
 	if(self.isForked(block)){
 		var previousBlock = self.getPreviousBlock(block);
-		library.logger.warn("Double forgery - Forked block ", {id: block.id, generator:block.generatorPublicKey, height:block.height, previousBlock: block.previousBlock, previousBlockchainBlock: previousBlock.id});
-		return cb && setImmediate(cb, null, block);
+		modules.accounts.getAccount({publicKey:block.generatorPublicKey}, function(err, delegate){
+			library.logger.error("Double forgery - Forked block - please disable delegate on one node", {id: block.id, generator:block.generatorPublicKey, username: delegate.username, height:block.height, previousBlock: block.previousBlock, previousBlockchainBlock: previousBlock.id});
+		});
+		return;
 	}
 
 	block.ready = true;

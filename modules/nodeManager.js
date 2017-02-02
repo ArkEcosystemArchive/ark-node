@@ -301,10 +301,10 @@ NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 	}
 };
 
-NodeManager.prototype.onBlockForged = function(block) {
+NodeManager.prototype.onBlockForged = function(block, cb) {
 	if(!block.ready){
 		library.logger.debug("Skip processing block", {id: block.id, height:block.height});
-		return cb && setImmediate(cb, null, block);
+		return;
 	}
 
 	block.verified = true;
@@ -313,7 +313,7 @@ NodeManager.prototype.onBlockForged = function(block) {
 	block.broadcast = true;
 
 	library.logger.info("Processing forged block", block.id);
-	library.bus.message('processBlock', block);
+	library.bus.message('processBlock', block, cb);
 }
 
 NodeManager.prototype.onBlockVerified = function(block, cb) {

@@ -160,6 +160,7 @@ Block.prototype.verifySignature = function (block) {
 		var hash = crypto.createHash('sha256').update(data).digest();
 		var blockSignatureBuffer = new Buffer(block.blockSignature, 'hex');
 		var generatorPublicKeyBuffer = new Buffer(block.generatorPublicKey, 'hex');
+		//console.log(hash.toString("hex"));
 		res = this.scope.ed.verify(hash, blockSignatureBuffer || ' ', generatorPublicKeyBuffer || ' ');
 	} catch (e) {
 		throw e;

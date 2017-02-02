@@ -329,6 +329,7 @@ __private.getPreviousBlock = function(block, cb){
 		library.db.query(sql.getBlockById, {
 			id: block.previousBlock
 		}).then(function (rows) {
+			//console.log(rows);
 			previousBlock = rows[0];
 
 			//TODO: get this right without this cleaning
@@ -349,8 +350,12 @@ __private.getPreviousBlock = function(block, cb){
 __private.popLastBlock = function (oldLastBlock, cb) {
 	library.balancesSequence.add(function (cb) {
 		__private.getPreviousBlock(oldLastBlock, function (err, previousBlock) {
-			if (err || !previousBlock) {
-				return setImmediate(cb, err || 'previousBlock is null');
+			if (err) {
+				return setImmediate(cb, err);
+			}
+			if (!previousBlock) {
+				// very wrong
+				return setImmediate(cb, "No previous block");
 			}
 
 			async.eachSeries(oldLastBlock.transactions.reverse(), function (transaction, cb) {
@@ -359,8 +364,6 @@ __private.popLastBlock = function (oldLastBlock, cb) {
 						modules.transactions.undo(transaction, oldLastBlock, cb);
 					}, function (cb) {
 						modules.transactions.undoUnconfirmed(transaction, cb);
-					}, function (cb) {
-						return setImmediate(cb);
 					}
 				], cb);
 			}, function (err) {
@@ -656,7 +659,7 @@ Blocks.prototype.loadBlocksOffset = function (limit, offset, verify, cb) {
 
 					if (!check.verified) {
 						library.logger.error(['loadBlocksOffset: Block ', block.id, 'verification failed'].join(' '), check.errors.join(', '));
-						return setImmediate(cb, check.errors[0]);
+						return setImmediate(cb, check.errors[0], block);
 					}
 				}
 				block.verified = true;

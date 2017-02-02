@@ -363,8 +363,7 @@ __private.forge = function (cb) {
 									'reward:' + b.reward,
 									'transactions:' + b.numberOfTransactions
 								].join(' '));
-								library.bus.message('blockForged', b);
-								modules.blocks.lastReceipt(new Date());
+								library.bus.message('blockForged', b, cb);
 							}
 							else{
 								library.logger.error('Failed generate block within delegate slot', err);
