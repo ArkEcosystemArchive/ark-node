@@ -309,20 +309,18 @@ Blockchain.prototype.onBlockReceived = function(block, peer, cb) {
 
 Blockchain.prototype.onBlockForged = function(block, cb) {
 	if(self.isPresent(block)){
-		library.logger.warn("Double forgery", {id: block.id, generator:block.generatorPublicKey, height:block.height, peer:peer.string});
+		library.logger.warn("Double forgery", {id: block.id, generator:block.generatorPublicKey, height:block.height});
 		return cb && setImmediate(cb, null, block);
 	}
 
 	if(self.isOrphaned(block)){
-		__private.orphanedBlocks[block.height]?__private.orphanedBlocks[block.height].push(block):[block];
-		library.logger.warn("Double forgery - Orphaned block", {id: block.id, generator:block.generatorPublicKey, height:block.height, peer:peer.string});
+		library.logger.warn("Double forgery - Orphaned block", {id: block.id, generator:block.generatorPublicKey, height:block.height});
 		return cb && setImmediate(cb, null, block);
 	}
 
 	if(self.isForked(block)){
-		__private.orphanedBlocks[block.height]?__private.orphanedBlocks[block.height].push(block):[block];
 		var previousBlock = self.getPreviousBlock(block);
-		library.logger.warn("Double forgery - Forked block ", {id: block.id, generator:block.generatorPublicKey, height:block.height, previousBlock: block.previousBlock, previousBlockchainBlock: previousBlock.id, peer:peer.string});
+		library.logger.warn("Double forgery - Forked block ", {id: block.id, generator:block.generatorPublicKey, height:block.height, previousBlock: block.previousBlock, previousBlockchainBlock: previousBlock.id});
 		return cb && setImmediate(cb, null, block);
 	}
 
