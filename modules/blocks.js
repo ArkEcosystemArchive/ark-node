@@ -367,6 +367,8 @@ __private.popLastBlock = function (oldLastBlock, cb) {
 					}
 				], cb);
 			}, function (err) {
+				// TODO: reinject transaction into pool: better than this
+				// library.bus.message("receiveTransactions")
 				modules.rounds.backwardTick(oldLastBlock, previousBlock, function () {
 					__private.deleteBlock(oldLastBlock.id, function (err) {
 						library.logger.warn("removing block", oldLastBlock.height);
@@ -1359,11 +1361,11 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, cb) {
 		if (!report) {
 			return setImmediate(cb, 'Received invalid blocks data', lastValidBlock);
 		}
-
-		if (blocks.length === 0) {
-			return setImmediate(cb, null, lastValidBlock);
-		} else {
-			return library.bus.message("blocksReceived", blocks, peer, cb);
+		return library.bus.message("blocksReceived", blocks, peer, cb);
+		// if (blocks.length === 0) {
+		// 	return cb(null, lastValidBlock);
+		// } else {
+		// 	return library.bus.message("blocksReceived", blocks, peer, cb);
 			// async.eachSeries(blocks, function (block, cb) {
 			// 	if (__private.cleanup) {
 			// 		return setImmediate(cb);
@@ -1401,7 +1403,7 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, cb) {
 			// 		return setImmediate(cb, null, lastValidBlock);
 			// 	}
 			// });
-		}
+		// }
 	});
 };
 

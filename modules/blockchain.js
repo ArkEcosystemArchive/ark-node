@@ -134,7 +134,9 @@ Blockchain.prototype.removeBlock = function(block, cb){
   } else if(__private.blockchain[block.height].id!=block.id){
     error = "removeBlock - Block has been replaced in the blockchain";
   } else {
-		__private.lastBlock = __private.blockchain[""+(block.height-1)];
+		if(__private.lastBlock.id == __private.blockchain[block.height].id){
+			__private.lastBlock = __private.blockchain[""+(block.height-1)];
+		}
     delete __private.blockchain[block.height];
 		// TODO: reuse orphaned blocks sending a message to stop rebuild
 		// if one of the orphaned block is at the origin (ie block.previousBlock == orphanedBlock.previousBlock)

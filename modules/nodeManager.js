@@ -68,110 +68,110 @@ NodeManager.prototype.onPeersUpdated = function() {
 
 NodeManager.prototype.onNetworkObserved = function(){
 	library.bus.message('downloadBlocks', function(err,lastBlock){
-		// TODO:
+		//console.log("bla");
 	});
 }
 
-
-NodeManager.prototype.onReceiveBlock = function (block, peer) {
-	//we make sure we process one block at a time
-	library.sequence.add(function (cb) {
-		var lastBlock = modules.blockchain.getLastBlock();
-
-		if (block.previousBlock === lastBlock.id && lastBlock.height + 1 === block.height) {
-			library.logger.info([
-				'Received new block id:', block.id,
-				'height:', block.height,
-				'round:',  modules.rounds.calc(block.height),
-				'slot:', slots.getSlotNumber(block.timestamp),
-				'reward:', block.reward,
-				'transactions', block.numberOfTransactions
-			].join(' '));
-
-			self.lastReceipt(new Date());
-			//library.logger.debug("Received block", block);
-			//RECEIVED full block?
-			if(block.numberOfTransactions==0 || block.numberOfTransactions==block.transactions.length){
-				library.logger.debug("processing full block",block.id);
-				self.processBlock(block, cb);
-			}
-			else {
-				//let's download the full block transactions
-				modules.transport.getFromPeer(peer, {
-					 method: 'GET',
-					 api: '/block?id=' + block.id
-				 }, function (err, res) {
-					 if (err || res.body.error) {
-						 library.logger.debug('Cannot get block', block.id);
-						 return setImmediate(cb, err);
-					 }
-					 library.logger.debug("calling "+peer.ip+":"+peer.port+"/peer/block?id=" + block.id);
-					 library.logger.debug("received transactions",res.body);
-
-					 if(res.body.transactions.length==block.numberOfTransactions){
-						 block.transactions=res.body.transactions
-						 self.processBlock(block, cb);
-					 }
-					 else{
-						 return setImmediate(cb, "Block transactions could not be downloaded.");
-					 }
-				 }
-			 );
-			}
-		} else if (block.previousBlock !== lastBlock.id && lastBlock.height + 1 === block.height) {
-			// Fork: consecutive height but different previous block id
-			library.bus.message("fork",block, 1);
-			// Uncle forging: decide winning chain
-			// -> winning chain is smallest block id (comparing with lexicographic order)
-			if(block.previousBlock < lastBlock.id){
-				// we should verify the block first:
-				// - forging delegate is legit
-				modules.delegates.validateBlockSlot(block, function (err) {
-					if (err) {
-						library.logger.warn("received block is not forged by a legit delegate", err);
-						return setImmediate(cb, err);
-					}
-					modules.loader.triggerBlockRemoval(1);
-					return  setImmediate(cb);
-				});
-			}
-			else {
-				// we are on winning chain, ignoring block
-				return setImmediate(cb);
-			}
-		} else if (block.previousBlock === lastBlock.previousBlock && block.height === lastBlock.height && block.id !== lastBlock.id) {
-			// Fork: Same height and previous block id, but different block id
-			library.logger.info("last block", lastBlock);
-			library.logger.info("received block", block);
-			library.bus.message("fork", block, 5);
-
-			// Orphan Block: Decide winning branch
-			// -> winning chain is smallest block id (comparing with lexicographic order)
-			if(block.id < lastBlock.id){
-				// we should verify the block first:
-				// - forging delegate is legit
-				modules.delegates.validateBlockSlot(block, function (err) {
-					if (err) {
-						library.logger.warn("received block is not forged by a legit delegate", err);
-						return setImmediate(cb, err);
-					}
-					modules.loader.triggerBlockRemoval(1);
-					return  setImmediate(cb);
-				});
-			}
-			else {
-				// we are on winning chain, ignoring block
-				return  setImmediate(cb);
-			}
-		} else {
-			//Dunno what this block coming from, ignoring block
-			return setImmediate(cb);
-		}
-	});
-};
+// deprecated, not used, here for info
+// NodeManager.prototype.onReceiveBlock = function (block, peer) {
+// 	//we make sure we process one block at a time
+// 	library.sequence.add(function (cb) {
+// 		var lastBlock = modules.blockchain.getLastBlock();
+//
+// 		if (block.previousBlock === lastBlock.id && lastBlock.height + 1 === block.height) {
+// 			library.logger.info([
+// 				'Received new block id:', block.id,
+// 				'height:', block.height,
+// 				'round:',  modules.rounds.calc(block.height),
+// 				'slot:', slots.getSlotNumber(block.timestamp),
+// 				'reward:', block.reward,
+// 				'transactions', block.numberOfTransactions
+// 			].join(' '));
+//
+// 			self.lastReceipt(new Date());
+// 			//library.logger.debug("Received block", block);
+// 			//RECEIVED full block?
+// 			if(block.numberOfTransactions==0 || block.numberOfTransactions==block.transactions.length){
+// 				library.logger.debug("processing full block",block.id);
+// 				self.processBlock(block, cb);
+// 			}
+// 			else {
+// 				//let's download the full block transactions
+// 				modules.transport.getFromPeer(peer, {
+// 					 method: 'GET',
+// 					 api: '/block?id=' + block.id
+// 				 }, function (err, res) {
+// 					 if (err || res.body.error) {
+// 						 library.logger.debug('Cannot get block', block.id);
+// 						 return setImmediate(cb, err);
+// 					 }
+// 					 library.logger.debug("calling "+peer.ip+":"+peer.port+"/peer/block?id=" + block.id);
+// 					 library.logger.debug("received transactions",res.body);
+//
+// 					 if(res.body.transactions.length==block.numberOfTransactions){
+// 						 block.transactions=res.body.transactions
+// 						 self.processBlock(block, cb);
+// 					 }
+// 					 else{
+// 						 return setImmediate(cb, "Block transactions could not be downloaded.");
+// 					 }
+// 				 }
+// 			 );
+// 			}
+// 		} else if (block.previousBlock !== lastBlock.id && lastBlock.height + 1 === block.height) {
+// 			// Fork: consecutive height but different previous block id
+// 			library.bus.message("fork",block, 1);
+// 			// Uncle forging: decide winning chain
+// 			// -> winning chain is smallest block id (comparing with lexicographic order)
+// 			if(block.previousBlock < lastBlock.id){
+// 				// we should verify the block first:
+// 				// - forging delegate is legit
+// 				modules.delegates.validateBlockSlot(block, function (err) {
+// 					if (err) {
+// 						library.logger.warn("received block is not forged by a legit delegate", err);
+// 						return setImmediate(cb, err);
+// 					}
+// 					modules.loader.triggerBlockRemoval(1);
+// 					return  setImmediate(cb);
+// 				});
+// 			}
+// 			else {
+// 				// we are on winning chain, ignoring block
+// 				return setImmediate(cb);
+// 			}
+// 		} else if (block.previousBlock === lastBlock.previousBlock && block.height === lastBlock.height && block.id !== lastBlock.id) {
+// 			// Fork: Same height and previous block id, but different block id
+// 			library.logger.info("last block", lastBlock);
+// 			library.logger.info("received block", block);
+// 			library.bus.message("fork", block, 5);
+//
+// 			// Orphan Block: Decide winning branch
+// 			// -> winning chain is smallest block id (comparing with lexicographic order)
+// 			if(block.id < lastBlock.id){
+// 				// we should verify the block first:
+// 				// - forging delegate is legit
+// 				modules.delegates.validateBlockSlot(block, function (err) {
+// 					if (err) {
+// 						library.logger.warn("received block is not forged by a legit delegate", err);
+// 						return setImmediate(cb, err);
+// 					}
+// 					modules.loader.triggerBlockRemoval(1);
+// 					return  setImmediate(cb);
+// 				});
+// 			}
+// 			else {
+// 				// we are on winning chain, ignoring block
+// 				return  setImmediate(cb);
+// 			}
+// 		} else {
+// 			//Dunno what this block coming from, ignoring block
+// 			return setImmediate(cb);
+// 		}
+// 	});
+// };
 
 NodeManager.prototype.onBlocksReceived = function(blocks, peer, cb) {
-	//console.log("onBlocksReceived");
+	//console.log("onBlocksReceived", blocks.length);
 
 	async.eachSeries(blocks, function (block, eachSeriesCb) {
 		block.reward = parseInt(block.reward);
@@ -180,21 +180,25 @@ NodeManager.prototype.onBlocksReceived = function(blocks, peer, cb) {
 		block.verified = false;
 	  block.processed = false;
 		modules.blockchain.addBlock(block);
-		if(block.height%1 == 0){
+		if(block.height%100 == 0){
 			library.logger.info("Processing block height", block.height);
 		}
 		library.bus.message('verifyBlock', block, function(err,block){
 			//console.log("verifiedBlock -- last");
-			setImmediate(eachSeriesCb,err);
+			eachSeriesCb(err, block);
 		});
 
 	}, function(err, block){
 		if(err){
 			library.logger.error(err, block);
 		}
+		else if(!blocks || blocks.length === 0){
+			return cb();
+		}
 		else{
 			return library.bus.message("downloadBlocks", cb);
 		}
+
 	});
 }
 
@@ -235,7 +239,7 @@ NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 			// great! All transactions were in mempool lets go!
 			if(missingTransactionIds.length==0){
 				block.transactions=foundTransactions;
-				library.logger.debug("processing block with transactions", block.height);
+				library.logger.debug("processing block with "+foundTransactions.length+" transactions", block.height);
 				library.bus.message('verifyBlock', block, cb);
 			}
 			// lets download the missing ones from the peer that sent the block.
@@ -278,7 +282,7 @@ NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 					 if(block.transactions.length==block.numberOfTransactions){
 						 //removing useless data
 						 delete block.transactionIds;
-						 library.logger.debug("processing block with transactions", block.height);
+						 library.logger.debug("processing block with "+block.numberOfTransactions+" transactions", block.height);
 						 return library.bus.message('verifyBlock', block, cb);
 					 }
 
@@ -294,7 +298,7 @@ NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 	else{ //block received complete
 		self.addToBlockchain(block, function(err, block){
 			if(!err){
-				library.logger.debug("processing block with transactions", block.height);
+				library.logger.debug("processing block with "+block.numberOfTransactions+" transactions", block.height);
 				library.bus.message('verifyBlock', block, cb);
 			}
 		});
@@ -410,36 +414,36 @@ NodeManager.prototype.onTransactionsReceived = function(transactions, source, cb
 };
 
 
-// manage the internal state logic
-__private.timestampState = function (lastReceipt) {
-	if(lastReceipt){
-		__private.lastReceipt = lastReceipt;
-	}
-	if (!__private.lastReceipt) {
-		__private.lastReceipt = new Date();
-		__private.lastReceipt.stale = true;
-		__private.lastReceipt.rebuild = false;
-		__private.lastReceipt.secondsAgo = 100000;
-	}
-	else {
-		var timeNow = new Date().getTime();
-		__private.lastReceipt.secondsAgo = Math.floor((timeNow -  __private.lastReceipt.getTime()) / 1000);
-		if(modules.delegates.isActiveDelegate()){
-			__private.lastReceipt.stale = __private.lastReceipt.secondsAgo > 8;
-			__private.lastReceipt.rebuild = __private.lastReceipt.secondsAgo > 60;
-		}
-
-		else if(modules.delegates.isForging()){
-			__private.lastReceipt.stale = __private.lastReceipt.secondsAgo > 30;
-			__private.lastReceipt.rebuild = __private.lastReceipt.secondsAgo > 100;
-		}
-
-		else {
-			__private.lastReceipt.stale = __private.lastReceipt.secondsAgo > 60;
-			__private.lastReceipt.rebuild = __private.lastReceipt.secondsAgo > 200;
-		}
-	}
-	return __private.lastReceipt;
-};
+// // manage the internal state logic
+// __private.timestampState = function (lastReceipt) {
+// 	if(lastReceipt){
+// 		__private.lastReceipt = lastReceipt;
+// 	}
+// 	if (!__private.lastReceipt) {
+// 		__private.lastReceipt = new Date();
+// 		__private.lastReceipt.stale = true;
+// 		__private.lastReceipt.rebuild = false;
+// 		__private.lastReceipt.secondsAgo = 100000;
+// 	}
+// 	else {
+// 		var timeNow = new Date().getTime();
+// 		__private.lastReceipt.secondsAgo = Math.floor((timeNow -  __private.lastReceipt.getTime()) / 1000);
+// 		if(modules.delegates.isActiveDelegate()){
+// 			__private.lastReceipt.stale = __private.lastReceipt.secondsAgo > 8;
+// 			__private.lastReceipt.rebuild = __private.lastReceipt.secondsAgo > 60;
+// 		}
+//
+// 		else if(modules.delegates.isForging()){
+// 			__private.lastReceipt.stale = __private.lastReceipt.secondsAgo > 30;
+// 			__private.lastReceipt.rebuild = __private.lastReceipt.secondsAgo > 100;
+// 		}
+//
+// 		else {
+// 			__private.lastReceipt.stale = __private.lastReceipt.secondsAgo > 60;
+// 			__private.lastReceipt.rebuild = __private.lastReceipt.secondsAgo > 200;
+// 		}
+// 	}
+// 	return __private.lastReceipt;
+// };
 
 module.exports = NodeManager;

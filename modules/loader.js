@@ -317,8 +317,6 @@ __private.loadBlocksFromNetwork = function (cb) {
 					__private.blocksToSync = peer.height - lastBlock.height;
 					library.logger.info('Looking for common block with: ' + peer.string);
 					modules.blocks.getCommonBlock(peer, lastBlock.height, function (err, commonBlock) {
-						//console.log(err);
-						//console.log(commonBlock);
 						if (err) {
 							errorCount += 1;
 							library.logger.error("stack", err);
@@ -336,8 +334,12 @@ __private.loadBlocksFromNetwork = function (cb) {
 					});
 				},
 				function loadBlocks (seriesCb) {
-					__private.blocksToSync = peer.height - lastBlock.height;
-					modules.blocks.loadBlocksFromPeer(peer, seriesCb);
+					if(peer.height > lastBlock.height){
+						modules.blocks.loadBlocksFromPeer(peer, seriesCb);
+					}
+					else{
+						seriesCb(null, lastBlock);
+					}
 				}
 			], function (err, lastBlock) {
 				next();
