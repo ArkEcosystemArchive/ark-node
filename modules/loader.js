@@ -297,13 +297,13 @@ __private.loadBlocksFromNetwork = function (cb) {
 		}
 	});
 
-	console.log("loadBlocksFromNetwork");
+	//console.log("loadBlocksFromNetwork");
 
 
 	async.whilst(
 		function () {
 			 //console.log(loaded);
-			console.log(tryCount);
+			//console.log(tryCount);
 			return !loaded && (tryCount < 5) && (peers.length > tryCount);
 		},
 		function (next) {
@@ -335,9 +335,8 @@ __private.loadBlocksFromNetwork = function (cb) {
 					});
 				},
 				function loadBlocks (seriesCb) {
-					//if(peer.height > lastBlock.height){
-						tryCount += 1;
-						modules.blocks.loadBlocksFromPeer(peer, seriesCb);
+
+					modules.blocks.loadBlocksFromPeer(peer, seriesCb);
 					//}
 					// else{
 					//  	tryCount += 1;
@@ -345,7 +344,13 @@ __private.loadBlocksFromNetwork = function (cb) {
 					// }
 				}
 			], function (err, lastBlock) {
-				next();
+				// no new block downloaded
+				if(!lastBlock){
+					loaded=true;
+				}
+				//console.log(lastBlock.height);
+				console.log("next");
+				//next();
 			});
 		},
 		function (err) {

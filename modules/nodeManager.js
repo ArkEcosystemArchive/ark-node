@@ -180,7 +180,7 @@ NodeManager.prototype.onNetworkObserved = function(network){
 
 NodeManager.prototype.onBlocksReceived = function(blocks, peer, cb) {
 
-
+	var currentBlock;
 	async.eachSeries(blocks, function (block, eachSeriesCb) {
 		block.reward = parseInt(block.reward);
 		block.totalAmount = parseInt(block.totalAmount);
@@ -188,21 +188,19 @@ NodeManager.prototype.onBlocksReceived = function(blocks, peer, cb) {
 		block.verified = false;
 	  block.processed = false;
 		modules.blockchain.addBlock(block);
+		currentBlock=block;
 		if(block.height%100 == 0){
 			library.logger.info("Processing block height", block.height);
 		}
-		library.bus.message('verifyBlock', block, function(err,block){
-			//console.log("verifiedBlock -- last");
-			eachSeriesCb(err, block);
-		});
+		library.bus.message('verifyBlock', block, eachSeriesCb);
 
-	}, function(err, block){
+	}, function(err){
 		if(err){
-			library.logger.error(err, block);
+			library.logger.error(err, currentBlock);
 		}
-
+		//console.log(currentBlock.height);
 		// we don't deal with download management, just return to say "blocks processed, go ahead"
-		return cb();
+		return cb(err, currentBlock);
 
 		// if(!blocks || blocks.length === 0){
 		// 	return cb();
@@ -372,13 +370,13 @@ NodeManager.prototype.onBlockVerified = function(block, cb) {
 }
 
 NodeManager.prototype.onBlockProcessed = function(block, cb) {
-	//console.log(block);
+	//console.log(block.height);
 	//console.log("onBlockProcessed - "+ block.height);
 	if(block.broadcast){
 		return library.bus.message('broadcastBlock', block, cb);
 	}
 	else{
-		cb && setImmediate(cb, null, block);
+		cb && cb(null, block);
 	}
 }
 

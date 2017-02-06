@@ -69,6 +69,7 @@ Blockchain.prototype.onStartBlockchain = function(){
 			library.logger.debug("Blockchain state", state);
 			//library.logger.debug("mem blockchain size", Object.keys(__private.blockchain).length);
 			library.bus.message("downloadBlocks", function(err, lastblock){
+				//console.log(lastblock.height);
 				// TODO: see how the download went for further action
 			});
 			// ok let's try in one more blocktime if still stale

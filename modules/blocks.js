@@ -1312,7 +1312,7 @@ Blocks.prototype.processBlock = function (block, cb) {
 							}
 						],function(error, errblock){
 							if(error){
-								return setImmediate(cb, error, errblock);
+								return cb(error, errblock);
 							}
 							else{
 								return library.bus.message("blockProcessed", block, cb)
