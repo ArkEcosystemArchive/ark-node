@@ -350,7 +350,7 @@ __private.getPreviousBlock = function(block, cb){
 __private.popLastBlock = function (oldLastBlock, cb) {
 	library.balancesSequence.add(function (cb) {
 		if(!oldLastBlock.previousBlock){
-			__private.deleteBlock(oldLastBlock.id, function (err) {
+			__private.simpleDeleteAfterBlock(oldLastBlock.id, function (err) {
 				library.logger.warn("removing block", oldLastBlock.height);
 				modules.blockchain.removeBlock(oldLastBlock);
 			});
@@ -362,7 +362,7 @@ __private.popLastBlock = function (oldLastBlock, cb) {
 			}
 			if (!previousBlock) {
 				// very wrong removing block from db only
-				__private.deleteBlock(oldLastBlock.id, function (err) {
+				__private.simpleDeleteAfterBlock(oldLastBlock.id, function (err) {
 					library.logger.warn("removing block", oldLastBlock.height);
 					modules.blockchain.removeBlock(oldLastBlock);
 				});
@@ -1260,9 +1260,8 @@ Blocks.prototype.processBlock = function (block, cb) {
 							library.db.query(sql.getTransactionId, { id: transaction.id }).then(function (rows) {
 								if (rows.length > 0) {
 									library.bus.message("fork",block, 0);
-									transaction.processed = true;
 									//we just don't process tx
-									return setImmediate(cb);
+									return setImmediate(cb, "Transaction already applied");
 								}
 								// Get account from database if any (otherwise cold wallet).
 								// DATABASE: read only
@@ -1277,9 +1276,6 @@ Blocks.prototype.processBlock = function (block, cb) {
 							// DATABASE: read only
 
 							if(block.height!=1){
-								if(transaction.processed){
-									return setImmediate(cb);
-								}
 								library.logic.transaction.verify(transaction, sender, cb);
 							}
 							else{
@@ -1334,15 +1330,15 @@ Blocks.prototype.processEmptyBlock = function (block, cb) {
 
 	//console.log("processEmptyBlock - "+ block.height);
 	return async.applyEachSeries([
-		function(block, applycb){
-			library.db.query(sql.getBlockId, { id: block.id }).then(function (rows) {
-				//console.log("getBlockId " + block.height);
-				if (rows.length > 0) {
-					return setImmediate(applycb,['Block', block.id, 'already exists'].join(' '));
-				}
-				return setImmediate(applycb);
-			});
-		},
+		// function(block, applycb){
+		// 	library.db.query(sql.getBlockId, { id: block.id }).then(function (rows) {
+		// 		//console.log("getBlockId " + block.height);
+		// 		if (rows.length > 0) {
+		// 			return setImmediate(applycb,['Block', block.id, 'already exists'].join(' '));
+		// 		}
+		// 		return setImmediate(applycb);
+		// 	});
+		// },
 		function(block, applycb){
 			//console.log("validateBlockSlot " + block.height);
 			modules.delegates.validateBlockSlot(block, applycb);
