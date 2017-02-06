@@ -38,20 +38,30 @@ Blockchain.prototype.onStartBlockchain = function(){
 	setImmediate(function listenBlockchainState(){
 		var state = __private.timestampState();
 		if(state.rebuild){
+			var timedout=false;
 			library.logger.warn("Blockchain rebuild triggered", state);
 			library.bus.message("rebuildBlockchain", 10, state, function(err,block){
 				if(block){ // rebuild done
 					library.logger.warn("Blockchain rebuild done", __private.timestampState());
-					setTimeout(listenBlockchainState, 1000);
+					if(!timedout){
+						timedout=true;
+						setTimeout(listenBlockchainState, 1000);
+					}
 				}
 				else if(!err){ // rebuild not done because in sync with network (ie network stale)
 					library.logger.warn("Rebuild aborted: In sync with observed network", __private.timestampState());
 					library.logger.warn("# Network looks stopped");
-					setTimeout(listenBlockchainState, 1000);
+					if(!timedout){
+						timedout=true;
+						setTimeout(listenBlockchainState, 1000);
+					}
 				}
 				else{
 					library.logger.error("Error rebuilding blockchain. You need to restart the node to get in sync", __private.timestampState());
-					setTimeout(listenBlockchainState, 1000);
+					if(!timedout){
+						timedout=true;
+						setTimeout(listenBlockchainState, 1000);
+					}
 				}
 			});
 		}

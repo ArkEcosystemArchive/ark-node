@@ -83,6 +83,7 @@ __private.attachApi = function () {
 			req.peer.state = 2;
 			req.peer.os = headers.os;
 			req.peer.version = headers.version;
+			modules.peers.update(req.peer, function(){});
 
 			if ((req.peer.version === library.config.version) && (headers.nethash === library.config.nethash)) {
 				if (!modules.blocks.lastReceipt()) {
