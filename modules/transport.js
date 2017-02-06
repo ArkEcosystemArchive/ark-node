@@ -206,6 +206,7 @@ __private.attachApi = function () {
 
 		modules.peers.update(req.peer, function(){});
 
+
 		library.bus.message('blockReceived', block, req.peer, function(error, data){
 			if(error){
 				library.logger.error(error, data);
@@ -309,7 +310,7 @@ __private.attachApi = function () {
 
 	router.get('/height', function (req, res) {
 		res.set(__private.headers);
-		var block = modules.blocks.getLastBlock();
+		var block = modules.blockchain.getLastBlock();
 		var blockheader={
 			id: block.id,
 			height: block.height,
@@ -318,16 +319,16 @@ __private.attachApi = function () {
 			totalFee: block.totalFee,
 			reward: block.reward,
 			payloadHash: block.payloadHash,
+			payloadLength: block.payloadLength,
 			timestamp: block.timestamp,
 			numberOfTransactions: block.numberOfTransactions,
-			payloadLength: block.payloadLength,
 			previousBlock: block.previousBlock,
 			generatorPublicKey: block.generatorPublicKey,
 			blockSignature: block.blockSignature
 		}
 		res.status(200).json({
 			success: true,
-			height: modules.blocks.getLastBlock().height,
+			height: block.height,
 			header: blockheader
 		});
 	});
@@ -378,8 +379,25 @@ Transport.prototype.broadcast = function (config, options, cb) {
 			peers = peers.slice(0,config.limit);
 		}
 		if (!err) {
+			// TODO: use a good bloom filter lib
+			// filtering out the peers likely already reached
+			// if(config.bloomfilter){
+			// 	peers=peers.filter(function(peer){
+			// 		if(!options.bloomfilter.checkEntry(peer.string)){
+			// 			options.bloomfilter.addEntry(peer.string);
+			// 			return true;
+			// 		}
+			// 		return false;
+			// 	});
+			// 	block.bloomfilter=config.bloomfilter.exportData().toString();
+			// }
 			async.eachLimit(peers, 3, function (peer, cb) {
-				return self.getFromPeer(peer, options, cb);
+				if(!modules.system.isMyself(peer)){
+					return self.getFromPeer(peer, options, cb);
+				}
+				else{
+					cb();
+				}
 			}, function (err) {
 				if (cb) {
 					return setImmediate(cb, null, {body: null, peer: peers});
@@ -431,6 +449,11 @@ Transport.prototype.getFromPeer = function (peer, options, cb) {
 
 	peer = modules.peers.inspect(peer);
 
+	//update headers to notify peer state
+	var lastBlock = modules.blockchain.getLastBlock();
+
+	__private.headers.height = lastBlock.height;
+
 	var req = {
 		url: 'http://' + peer.ip + ':' + peer.port + url,
 		method: options.method,
@@ -475,16 +498,12 @@ Transport.prototype.getFromPeer = function (peer, options, cb) {
 			// update the saved list of peers
 			modules.peers.update({
 				ip: peer.ip,
+				height: peer.height,
 				blockheader: headers.blockheader,
 				port: headers.port,
 				state: 2
 			}, function(){});
 
-			// update the passed arg 'peer' with its last received state
-			if(headers.blockheader){
-				peer.height = headers.blockheader.height;
-				peer.blockheader = headers.blockheader;
-			}
 
 			return setImmediate(cb, null, {body: res.body, peer: peer});
 		}
@@ -549,6 +568,14 @@ Transport.prototype.onBroadcastTransaction = function (transaction) {
 
 Transport.prototype.onBroadcastBlock = function (block) {
 	// we want to propagate as fast as possible only the headers unless the node generated it.
+	// var bloomfilter;
+	// if(block.bloomfilter){
+	// 	bloomfilter = BloomFilter.create(numberofElements, falsePositiveRate);
+	// }
+	// else {
+	// 	bloomfilter = new BloomFilter(serialized);
+	// }
+
 	var blockheaders = {
 		id: block.id,
 		height: block.height,
@@ -576,8 +603,6 @@ Transport.prototype.onBroadcastBlock = function (block) {
 		blockheaders.transactionIds=block.transactions.map(function(t){return t.id});
 		//console.log(block.transactions.map(function(t){return t.id}));
 	}
-
-
 
 	self.broadcast({all: block.forged, limit: limitbroadcast}, {api: '/blocks', data: {block: blockheaders}, method: 'POST'});
 };

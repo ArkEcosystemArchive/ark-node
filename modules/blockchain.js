@@ -7,13 +7,20 @@ var self, library, modules;
 
 var __private = {};
 
-// indexed by height
+// Indexed by height
 __private.blockchain = {};
 
-// indexed by height all blocks considered as orphaned
+// Indexed by height all blocks considered as orphaned
+// unused so far
 __private.orphanedBlocks = {};
 
-// last block processed in the blockchain
+// List of blocks received higher than lastBlock.height that can't be processed
+// Indicator of being forked from network
+// To use carefully as it can be a vector of attack
+// Indexed by height
+__private.forkedChainBlocks = {}
+
+// Last block processed in the blockchain
 __private.lastBlock = {height: 0};
 
 // Constructor
@@ -33,7 +40,19 @@ Blockchain.prototype.onStartBlockchain = function(){
 		if(state.rebuild){
 			library.logger.warn("Blockchain rebuild triggered", state);
 			library.bus.message("rebuildBlockchain", 10, state, function(err,block){
-				setTimeout(listenBlockchainState, 1000);
+				if(block){ // rebuild done
+					library.logger.warn("Blockchain rebuild done", __private.timestampState());
+					setTimeout(listenBlockchainState, 1000);
+				}
+				else if(!err){ // rebuild not done because in sync with network (ie network stale)
+					library.logger.warn("Rebuild aborted: In sync with observed network", __private.timestampState());
+					library.logger.warn("# Network looks stopped");
+					setTimeout(listenBlockchainState, 1000);
+				}
+				else{
+					library.logger.error("Error rebuilding blockchain. You need to restart the node to get in sync", __private.timestampState());
+					setTimeout(listenBlockchainState, 1000);
+				}
 			});
 		}
 		else if(state.stale){
@@ -48,6 +67,17 @@ Blockchain.prototype.onStartBlockchain = function(){
 		else{
 			setTimeout(listenBlockchainState, 1000);
 		}
+	});
+
+	setImmediate(function cleanBlockchain(){
+		var height = __private.lastBlock.height;
+		var blockremoved = __private.blockchain[height-200];
+		library.logger.debug("Removing from memory blockchain blocks with height under", height-200);
+		while(blockremoved){
+			delete __private.blockchain[blockremoved.height];
+			blockremoved = __private.blockchain[""+(blockremoved.height-1)];
+		}
+		setTimeout(cleanBlockchain, 10000);
 	});
 
 	// setTimeout(function fakeRebuild(){
@@ -98,7 +128,14 @@ Blockchain.prototype.isPresent = function(block){
 }
 
 Blockchain.prototype.isReady = function(block){
-	return __private.lastBlock.height == block.height - 1;
+	var ready = __private.lastBlock.height == block.height - 1;
+	if(ready){
+		return true;
+	}
+	else{
+		__private.forkedChainBlocks[block.height]=block;
+		return false;
+	}
 }
 
 Blockchain.prototype.addBlock = function(block, cb){
@@ -395,7 +432,7 @@ Blockchain.prototype.onFork = function (block, cause) {
 		},
 		cause: cause
 	});
-	library.logger.debug('Forked block',block);
+	//library.logger.debug('Forked block',block);
 };
 
 // manage the internal state logic
@@ -429,6 +466,8 @@ __private.timestampState = function (lastReceipt) {
 	if(__private.lastBlock.height < 100){
 		__private.lastReceipt.rebuild = false;
 	}
+
+	__private.lastReceipt.height = __private.lastBlock.height;
 
 	return __private.lastReceipt;
 };

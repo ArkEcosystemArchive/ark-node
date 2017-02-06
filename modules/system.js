@@ -42,6 +42,15 @@ System.prototype.onBind = function (scope) {
 	modules = scope;
 };
 
+System.prototype.isMyself = function (peer) {
+	var interfaces = os.networkInterfaces();
+	return Object.keys(interfaces).some(function(family){
+		return interfaces[family].some(function(nic){
+			return nic.address == peer.ip && peer.port == __private.port;
+		});
+	});
+}
+
 // Shared
 
 // Export

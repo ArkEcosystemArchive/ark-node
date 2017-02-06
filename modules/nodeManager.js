@@ -39,12 +39,10 @@ NodeManager.prototype.onDatabaseLoaded = function(lastBlock) {
 	library.bus.message('startBlockchain');
 };
 
-NodeManager.prototype.onNetworkApiAttached = function(){
-  library.bus.message('updatePeers');
-}
-
 NodeManager.prototype.onDelegatesLoaded = function(keypairs) {
   var numberOfDelegates=Object.keys(keypairs).length;
+
+	// If there are some delegates configured, start forging, else just relay tx and blocks
   if(numberOfDelegates>0){
     __private.keypairs=keypairs;
     library.logger.info("# Loaded "+numberOfDelegates+" delegate(s). Started as a forging node");
@@ -54,23 +52,33 @@ NodeManager.prototype.onDelegatesLoaded = function(keypairs) {
     library.logger.info("# Started as a relay node");
   }
 
+	// Mount the network API
 	library.logger.info("# Mounting Network API");
 	library.bus.message('attachNetworkApi');
+
+	// If configured, mount the public API (not recommanded for forging node on long term).
 	if(library.config.api.mount){
 		library.logger.info("# Mounting Public API");
 		library.bus.message('attachPublicApi');
 	}
 };
 
+NodeManager.prototype.onNetworkApiAttached = function(){
+  library.bus.message('updatePeers');
+}
+
 NodeManager.prototype.onPeersUpdated = function() {
 	library.bus.message('observeNetwork');
 };
 
-NodeManager.prototype.onNetworkObserved = function(){
-	library.bus.message('downloadBlocks', function(err,lastBlock){
-		//console.log("bla");
-	});
+NodeManager.prototype.onNetworkObserved = function(network){
+	if(!__private.lastBlock || network.height > __private.lastBlock.height){
+		library.bus.message('downloadBlocks', function(err,lastBlock){
+			//console.log("bla");
+		});
+	}
 }
+
 
 // deprecated, not used, here for info
 // NodeManager.prototype.onReceiveBlock = function (block, peer) {
@@ -203,9 +211,42 @@ NodeManager.prototype.onBlocksReceived = function(blocks, peer, cb) {
 }
 
 NodeManager.prototype.onRebuildBlockchain = function(blocksToRemove, state, cb) {
-	return modules.blocks.removeSomeBlocks(blocksToRemove, function(error, lastBlock){
-		library.bus.message("downloadBlocks", cb);
+	return modules.loader.getNetwork(true, function(err, network){
+		if(!network){
+			cb("Can't find peers to sync with...");
+		}
+		var lastBlock = modules.blockchain.getLastBlock();
+		if(network.height > lastBlock.height){
+			library.logger.info("Observed network height is higher", {network: network.height, node:lastBlock.height});
+			library.logger.info("Rebuilding from network");
+			modules.blocks.removeSomeBlocks(blocksToRemove, function(error, lastBlock){
+				library.bus.message("downloadBlocks", cb);
+			});
+		}
+		else{
+			var bestBlock = modules.loader.getNetworkSmallestBlock();
+			//network.height is some kind of "conservative" estimation, so some peers can have bigger height
+			if(bestBlock && bestBlock.height > lastBlock.height){
+				library.logger.info("Observed network is on same height, but some peers with bigger height", {network: {id: bestBlock.id, height:bestBlock.height}, node:{id: lastBlock.id, height:lastBlock.height}});
+				library.logger.info("Rebuilding from network");
+				modules.blocks.removeSomeBlocks(blocksToRemove, function(error, lastBlock){
+					library.bus.message("downloadBlocks", cb);
+				});
+			}
+			else if(bestBlock && bestBlock.height == lastBlock.height && bestBlock.id != lastBlock.id){
+				library.logger.info("Observed network is on same height, but found a smaller block id", {network: {id: bestBlock.id, height:bestBlock.height}, node:{id: lastBlock.id, height:lastBlock.height}});
+				library.logger.info("Rebuilding from network");
+				modules.blocks.removeSomeBlocks(blocksToRemove, function(error, lastBlock){
+					library.bus.message("downloadBlocks", cb);
+				});
+			}
+			else{
+				library.logger.info("Observed network is on same height, and same smallest block id", {network: network.height, node:lastBlock.height});
+				cb();
+			}
+		}
 	});
+
 };
 
 NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
@@ -214,7 +255,7 @@ NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 		return cb && setImmediate(cb, null, block);
 	}
 
-	library.logger.info("New block received", {id: block.id, height:block.height});
+	library.logger.info("New block received", {id: block.id, height:block.height, transactions: block.numberOfTransactions, peer:peer.string});
 
 	block.verified = false;
 	block.processed = false;
@@ -412,38 +453,5 @@ NodeManager.prototype.onTransactionsReceived = function(transactions, source, cb
 	}
 
 };
-
-
-// // manage the internal state logic
-// __private.timestampState = function (lastReceipt) {
-// 	if(lastReceipt){
-// 		__private.lastReceipt = lastReceipt;
-// 	}
-// 	if (!__private.lastReceipt) {
-// 		__private.lastReceipt = new Date();
-// 		__private.lastReceipt.stale = true;
-// 		__private.lastReceipt.rebuild = false;
-// 		__private.lastReceipt.secondsAgo = 100000;
-// 	}
-// 	else {
-// 		var timeNow = new Date().getTime();
-// 		__private.lastReceipt.secondsAgo = Math.floor((timeNow -  __private.lastReceipt.getTime()) / 1000);
-// 		if(modules.delegates.isActiveDelegate()){
-// 			__private.lastReceipt.stale = __private.lastReceipt.secondsAgo > 8;
-// 			__private.lastReceipt.rebuild = __private.lastReceipt.secondsAgo > 60;
-// 		}
-//
-// 		else if(modules.delegates.isForging()){
-// 			__private.lastReceipt.stale = __private.lastReceipt.secondsAgo > 30;
-// 			__private.lastReceipt.rebuild = __private.lastReceipt.secondsAgo > 100;
-// 		}
-//
-// 		else {
-// 			__private.lastReceipt.stale = __private.lastReceipt.secondsAgo > 60;
-// 			__private.lastReceipt.rebuild = __private.lastReceipt.secondsAgo > 200;
-// 		}
-// 	}
-// 	return __private.lastReceipt;
-// };
 
 module.exports = NodeManager;

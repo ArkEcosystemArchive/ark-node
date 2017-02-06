@@ -349,12 +349,24 @@ __private.getPreviousBlock = function(block, cb){
 
 __private.popLastBlock = function (oldLastBlock, cb) {
 	library.balancesSequence.add(function (cb) {
+		if(!oldLastBlock.previousBlock){
+			__private.deleteBlock(oldLastBlock.id, function (err) {
+				library.logger.warn("removing block", oldLastBlock.height);
+				modules.blockchain.removeBlock(oldLastBlock);
+			});
+			return setImmediate(cb, "No previous block");
+		}
 		__private.getPreviousBlock(oldLastBlock, function (err, previousBlock) {
 			if (err) {
 				return setImmediate(cb, err);
 			}
 			if (!previousBlock) {
-				// very wrong
+				// very wrong removing block from db only
+				__private.deleteBlock(oldLastBlock.id, function (err) {
+					library.logger.warn("removing block", oldLastBlock.height);
+					modules.blockchain.removeBlock(oldLastBlock);
+				});
+
 				return setImmediate(cb, "No previous block");
 			}
 
@@ -554,6 +566,7 @@ Blocks.prototype.getCommonBlock = function (peer, height, cb) {
 			});
 		},
 		function (res, waterCb) {
+			//console.log(res);
 			library.db.query(sql.getCommonBlock(res.body.common.previousBlock), {
 				id: res.body.common.id,
 				previousBlock: res.body.common.previousBlock,
@@ -854,9 +867,67 @@ Blocks.prototype.onVerifyBlock = function (block, cb) {
 	}
 }
 
+Blocks.prototype.verifyBlockHeader = function (block) {
+	var result = { verified: false, errors: [] };
+	if(!block.transactions){
+		block.transactions=[];
+	}
+
+	try {
+		block = library.logic.block.objectNormalize(block);
+	} catch (err) {
+		result.errors.push(err);
+	}
+
+	if(!block.id){
+		result.errors.push("No block id");
+	}
+
+	var expectedReward = __private.blockReward.calcReward(block.height);
+
+	if (block.height !== 1 && expectedReward !== block.reward) {
+		result.errors.push(['Invalid block reward:', block.reward, 'expected:', expectedReward].join(' '));
+	}
+
+	var valid;
+
+	try {
+		valid = library.logic.block.verifySignature(block);
+	} catch (e) {
+		result.errors.push(e.toString());
+	}
+
+	if (!valid) {
+		result.errors.push('Failed to verify block signature');
+	}
+
+	if (block.version > 0) {
+		result.errors.push('Invalid block version');
+	}
+
+	var blockSlotNumber = slots.getSlotNumber(block.timestamp);
+
+	if (blockSlotNumber > slots.getSlotNumber()){
+		result.errors.push('Invalid block timestamp');
+	}
+
+	if (block.payloadLength > constants.maxPayloadLength) {
+		result.errors.push('Payload length is too high');
+	}
+
+	if (block.numberOfTransactions > constants.maxTxsPerBlock) {
+		result.errors.push('Transactions length is too high');
+	}
+
+	result.verified = result.errors.length === 0;
+	return result;
+};
+
+
+
 // Will return all possible errors that are intrinsic to the block.
 // NO DATABASE access
-// skipLastBlockCheck: to check any block, and not check if we have the next block of the internal chain
+// checkPreviousBlock: includes check if we have the previous block of the internal chain
 Blocks.prototype.verifyBlock = function (block, checkPreviousBlock) {
 	var result = { verified: false, errors: [] };
 
@@ -878,8 +949,8 @@ Blocks.prototype.verifyBlock = function (block, checkPreviousBlock) {
 		} else if (checkPreviousBlock){
 			previousBlock = modules.blockchain.getPreviousBlock(block);
 			if(!previousBlock) {
-				library.bus.message("fork",block, 1);
-				result.errors.push(['Invalid previous block:', block.previousBlock, 'expected:', lastBlock.id].join(' '));
+				library.bus.message("fork", block, 1);
+				result.errors.push(['Invalid previous block:', block.previousBlock, 'height:', block.height].join(' '));
 			}
 		}
 	}
@@ -915,13 +986,13 @@ Blocks.prototype.verifyBlock = function (block, checkPreviousBlock) {
 		result.errors.push('Invalid block timestamp');
 	}
 
-	// Disabling to allow orphanedBlocks
-	// if(checkPreviousBlock){
-	// 	var lastBlockSlotNumber = slots.getSlotNumber(lastBlock.timestamp);
-	// 	if(blockSlotNumber <= lastBlockSlotNumber) {
-	// 	 	result.errors.push('Invalid block timestamp');
-	// 	}
-	// }
+	// Disabling to allow orphanedBlocks?
+	if(previousBlock){
+		var lastBlockSlotNumber = slots.getSlotNumber(previousBlock.timestamp);
+		if(blockSlotNumber <= lastBlockSlotNumber) {
+		 	result.errors.push('block timestamp is smaller than previous block timestamp');
+		}
+	}
 
 	if (block.payloadLength > constants.maxPayloadLength) {
 		result.errors.push('Payload length is too high');

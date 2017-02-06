@@ -9,7 +9,6 @@
     "start:newtest": "node app.js --genesis tasks/genesisBlock.json --config tasks/config.json",
     "snapshot": "node app.js --genesis genesisBlock.testnet.json --config config.testnet.json -s 2295",
     "test": "./node_modules/.bin/mocha",
-
     "cov": "./node_modules/.bin/mocha --require blanket -R html-cov test/helpers test/logic > tmp/coverage.html"
   },
   "author": "Boris Povod <boris@crypti.me>, Pavel Nekrasov <landgraf.paul@gmail.com>, Oliver Beddows <oliver@lisk.io>, FX Thoorens <fx.thoorens@ark.io>",

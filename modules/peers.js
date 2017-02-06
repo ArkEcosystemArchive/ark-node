@@ -81,7 +81,7 @@ __private.updatePeersList = function (cb) {
 			// Removing nodes not behaving well
 			library.logger.debug('Removed peers: ' + removed.length);
 			var peers = res.body.peers.filter(function (peer) {
-					return removed.indexOf(peer.ip);
+					return removed.indexOf(peer.ip+":"+peer.port);
 			});
 
 			// Update only a subset of the peers to decrease the noise on the network.
@@ -233,7 +233,10 @@ Peers.prototype.inspect = function (peer) {
 };
 
 Peers.prototype.list = function (options, cb) {
-	var list = Object.keys(__private.peers).map(function (key) {
+
+	var peers=Object.keys(__private.peers);
+
+	var list = peers.map(function (key) {
     return __private.peers[key];
 	});
 	function shuffle(array) {
@@ -301,12 +304,9 @@ Peers.prototype.remove = function (pip, port, cb) {
 	if (isFrozenList !== undefined && cb) {
 		return setImmediate(cb, 'Peer in white list');
 	}
-	removed.push(pip);
-	var params = {
-		ip: pip,
-		port: port
-	};
-
+	
+	// to prevent from reappearing too often
+	removed.push(pip+":"+port);
 	delete __private.peers[pip+":"+port];
 	// library.db.query(sql.remove, params).then(function (res) {
 	// 	library.logger.debug('Removed peer', params);
@@ -338,6 +338,9 @@ Peers.prototype.update = function (peer, cb) {
 		if(peer.blockheader){
 			__private.peers[(peer.ip+":"+peer.port)] = peer;
 			__private.peers[(peer.ip+":"+peer.port)].height = peer.blockheader.height;
+		}
+		else if(peer.height){
+			__private.peers[(peer.ip+":"+peer.port)].height = peer.height
 		}
 	}
 	else if(parseInt(peer.port)!=1){
@@ -378,21 +381,23 @@ Peers.prototype.onAttachPublicApi = function () {
 Peers.prototype.onUpdatePeers = function () {
 	__private.updatePeersList(function (err) {
 		if (err) {
-			library.logger.error('Peers timer:', err);
+			library.logger.error('Error while updating the list of peers:', err);
 		}
 		library.bus.message('peersUpdated');
+	});
+
+	setImmediate(function nextUpdate () {
+		__private.updatePeersList(function (err) {
+			if (err) {
+				library.logger.error('Error while updating the list of peers:', err);
+			}
+			setTimeout(nextUpdate, 60 * 1000);
+		});
 	});
 };
 
 Peers.prototype.onPeersReady = function () {
-	setImmediate(function nextUpdatePeersList () {
-		__private.updatePeersList(function (err) {
-			if (err) {
-				library.logger.error('Peers timer:', err);
-			}
-			setTimeout(nextUpdatePeersList, 60 * 1000);
-		});
-	});
+
 
 	setImmediate(function nextBanManager () {
 		__private.banManager(function (err) {

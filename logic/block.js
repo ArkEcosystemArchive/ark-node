@@ -32,8 +32,8 @@ Block.prototype.create = function (data) {
 	var transactions = data.transactions.sort(function compare(a, b) {
 		if (a.type < b.type) { return -1; }
 		if (a.type > b.type) { return 1; }
-		if (a.amount < b.amount) { return -1; }
-		if (a.amount > b.amount) { return 1; }
+		if (a.id < b.id) { return -1; }
+		if (a.id > b.id) { return 1; }
 		return 0;
 	});
 

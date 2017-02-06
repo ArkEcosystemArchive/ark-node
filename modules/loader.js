@@ -282,18 +282,18 @@ __private.loadBlockChain = function () {
 };
 
 __private.loadBlocksFromNetwork = function (cb) {
-	var errorCount = 0;
+	var tryCount = 0;
 	var loaded = false;
 
 	var network = __private.network;
 
 
 	var peers=network.peers.sort(function(p1, p2){
-		if(p1.blockheader.height==p2.blockheader.height){
+		if(p1.height==p2.height){
 			return p1.blockheader.id<p2.blockheader.id;
 		}
 		else{
-			return p1.blockheader.height<p2.blockheader.height;
+			return p1.height<p2.height;
 		}
 	});
 
@@ -301,12 +301,12 @@ __private.loadBlocksFromNetwork = function (cb) {
 	async.whilst(
 		function () {
 			 //console.log(loaded);
-			 //console.log(errorCount);
-			return !loaded && (errorCount < 5) && (peers.length > errorCount);
+			 //console.log(tryCount);
+			return !loaded && (tryCount < 5) && (peers.length > tryCount);
 		},
 		function (next) {
 
-			var peer = peers[errorCount];
+			var peer = peers[tryCount];
 			var lastBlock = modules.blockchain.getLastBlock();
 
 			async.waterfall([
@@ -318,17 +318,16 @@ __private.loadBlocksFromNetwork = function (cb) {
 					library.logger.info('Looking for common block with: ' + peer.string);
 					modules.blocks.getCommonBlock(peer, lastBlock.height, function (err, commonBlock) {
 						if (err) {
-							errorCount += 1;
+							tryCount += 1;
 							library.logger.error("stack", err);
 							return setImmediate(seriesCb, err);
 						}
 						else if (!commonBlock) {
-							errorCount += 1;
+							tryCount += 1;
 							modules.peers.remove(peer.ip, peer.port);
 							return setImmediate(seriesCb, "Detected forked chain, no common block with: " + peer.string);
 						} else {
 							library.logger.info(['Found common block:', commonBlock.id, 'with:', peer.string].join(' '));
-							loaded=true;
 							return setImmediate(seriesCb);
 						}
 					});
@@ -338,7 +337,8 @@ __private.loadBlocksFromNetwork = function (cb) {
 						modules.blocks.loadBlocksFromPeer(peer, seriesCb);
 					}
 					else{
-						seriesCb(null, lastBlock);
+					 	tryCount += 1;
+					 	seriesCb(null, lastBlock);
 					}
 				}
 			], function (err, lastBlock) {
@@ -501,6 +501,26 @@ Loader.prototype.triggerBlockRemoval = function(number){
 	__private.forceRemoveBlocks = number;
 };
 
+
+// get the smallest block id from network
+Loader.prototype.getNetworkSmallestBlock = function(){
+	var bestBlock = null;
+	__private.network.peers.forEach(function(peer){
+		if(!bestBlock){
+			bestBlock=peer.blockheader;
+		}
+		else if(!modules.system.isMyself(peer)){
+			if(peer.blockheader.height>bestBlock.height){
+				bestBlock=peer.blockheader;
+			}
+			else if(peer.blockheader.height == bestBlock.height && peer.blockheader.id < bestBlock.id){
+				bestBlock=peer.blockheader;
+			}
+		}
+	});
+	return bestBlock;
+}
+
 // Rationale:
 // - We pick 100 random peers from a random peer (could be unreachable).
 // - Then for each of them we grab the height of their blockchain.
@@ -508,7 +528,7 @@ Loader.prototype.triggerBlockRemoval = function(number){
 Loader.prototype.getNetwork = function (force, cb) {
 	// If __private.network.height is not so far (i.e. 1 round) from current node height, just return cached __private.network.
 	// If node is forging, do it more often (every block?)
-	var distance = modules.delegates.isForging() ? 10 : 51
+	var distance = modules.delegates.isActiveDelegate() ? 2 : 51;
 
 	if (!force && __private.network.height > 0 && Math.abs(__private.network.height - modules.blocks.getLastBlock().height) < distance) {
 		return setImmediate(cb, null, __private.network);
@@ -569,32 +589,31 @@ Loader.prototype.getNetwork = function (force, cb) {
 							library.logger.warn('Failed to get height from peer', peer.string);
 							return setImmediate(cb);
 						}
-						//TODO: validate block header instead
-						var heightIsValid = library.schema.validate(res.body.header, schema.getNetwork.height);
-						var valid = false;
+
+						var verification = false;
 						//library.logger.debug("received block header", res.body.header);
 						try {
 							// TODO: also check that the delegate was legit to forge the block ?
 							// likely too much work since in the end we use only a few peers of the list
 							// or maybe only the ones claiming height > current node height
-							valid = (res.body.header.height == 1) || library.logic.block.verifySignature(res.body.header);
+							verification = modules.blocks.verifyBlockHeader(res.body.header);
 						} catch (e) {
-							library.logger.error("error:",e);
+							library.logger.error("error:", e);
 						}
-						if(!valid){
+						//console.log(res.body);
+
+						if(!verification.verified){
 							library.logger.warn('# Received invalid block header from peer. Can be a tentative to attack the network!');
 							library.logger.warn(peer.string + " sent header",res.body.header);
-							//library.logger.debug("verify", library.logic.block.verifySignature(res.body.header));
+							library.logger.warn("errors", verification);
 
 							return setImmediate(cb);
 						}
-						if(heightIsValid) {
+						else{
 							library.logger.info(['Received height:', res.body.header.height, ', block_id: ', res.body.header.id,'from peer'].join(' '), peer.string);
 							return setImmediate(cb, null, {peer: peer, height: res.body.header.height, header:res.body.header});
-						} else {
-							library.logger.warn('Received invalid height from peer', peer.string);
-							return setImmediate(cb);
 						}
+
 					});
 				} else {
 					library.logger.warn('Failed to validate peer', peer);
@@ -813,20 +832,17 @@ Loader.prototype.onBind = function (scope) {
 
 Loader.prototype.onLoadDatabase = function(){
 	__private.loadBlockChain();
-}
+};
 
 Loader.prototype.onObserveNetwork = function(){
 	self.getNetwork(true, function(err, network){
-		library.bus.message("networkObserved");
+		library.bus.message("networkObserved", network);
 	});
-}
-
+};
 
 Loader.prototype.onAttachPublicApi = function () {
  	__private.attachApi();
 };
-
-
 
 // Blockchain loaded from database and ready to accept blocks from network
 Loader.prototype.onDownloadBlocks = function (cb) {

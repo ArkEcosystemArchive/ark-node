@@ -259,8 +259,7 @@ d.run(function () {
 				var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
 
 				// Log client connections
-				logger.log(req.method + ' ' + req.url + ' from ' + ip);
-
+				logger.log(req.method + ' ' + req.url + ' from ' + ip + ":" + req.headers.port);
 				/* Instruct browser to deny display of <frame>, <iframe> regardless of origin.
 				 *
 				 * RFC -> https://tools.ietf.org/html/rfc7034
