@@ -542,7 +542,7 @@ Delegates.prototype.getDelegates = function (query, cb) {
 		var length = Math.min(limit, count);
 		var realLimit = Math.min(offset + limit, count);
 
-		var lastBlock   = modules.blocks.getLastBlock(),
+		var lastBlock   = modules.blockchain.getLastBlock(),
 		    totalSupply = __private.blockReward.calcSupply(lastBlock.height);
 
 		for (var i = 0; i < delegates.length; i++) {
@@ -636,7 +636,7 @@ Delegates.prototype.onStartForging = function () {
 };
 
 Delegates.prototype.onStopForging = function () {
-	__private.forging=false;
+	__private.forging = false;
 };
 
 Delegates.prototype.onAttachPublicApi = function () {
@@ -777,7 +777,7 @@ shared.getDelegate = function (req, cb) {
 };
 
 shared.getNextForgers = function (req, cb) {
-	var currentBlock = modules.blocks.getLastBlock();
+	var currentBlock = modules.blockchain.getLastBlock();
 	var limit = req.body.limit || 10;
 
 	modules.delegates.generateDelegateList(currentBlock.height, function (err, activeDelegates) {

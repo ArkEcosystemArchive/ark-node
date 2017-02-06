@@ -297,11 +297,13 @@ __private.loadBlocksFromNetwork = function (cb) {
 		}
 	});
 
+	console.log("loadBlocksFromNetwork");
+
 
 	async.whilst(
 		function () {
 			 //console.log(loaded);
-			 //console.log(tryCount);
+			console.log(tryCount);
 			return !loaded && (tryCount < 5) && (peers.length > tryCount);
 		},
 		function (next) {
@@ -312,7 +314,7 @@ __private.loadBlocksFromNetwork = function (cb) {
 			async.waterfall([
 				function getCommonBlock (seriesCb) {
 					if (lastBlock.height === 1){
-						return setImmediate(seriesCb);
+						return seriesCb();
 					}
 					__private.blocksToSync = peer.height - lastBlock.height;
 					library.logger.info('Looking for common block with: ' + peer.string);
@@ -320,7 +322,7 @@ __private.loadBlocksFromNetwork = function (cb) {
 						if (err) {
 							tryCount += 1;
 							library.logger.error("stack", err);
-							return setImmediate(seriesCb, err);
+							return seriesCb(err);
 						}
 						else if (!commonBlock) {
 							tryCount += 1;
@@ -328,18 +330,19 @@ __private.loadBlocksFromNetwork = function (cb) {
 							return setImmediate(seriesCb, "Detected forked chain, no common block with: " + peer.string);
 						} else {
 							library.logger.info(['Found common block:', commonBlock.id, 'with:', peer.string].join(' '));
-							return setImmediate(seriesCb);
+							return seriesCb();
 						}
 					});
 				},
 				function loadBlocks (seriesCb) {
-					if(peer.height > lastBlock.height){
+					//if(peer.height > lastBlock.height){
+						tryCount += 1;
 						modules.blocks.loadBlocksFromPeer(peer, seriesCb);
-					}
-					else{
-					 	tryCount += 1;
-					 	seriesCb(null, lastBlock);
-					}
+					//}
+					// else{
+					//  	tryCount += 1;
+					//  	seriesCb(null, lastBlock);
+					// }
 				}
 			], function (err, lastBlock) {
 				next();
@@ -846,6 +849,7 @@ Loader.prototype.onAttachPublicApi = function () {
 
 // Blockchain loaded from database and ready to accept blocks from network
 Loader.prototype.onDownloadBlocks = function (cb) {
+	//console.log("onDownloadBlocks");
 	__private.loadBlocksFromNetwork(cb);
 };
 

@@ -179,7 +179,7 @@ NodeManager.prototype.onNetworkObserved = function(network){
 // };
 
 NodeManager.prototype.onBlocksReceived = function(blocks, peer, cb) {
-	//console.log("onBlocksReceived", blocks.length);
+
 
 	async.eachSeries(blocks, function (block, eachSeriesCb) {
 		block.reward = parseInt(block.reward);
@@ -200,12 +200,17 @@ NodeManager.prototype.onBlocksReceived = function(blocks, peer, cb) {
 		if(err){
 			library.logger.error(err, block);
 		}
-		else if(!blocks || blocks.length === 0){
-			return cb();
-		}
-		else{
-			return library.bus.message("downloadBlocks", cb);
-		}
+
+		// we don't deal with download management, just return to say "blocks processed, go ahead"
+		return cb();
+
+		// if(!blocks || blocks.length === 0){
+		// 	return cb();
+		// }
+		// else{
+		// 	return cb();
+		// 	return library.bus.message("downloadBlocks", cb);
+		// }
 
 	});
 }
