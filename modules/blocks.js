@@ -1537,6 +1537,14 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 	}, function () {
 		var block;
 
+		// ok sometimes it takes time to get there so timestamp could have been calculated before the lastBlock received.
+		// imagine the disaster
+		// so if this is the case we push the timestamp forward
+		var lastBlock = modules.blockchain.getLastBlock();
+		if(timestamp <= lastBlock.timestamp){
+			timestamp = lastBlock.timestamp + 1;
+		}
+
 		try {
 			block = library.logic.block.create({
 				keypair: keypair,

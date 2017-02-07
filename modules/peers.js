@@ -24,11 +24,14 @@ function Peers (cb, scope) {
 	library = scope;
 	self = this;
 
-	__private.attachApi();
 	//prevents from looking too much around at coldstart
 	__private.lastPeersUpdate = new Date().getTime();
+
 	//hold the peer list
-	__private.peers={};
+	__private.peers = {};
+
+	// peers that have timeout, so there are not used for time sensitive acctions
+	__private.timeoutPeers = {};
 
 	setImmediate(cb, null, self);
 }
@@ -297,6 +300,28 @@ Peers.prototype.state = function (pip, port, state, timeoutSeconds, cb) {
 	});
 };
 
+Peers.prototype.timeoutPeer = function(peer){
+	__private.timeoutPeers[peer.ip+":"+peer.port] = peer;
+	self.remove(peer.ip, peer.port);
+}
+
+Peers.prototype.releaseTimeoutPeers = function(){
+	async.each(Object.keys(__private.timeoutPeers), function (peerstring, cb) {
+		var peer = __private.timeoutPeers[peerstring];
+		modules.transport.getFromPeer(peer, {
+			api: '/height',
+			method: 'GET',
+			timeout: 2000
+		}, function(error){
+			if(!error){
+				delete __private.timeoutPeers[peerstring];
+				self.update(peer);
+			}
+			return cb();
+		});
+	});
+}
+
 Peers.prototype.remove = function (pip, port, cb) {
 	var isFrozenList = _.find(library.config.peers.list, function (peer) {
 		return peer.ip === pip && peer.port === port;
@@ -304,7 +329,7 @@ Peers.prototype.remove = function (pip, port, cb) {
 	if (isFrozenList !== undefined && cb) {
 		return setImmediate(cb, 'Peer in white list');
 	}
-	
+
 	// to prevent from reappearing too often
 	removed.push(pip+":"+port);
 	delete __private.peers[pip+":"+port];
@@ -317,7 +342,7 @@ Peers.prototype.remove = function (pip, port, cb) {
 	// });
 };
 
-Peers.prototype.update = function (peer, cb) {
+Peers.prototype.update = function (peer) {
 	// var params = {
 	// 	ip: peer.ip,
 	// 	port: peer.port,
@@ -343,13 +368,10 @@ Peers.prototype.update = function (peer, cb) {
 			__private.peers[(peer.ip+":"+peer.port)].height = peer.height
 		}
 	}
-	else if(parseInt(peer.port)!=1){
+	else if(peer.port && parseInt(peer.port)!=1 && !__private.timeoutPeers[peer.ip+":"+peer.port]){
 		__private.peers[(peer.ip+":"+peer.port)] = peer;
 		library.logger.debug("New peer added", peer);
 	}
-
-
-	return setImmediate(cb);
 
 	// library.db.query(query, params).then(function () {
 	// 	library.logger.debug('Upserted peer', params);

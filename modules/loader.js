@@ -346,7 +346,7 @@ __private.loadBlocksFromNetwork = function (cb) {
 				}
 			], function (err, lastBlock) {
 				//console.log(lastBlock.height);
-				console.log("next");
+				//console.log("next");
 				next();
 			});
 		},
@@ -494,7 +494,7 @@ __private.findGoodPeers = function (heights) {
 	}).map(function (item) {
 		item.peer.height = item.height;
 		item.peer.blockheader = item.header;
-		modules.peers.update(item.peer, function(err, res){});
+		modules.peers.update(item.peer);
 		return item.peer;
 	});
 	return {height: height, peers: peers};
@@ -587,7 +587,8 @@ Loader.prototype.getNetwork = function (force, cb) {
 				if (peerIsValid) {
 					modules.transport.getFromPeer(peer, {
 						api: '/height',
-						method: 'GET'
+						method: 'GET',
+						timeout: 2000
 					}, function (err, res) {
 						if (err) {
 							library.logger.error("error:",err);
@@ -618,7 +619,6 @@ Loader.prototype.getNetwork = function (force, cb) {
 							library.logger.info(['Received height:', res.body.header.height, ', block_id: ', res.body.header.id,'from peer'].join(' '), peer.string);
 							return setImmediate(cb, null, {peer: peer, height: res.body.header.height, header:res.body.header});
 						}
-
 					});
 				} else {
 					library.logger.warn('Failed to validate peer', peer);
@@ -646,7 +646,6 @@ Loader.prototype.syncing = function () {
 
 // Events
 
-// This is triggered by modules/peers.js when Peers.prototype.onBlockchainReady has finished
 // The state of blockchain is unclear.
 Loader.prototype.onPeersReady = function () {
 
@@ -670,6 +669,9 @@ Loader.prototype.onPeersReady = function () {
 		else if(modules.delegates.isForging()){
 			timeout = 120000;
 		}
+
+		// try to connect to timed out peers and include them in peers if successful
+		modules.peers.releaseTimeoutPeers();
 
 		// Triggers a network poll and then comparing to the node state decide if a rebuild should be done.
 		self.getNetwork(true,function(err, network){

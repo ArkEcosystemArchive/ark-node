@@ -90,7 +90,7 @@ __private.attachApi = function () {
 			// 	}
 			// }
 
-			modules.peers.update(req.peer, function(){});
+			modules.peers.update(req.peer);
 
 			return next();
 		});
@@ -206,7 +206,7 @@ __private.attachApi = function () {
 			return res.status(200).json({success: false, error: e.toString()});
 		}
 
-		modules.peers.update(req.peer, function(){});
+		modules.peers.update(req.peer);
 
 
 		library.bus.message('blockReceived', block, req.peer, function(error, data){
@@ -460,7 +460,7 @@ Transport.prototype.getFromPeer = function (peer, options, cb) {
 		url: 'http://' + peer.ip + ':' + peer.port + url,
 		method: options.method,
 		headers: _.extend({}, __private.headers, options.headers),
-		timeout: library.config.peers.options.timeout
+		timeout: options.timeout || library.config.peers.options.timeout
 	};
 
 	if (options.data) {
@@ -504,23 +504,18 @@ Transport.prototype.getFromPeer = function (peer, options, cb) {
 				blockheader: headers.blockheader,
 				port: headers.port,
 				state: 2
-			}, function(){});
+			});
 
 
 			return setImmediate(cb, null, {body: res.body, peer: peer});
 		}
 	})
 	.catch(function (err) {
-		// Commenting out the code because it makes no sense since it could because node is offline
-		// if (peer) {
-		// 	if (err.code === 'EUNAVAILABLE' || err.code === 'ETIMEOUT') {
-		// 		// Remove peer
-		// 		__private.removePeer({peer: peer, code: err.code, req: req});
-		// 	} else {
-		// 		// Ban peer for 10 minutes
-		// 		__private.banPeer({peer: peer, code: err.code, req: req, clock: 600});
-		// 	}
-		// }
+		if (peer) {
+			if (err.code === 'EUNAVAILABLE' || err.code === 'ETIMEOUT') {
+				modules.peers.timeoutPeer(peer);
+			}
+		}
 
 		return setImmediate(cb, [err.code, 'Request failed', req.method, req.url].join(' '));
 	});
