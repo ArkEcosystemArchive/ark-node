@@ -151,26 +151,23 @@ __private.loadBlockChain = function () {
 						async.until(
 							function () {
 								return count < offset;
-							}, function (cb) {
+							},
+							function (cb) {
 								if (count > 1) {
 									library.logger.info('Rebuilding blockchain, current block height: '  + (offset + 1));
 								}
 								modules.blocks.loadBlocksOffset(limit, offset, verify, function (err, lastBlock) {
-									if (err) {
-										return setImmediate(cb, err);
-									}
-
 									offset = offset + limit;
 									__private.lastBlock = lastBlock;
-
-									return setImmediate(cb);
+									return cb(err, lastBlock);
 								});
-							}, function (err) {
+							},
+							function (err, lastBlock) {
 								if (err) {
 									library.logger.error("error:",err);
-									if (err.block) {
-										library.logger.error('Blockchain failed at: ' + err.block.height);
-										modules.blocks.simpleDeleteAfterBlock(err.block.id, function (err, res) {
+									if (__private.lastBlock) {
+										library.logger.error('Blockchain failed at: ' + __private.lastBlock.height);
+										modules.blocks.simpleDeleteAfterBlock(__private.lastBlock.id, function (err, res) {
 											library.logger.error('Blockchain clipped');
 										});
 									}
@@ -336,7 +333,11 @@ __private.loadBlocksFromNetwork = function (cb) {
 				},
 				function loadBlocks (seriesCb) {
 
-					modules.blocks.loadBlocksFromPeer(peer, seriesCb);
+					modules.blocks.loadBlocksFromPeer(peer, function(err, lastBlock){
+						//console.log(lastBlock);
+						loaded=!lastBlock;
+						seriesCb(err, lastBlock);
+					});
 					//}
 					// else{
 					//  	tryCount += 1;
@@ -344,13 +345,9 @@ __private.loadBlocksFromNetwork = function (cb) {
 					// }
 				}
 			], function (err, lastBlock) {
-				// no new block downloaded
-				if(!lastBlock){
-					loaded=true;
-				}
 				//console.log(lastBlock.height);
 				console.log("next");
-				//next();
+				next();
 			});
 		},
 		function (err) {

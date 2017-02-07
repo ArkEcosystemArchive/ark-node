@@ -857,7 +857,7 @@ Blocks.prototype.getLastBlock = function () {
 };
 
 Blocks.prototype.onVerifyBlock = function (block, cb) {
-	var result = self.verifyBlock(block, false);
+	var result = self.verifyBlock(block, true);
 	//console.log(result);
 	if(result.verified){
 		return library.bus.message("blockVerified", block, cb);
@@ -989,7 +989,7 @@ Blocks.prototype.verifyBlock = function (block, checkPreviousBlock) {
 	// Disabling to allow orphanedBlocks?
 	if(previousBlock){
 		var lastBlockSlotNumber = slots.getSlotNumber(previousBlock.timestamp);
-		if(blockSlotNumber <= lastBlockSlotNumber) {
+		if(blockSlotNumber < lastBlockSlotNumber) {
 		 	result.errors.push('block timestamp is smaller than previous block timestamp');
 		}
 	}
@@ -1490,7 +1490,6 @@ Blocks.prototype.deleteBlocksBefore = function (block, cb) {
 					library.logger.error('error removing block', block);
 					library.logger.error('error removing block', err);
 				}
-
 				library.logger.debug('removing block', block);
 				next(err);
 			});

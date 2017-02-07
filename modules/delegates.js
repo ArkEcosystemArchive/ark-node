@@ -334,7 +334,7 @@ __private.forge = function (cb) {
 					}
 
 					// PBFT: most nodes are on same branch, no other block have been forged
-					if(quorum/(quorum+noquorum) > 0.67){
+					if(quorum/(quorum+noquorum) > 0.66){
 						letsforge = true;
 					}
 					else{
