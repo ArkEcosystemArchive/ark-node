@@ -919,7 +919,7 @@ Blocks.prototype.verifyBlockHeader = function (block) {
 		result.errors.push('Transactions length is too high');
 	}
 
-	result.verified = result.errors.length === 0;
+	result.verified = block.height === 1 || result.errors.length === 0;
 	return result;
 };
 
