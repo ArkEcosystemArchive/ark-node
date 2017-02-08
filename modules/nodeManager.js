@@ -367,7 +367,9 @@ NodeManager.prototype.onBlockVerified = function(block, cb) {
 	//console.log("onBlockVerified - "+block.height);
 	library.blockSequence.add(function(sequenceCb){
 		library.bus.message('processBlock', block, sequenceCb);
-	}, cb);
+	}, function(err,data){
+		cb && setImmediate(cb, err, data);
+	});
 }
 
 NodeManager.prototype.onBlockProcessed = function(block, cb) {
