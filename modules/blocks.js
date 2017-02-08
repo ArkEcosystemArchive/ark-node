@@ -774,7 +774,7 @@ Blocks.prototype.swapLastBlockWith = function(block, cb){
 		function(seriesCb){
 			return self.removeLastBlock(seriesCb);
 		},
-		function(block, seriesCb){
+		function(data, seriesCb){
 			delete block.orphaned;
 			block.ready = true;
 			block.verified = false;
