@@ -263,7 +263,7 @@ NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 		if(block.orphaned && lastBlock.height == block.height){
 			//all right we are at the beginning of a fork, let's swap asap if needed
 			if(block.id < lastBlock.id){ // lowest id win
-				library.logger.debug("Orphaned block has a smaller id, swaping with lastBlock", {id: block.id, height:block.height});
+				library.logger.info("Orphaned block has a smaller id, swaping with lastBlock", {id: block.id, height:block.height});
 				return modules.blocks.swapLastBlockWith(block, cb);
 			}
 			else{
@@ -419,53 +419,59 @@ NodeManager.prototype.onTransactionsReceived = function(transactions, source, cb
 		if (!report) {
 			return setImmediate(cb, "Transactions list is not conform", transactions);
 		}
-		var skimmedtransactions = [];
 
-		async.eachSeries(transactions, function (transaction, cb) {
-			try {
-				transaction = library.logic.transaction.objectNormalize(transaction);
-				transaction.id = library.logic.transaction.getId(transaction);
-			} catch (e) {
-				return setImmediate(cb, e);
-			}
+		//encapsulating in blockSequence so unconfirmed transactions are not applied while processing block
+		library.blockSequence.add(function(sequenceCb){
 
-
-			if(!library.logic.transaction.verifyFee(transaction)){
-				return setImmediate(cb, "Transaction fee is too low");
-			}
-
-			library.db.query(sql.getTransactionId, { id: transaction.id }).then(function (rows) {
-				if (rows.length > 0) {
-					library.logger.debug('Transaction ID is already in blockchain', transaction.id);
+			var skimmedtransactions = [];
+			async.eachSeries(transactions, function (transaction, cb) {
+				try {
+					transaction = library.logic.transaction.objectNormalize(transaction);
+					transaction.id = library.logic.transaction.getId(transaction);
+				} catch (e) {
+					return setImmediate(cb, e);
 				}
-				else{ // we only broadcast tx with known hop.
-					transaction.broadcast = false;
-					if(transaction.hop){
-						transaction.hop = parseInt(transaction.hop);
-						if(transaction.hop > -1 && transaction.hop < __private.maxhop){
-							transaction.hop++;
+
+
+				if(!library.logic.transaction.verifyFee(transaction)){
+					return setImmediate(cb, "Transaction fee is too low");
+				}
+
+				library.db.query(sql.getTransactionId, { id: transaction.id }).then(function (rows) {
+					if (rows.length > 0) {
+						library.logger.debug('Transaction ID is already in blockchain', transaction.id);
+					}
+					else{ // we only broadcast tx with known hop.
+						transaction.broadcast = false;
+						if(transaction.hop){
+							transaction.hop = parseInt(transaction.hop);
+							if(transaction.hop > -1 && transaction.hop < __private.maxhop){
+								transaction.hop++;
+								transaction.broadcast = true;
+							}
+						}
+						else { // TODO: backward compatibility, to deprecate
+							transaction.hop = 1;
 							transaction.broadcast = true;
 						}
+						skimmedtransactions.push(transaction);
 					}
-					else { // TODO: backward compatibility, to deprecate
-						transaction.hop = 1;
-						transaction.broadcast = true;
-					}
-					skimmedtransactions.push(transaction);
+					return setImmediate(cb);
+				});
+			}, function (err) {
+				if(err){
+					return setImmediate(sequenceCb, err);
 				}
-				return setImmediate(cb);
+				if(skimmedtransactions.length>0){
+					library.bus.message("addTransactionsToPool", skimmedtransactions, sequenceCb);
+				}
+				else{
+					return setImmediate(sequenceCb);
+				}
 			});
-		}, function (err) {
-			if(err){
-				return setImmediate(cb, err);
-			}
-			if(skimmedtransactions.length>0){
-				library.bus.message("addTransactionsToPool", skimmedtransactions, cb);
-			}
-			else{
-				return setImmediate(cb);
-			}
-		});
+		}, cb);
+
+
 	}
 	else {
 		library.logger.error("Unknown sourced transactions", source);
