@@ -179,7 +179,6 @@ NodeManager.prototype.onNetworkObserved = function(network){
 // };
 
 NodeManager.prototype.onBlocksReceived = function(blocks, peer, cb) {
-
 	var currentBlock;
 	async.eachSeries(blocks, function (block, eachSeriesCb) {
 		block.reward = parseInt(block.reward);
@@ -187,6 +186,13 @@ NodeManager.prototype.onBlocksReceived = function(blocks, peer, cb) {
 		block.totalFee = parseInt(block.totalFee);
 		block.verified = false;
 	  block.processed = false;
+
+		// rationale: onBlocksReceived received is called within another thread than onBlockReceived
+		// so we prevent from processing blocks we asked for and we received in the between via normal broadcast
+		if(block.height <= modules.blockchain.getLastIncludedBlock().height){
+			return eachSeriesCb(null, block);
+		}
+
 		modules.blockchain.addBlock(block);
 		currentBlock=block;
 		if(block.height%100 == 0){
