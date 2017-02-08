@@ -265,7 +265,7 @@ NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 				  //all right we are at the beginning of a fork, let's swap asap if needed
 					if(block.id < lastBlock.id){ // lowest id win
 						library.logger.info("Orphaned block has a smaller id, swaping with lastBlock", {id: block.id, height:block.height});
-						return modules.blocks.swapLastBlockWith(block, cb);
+						return modules.blocks.swapLastBlockWith(block, peer, cb);
 					}
 					else{
 						library.logger.info("Orphaned block has a bigger id, processing skipped", {id: block.id, height:block.height});

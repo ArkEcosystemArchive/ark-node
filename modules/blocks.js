@@ -769,7 +769,7 @@ Blocks.prototype.removeSomeBlocks = function(numbers, cb){
 }
 
 
-Blocks.prototype.swapLastBlockWith = function(block, cb){
+Blocks.prototype.swapLastBlockWith = function(block, peer, cb){
 	async.waterfall([
 		function(seriesCb){
 			return self.removeLastBlock(seriesCb);
@@ -781,7 +781,7 @@ Blocks.prototype.swapLastBlockWith = function(block, cb){
 			block.processed = false;
 			block.broadcast = true;
 			modules.blockchain.addBlock(block);
-			return library.bus.message("verifyBlock", block, seriesCb);
+			return library.bus.message("receiveBlock", block, peer, seriesCb);
 		}
 	], cb);
 };
