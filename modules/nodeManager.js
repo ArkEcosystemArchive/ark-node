@@ -275,13 +275,13 @@ NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 						}
 					}
 					else {
-						return sequenceCb();
+						return sequenceCb && sequenceCb(null, block);
 					}
 				}, cb);
 			}
 			else{
 				library.logger.debug("Skip processing block", {id: block.id, height:block.height});
-				return sequenceCb && sequenceCb(null, block);
+				return cb && cb(null, block);
 			}
 
 	}
