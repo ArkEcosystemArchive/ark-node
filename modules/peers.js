@@ -27,6 +27,9 @@ function Peers (cb, scope) {
 	//prevents from looking too much around at coldstart
 	__private.lastPeersUpdate = new Date().getTime();
 
+	//not banning at the start of nodes
+	__private.coldstart = new Date().getTime();
+
 	//hold the peer list
 	__private.peers = {};
 
@@ -301,8 +304,10 @@ Peers.prototype.state = function (pip, port, state, timeoutSeconds, cb) {
 };
 
 Peers.prototype.timeoutPeer = function(peer){
-	__private.timeoutPeers[peer.ip+":"+peer.port] = peer;
-	self.remove(peer.ip, peer.port);
+	if(__private.coldstart+10000 < new Date().getTime()){
+		__private.timeoutPeers[peer.ip+":"+peer.port] = peer;
+		self.remove(peer.ip, peer.port);
+	}
 }
 
 Peers.prototype.releaseTimeoutPeers = function(){
