@@ -351,9 +351,8 @@ NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 NodeManager.prototype.onBlockForged = function(block, cb) {
 	if(!block.ready){
 		library.logger.debug("Skip processing block", {id: block.id, height:block.height});
-		return;
+		return cb && cb(null, block);
 	}
-
 	block.verified = true;
 	block.forged = true;
   block.processed = false;
@@ -372,11 +371,9 @@ NodeManager.prototype.onBlockProcessed = function(block, cb) {
 	//console.log(block.height);
 	//console.log("onBlockProcessed - "+ block.height);
 	if(block.broadcast){
-		return library.bus.message('broadcastBlock', block, cb);
+		library.bus.message('broadcastBlock', block);
 	}
-	else{
-		cb && cb(null, block);
-	}
+	cb && cb(null, block);
 }
 
 NodeManager.prototype.onTransactionsReceived = function(transactions, source, cb) {

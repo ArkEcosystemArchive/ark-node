@@ -367,8 +367,8 @@ __private.forge = function (cb) {
 							}
 							else{
 								library.logger.error('Failed generate block within delegate slot', err);
+								return setImmediate(cb, err);
 							}
-							return setImmediate(cb, err);
 						});
 					}
 				}
