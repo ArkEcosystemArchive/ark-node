@@ -273,7 +273,7 @@ __private.prepareBlock = function(block, peer, cb){
 		// get transactions by id from mempool
 		modules.transactionPool.getMissingTransactions(transactionIds, function(err, missingTransactionIds, foundTransactions){
 			if(err){
-				return cb && cb("Cannot process block", block);
+				return cb && cb(err, block);
 			}
 
 			// great! All transactions were in mempool lets go!
@@ -388,9 +388,8 @@ NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 		block.processed = false;
 		block.broadcast = true;
 		__private.prepareBlock(block, peer, function(err, block){
-
+			library.logger.debug("processing block with "+block.transactions.length+" transactions", block.height);
 			modules.blockchain.addBlock(block);
-			library.logger.debug("processing block with "+foundTransactions.length+" transactions", block.height);
 			return library.bus.message('verifyBlock', block, cb);
 		});
 	}
