@@ -342,16 +342,16 @@ __private.prepareBlock = function(block, peer, cb){
 NodeManager.prototype.swapLastBlockWith = function(block, peer, cb){
 	async.waterfall([
 		function(seriesCb){
+			__private.prepareBlock(block, peer, seriesCb);
+		},
+		function(data, seriesCb){
 			return modules.blocks.removeLastBlock(seriesCb);
 		},
 		function(data, seriesCb){
 			delete block.orphaned;
 			block.verified = false;
 			block.processed = false;
-		  block.broadcast = true;
-			__private.prepareBlock(block, peer, seriesCb);
-		},
-		function(data, seriesCb){
+			block.broadcast = true;
 			modules.blockchain.addBlock(block);
 			modules.bus.message("verifyBlock", block, seriesCb);
 		}
@@ -361,19 +361,15 @@ NodeManager.prototype.swapLastBlockWith = function(block, peer, cb){
 NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 	if(!block.ready){
 		if(block.orphaned){
-			var lastBlock = modules.blockchain.getLastBlock();
-			if(lastBlock.height == block.height){
-			  //all right we are at the beginning of a fork, let's swap asap if needed
-				if(block.id < lastBlock.id){ // lowest id win
-					library.logger.info("Orphaned block has a smaller id, swaping with lastBlock", {id: block.id, height:block.height});
-					return modules.blocks.swapLastBlockWith(block, peer, cb);
-				}
-				else {
-					library.logger.info("Orphaned block has a bigger id, processing skipped", {id: block.id, height:block.height});
-					return cb && cb(null, block);
-				}
+			// this lastBlock is "likely" not processed, but the swap anyway will occur in a block sequence.
+			var lastBlock = modules.blockchain.getBlockAtHeight(block.height);
+			//all right we are at the beginning of a fork, let's swap asap if needed
+			if(lastBlock && block.id < lastBlock.id){ // lowest id win
+				library.logger.info("Orphaned block has a smaller id, swaping with lastBlock", {id: block.id, height:block.height});
+				return self.swapLastBlockWith(block, peer, cb);
 			}
 			else {
+				library.logger.info("Orphaned block has a bigger id, processing skipped", {id: block.id, height:block.height});
 				return cb && cb(null, block);
 			}
 		}
