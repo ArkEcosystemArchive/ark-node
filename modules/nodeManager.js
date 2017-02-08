@@ -257,6 +257,106 @@ NodeManager.prototype.onRebuildBlockchain = function(blocksToRemove, state, cb) 
 	});
 };
 
+
+//make sure the block transaction list is complete, otherwise try to find transactions
+__private.prepareBlock = function(block, peer, cb){
+	block.verified = false;
+	block.processed = false;
+  block.broadcast = true;
+
+	//RECEIVED empty block?
+	if(block.numberOfTransactions == 0){
+		return cb && cb(null, block);
+	}
+	// lets download transactions
+	// carefully since order is important to validate block
+	else if(block.transactions.length == 0){
+		var transactionIds = block.transactionIds;
+
+		// get transactions by id from mempool
+		modules.transactionPool.getMissingTransactions(transactionIds, function(err, missingTransactionIds, foundTransactions){
+			if(err){
+				return cb && cb("Cannot process block", block);
+			}
+
+			// great! All transactions were in mempool lets go!
+			if(missingTransactionIds.length==0){
+				delete block.transactionIds;
+				block.transactions=foundTransactions;
+				return cb && cb(null, block);
+			}
+			// lets download the missing ones from the peer that sent the block.
+			else{
+				modules.transport.getFromPeer(peer, {
+					 method: 'GET',
+					api: '/transactionsFromIds?blockid=' + block.id + "&ids='"+missingTransactionIds.join(",")+"'"
+				}, function (err, res) {
+					library.logger.debug("called "+res.peer.ip+":"+res.peer.port+"/peer/transactionsFromIds");
+					 if (err) {
+						 library.logger.debug('Cannot get transactions for block', block.id);
+						 return cb && cb(null, block);
+					 }
+
+					 var receivedTransactions = res.body.transactions;
+					 library.logger.debug("received transactions", receivedTransactions.length);
+
+					 for(var i=0;i<transactionIds.length;i++){
+						 var id=transactionIds[i]
+						 var tx=receivedTransactions.find(function(tx){return tx.id==id});
+						 if(tx){
+							 transactionIds[i]=tx;
+						 }
+						 else{
+							 tx=foundTransactions.find(function(tx){return tx.id==id});
+							 if(tx){
+								 transactionIds[i]=tx;
+							 }
+							 else{
+								 //Fucked
+								 return cb && cb("Cannot find all transactions to complete the block", block);
+							 }
+						 }
+					 }
+
+					 // transactionsIds now has the transactions in same order as original block
+					 block.transactions = transactionIds;
+
+					 // sanity check everything looks ok
+					 if(block.transactions.length==block.numberOfTransactions){
+						 //removing useless data
+						 delete block.transactionIds;
+						 return cb && cb(null, block);
+					 }
+
+					 // we should never end up here
+					 else{
+						 return cb && cb("Block transactions are inconsistant. This is likely a bug, please report.", block);
+					 }
+				 }
+			 );
+			}
+		});
+	}
+	else { //block received complete
+		return cb && cb(null, block);
+	}
+}
+
+NodeManager.prototype.swapLastBlockWith = function(block, peer, cb){
+	async.waterfall([
+		function(seriesCb){
+			return modules.blocks.removeLastBlock(seriesCb);
+		},
+		function(data, seriesCb){
+			delete block.orphaned;
+			__private.prepareBlock(block, peer, seriesCb);
+		},
+		function(data, seriesCb){
+			modules.bus.message("verifyBlock", block, seriesCb);
+		}
+	], cb);
+};
+
 NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 	if(!block.ready){
 			if(block.orphaned){
@@ -280,99 +380,15 @@ NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 				library.logger.debug("Skip processing block", {id: block.id, height:block.height});
 				return cb && cb(null, block);
 			}
-
 	}
 
 
 	library.logger.info("New block received", {id: block.id, height:block.height, transactions: block.numberOfTransactions, peer:peer.string});
 
-	block.verified = false;
-	block.processed = false;
-  block.broadcast = true;
-
-	//RECEIVED empty block?
-	if(block.numberOfTransactions == 0){
-		library.logger.debug("processing empty block", block.id);
-    library.bus.message('verifyBlock', block, cb);
-	}
-	// lets download transactions
-	// carefully since order is important to validate block
-	else if(block.transactions.length == 0){
-		var transactionIds = block.transactionIds;
-
-		// get transactions by id from mempool
-		modules.transactionPool.getMissingTransactions(transactionIds, function(err, missingTransactionIds, foundTransactions){
-			if(err){
-				return cb && setImmediate(cb, "Cannot process block", block);
-			}
-
-			// great! All transactions were in mempool lets go!
-			if(missingTransactionIds.length==0){
-				block.transactions=foundTransactions;
-				library.logger.debug("processing block with "+foundTransactions.length+" transactions", block.height);
-				library.bus.message('verifyBlock', block, cb);
-			}
-			// lets download the missing ones from the peer that sent the block.
-			else{
-				modules.transport.getFromPeer(peer, {
-					 method: 'GET',
-					api: '/transactionsFromIds?blockid=' + block.id + "&ids='"+missingTransactionIds.join(",")+"'"
-				}, function (err, res) {
-					library.logger.debug("called "+res.peer.ip+":"+res.peer.port+"/peer/transactionsFromIds");
-					 if (err) {
-						 library.logger.debug('Cannot get transactions for block', block.id);
-						 return setImmediate(cb, err);
-					 }
-
-					 var receivedTransactions = res.body.transactions;
-					 library.logger.debug("received transactions", receivedTransactions.length);
-
-					 for(var i=0;i<transactionIds.length;i++){
-						 var id=transactionIds[i]
-						 var tx=receivedTransactions.find(function(tx){return tx.id==id});
-						 if(tx){
-							 transactionIds[i]=tx;
-						 }
-						 else{
-							 tx=foundTransactions.find(function(tx){return tx.id==id});
-							 if(tx){
-								 transactionIds[i]=tx;
-							 }
-							 else{
-								 //Fucked
-								 return setImmediate(cb, "Cannot find all transactions to complete the block.", block.id);
-							 }
-						 }
-					 }
-
-					 // transactionsIds now has the transactions in same order as original block
-					 block.transactions = transactionIds;
-
-					 // sanity check everything looks ok
-					 if(block.transactions.length==block.numberOfTransactions){
-						 //removing useless data
-						 delete block.transactionIds;
-						 library.logger.debug("processing block with "+block.numberOfTransactions+" transactions", block.height);
-						 return library.bus.message('verifyBlock', block, cb);
-					 }
-
-					 // we should never end up here
-					 else{
-						 return cb && setImmediate(cb, "Block transactions are inconsistant. This is likely a bug, please report.", block);
-					 }
-				 }
-			 );
-			}
-		});
-	}
-	else{ //block received complete
-		self.addToBlockchain(block, function(err, block){
-			if(!err){
-				library.logger.debug("processing block with "+block.numberOfTransactions+" transactions", block.height);
-				library.bus.message('verifyBlock', block, cb);
-			}
-		});
-	}
+	__private.prepareBlock(block, peer, function(err, block){
+		library.logger.debug("processing block with "+foundTransactions.length+" transactions", block.height);
+		library.bus.message('verifyBlock', block, cb);
+	});
 };
 
 NodeManager.prototype.onBlockForged = function(block, cb) {
