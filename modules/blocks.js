@@ -795,7 +795,7 @@ Blocks.prototype.removeLastBlock = function(cb){
 		// Don't shutdown now
 		__private.noShutdownRequired = true;
 
-		async.waterfall({
+		async.series({
 			// Rewind any unconfirmed transactions before removing blocks.
 			// We won't apply them again since we will have to resync blocks back from network
 			undoUnconfirmedList: function (seriesCb) {
