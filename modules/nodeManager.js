@@ -260,9 +260,6 @@ NodeManager.prototype.onRebuildBlockchain = function(blocksToRemove, state, cb) 
 
 //make sure the block transaction list is complete, otherwise try to find transactions
 __private.prepareBlock = function(block, peer, cb){
-	block.verified = false;
-	block.processed = false;
-  block.broadcast = true;
 
 	//RECEIVED empty block?
 	if(block.numberOfTransactions == 0){
@@ -349,9 +346,13 @@ NodeManager.prototype.swapLastBlockWith = function(block, peer, cb){
 		},
 		function(data, seriesCb){
 			delete block.orphaned;
+			block.verified = false;
+			block.processed = false;
+		  block.broadcast = true;
 			__private.prepareBlock(block, peer, seriesCb);
 		},
 		function(data, seriesCb){
+			modules.blockchain.addBlock(block);
 			modules.bus.message("verifyBlock", block, seriesCb);
 		}
 	], cb);
@@ -359,36 +360,40 @@ NodeManager.prototype.swapLastBlockWith = function(block, peer, cb){
 
 NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 	if(!block.ready){
-			if(block.orphaned){
-				var lastBlock = modules.blockchain.getLastBlock();
-				if(lastBlock.height == block.height){
-				  //all right we are at the beginning of a fork, let's swap asap if needed
-					if(block.id < lastBlock.id){ // lowest id win
-						library.logger.info("Orphaned block has a smaller id, swaping with lastBlock", {id: block.id, height:block.height});
-						return modules.blocks.swapLastBlockWith(block, peer, cb);
-					}
-					else{
-						library.logger.info("Orphaned block has a bigger id, processing skipped", {id: block.id, height:block.height});
-						return cb && cb(null, block);
-					}
+		if(block.orphaned){
+			var lastBlock = modules.blockchain.getLastBlock();
+			if(lastBlock.height == block.height){
+			  //all right we are at the beginning of a fork, let's swap asap if needed
+				if(block.id < lastBlock.id){ // lowest id win
+					library.logger.info("Orphaned block has a smaller id, swaping with lastBlock", {id: block.id, height:block.height});
+					return modules.blocks.swapLastBlockWith(block, peer, cb);
 				}
 				else {
+					library.logger.info("Orphaned block has a bigger id, processing skipped", {id: block.id, height:block.height});
 					return cb && cb(null, block);
 				}
 			}
-			else{
-				library.logger.debug("Skip processing block", {id: block.id, height:block.height});
+			else {
 				return cb && cb(null, block);
 			}
+		}
+		else {
+			library.logger.debug("Skip processing block", {id: block.id, height:block.height});
+			return cb && cb(null, block);
+		}
 	}
+	else {
+		library.logger.info("New block received", {id: block.id, height:block.height, transactions: block.numberOfTransactions, peer:peer.string});
+		block.verified = false;
+		block.processed = false;
+		block.broadcast = true;
+		__private.prepareBlock(block, peer, function(err, block){
 
-
-	library.logger.info("New block received", {id: block.id, height:block.height, transactions: block.numberOfTransactions, peer:peer.string});
-
-	__private.prepareBlock(block, peer, function(err, block){
-		library.logger.debug("processing block with "+foundTransactions.length+" transactions", block.height);
-		library.bus.message('verifyBlock', block, cb);
-	});
+			modules.blockchain.addBlock(block);
+			library.logger.debug("processing block with "+foundTransactions.length+" transactions", block.height);
+			return library.bus.message('verifyBlock', block, cb);
+		});
+	}
 };
 
 NodeManager.prototype.onBlockForged = function(block, cb) {
