@@ -259,8 +259,10 @@ NodeManager.prototype.onRebuildBlockchain = function(blocksToRemove, state, cb) 
 
 NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 	if(!block.ready){
-		if(block.orphaned && __private.lastBlock.height == block.height){//all right we are at the beginning of a fork, let's swap asap if needed
-			if(block.id < __private.lastBlock.id){ // lowest id win
+		var lastBlock = modules.blockchain.getLastBlock();
+		if(block.orphaned && lastBlock.height == block.height){
+			//all right we are at the beginning of a fork, let's swap asap if needed
+			if(block.id < lastBlock.id){ // lowest id win
 				library.logger.debug("Orphaned block has a smaller id, swaping with lastBlock", {id: block.id, height:block.height});
 				return modules.blocks.swapLastBlockWith(block, cb);
 			}
