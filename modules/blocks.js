@@ -770,20 +770,20 @@ Blocks.prototype.removeSomeBlocks = function(numbers, cb){
 
 
 Blocks.prototype.swapLastBlockWith = function(block, cb){
-	async.series({
-		removeLastBlock: function(seriesCb){
-			self.removeLastBlock(seriesCb);
+	async.waterfall([
+		function(seriesCb){
+			return self.removeLastBlock(seriesCb);
 		},
-		addOrphanedBlock: function(seriesCb){
+		function(block, seriesCb){
 			delete block.orphaned;
-			block.ready=true;
+			block.ready = true;
 			block.verified = false;
 			block.processed = false;
 			block.broadcast = true;
 			modules.blockchain.addBlock(block);
-			library.bus.message("verifyBlock", block, seriesCb);
+			return library.bus.message("verifyBlock", block, seriesCb);
 		}
-	}, cb);
+	], cb);
 };
 
 
@@ -795,7 +795,7 @@ Blocks.prototype.removeLastBlock = function(cb){
 		// Don't shutdown now
 		__private.noShutdownRequired = true;
 
-		async.series({
+		async.waterfall({
 			// Rewind any unconfirmed transactions before removing blocks.
 			// We won't apply them again since we will have to resync blocks back from network
 			undoUnconfirmedList: function (seriesCb) {
