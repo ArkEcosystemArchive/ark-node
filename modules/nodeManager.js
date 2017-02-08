@@ -353,7 +353,7 @@ NodeManager.prototype.swapLastBlockWith = function(block, peer, cb){
 			block.processed = false;
 			block.broadcast = true;
 			modules.blockchain.addBlock(block);
-			modules.bus.message("verifyBlock", block, seriesCb);
+			library.bus.message("verifyBlock", block, seriesCb);
 		}
 	], cb);
 };
