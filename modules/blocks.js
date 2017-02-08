@@ -1568,15 +1568,13 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 
 // Events
 Blocks.prototype.onProcessBlock = function (block, cb) {
-	library.blockSequence.add(function(sequenceCb){
-		if(block.numberOfTransactions == 0){
-			//console.log("onProcessBlock - "+ block.height);
-			self.processEmptyBlock(block,sequenceCb);
-		}
-		else{
-			self.processBlock(block,sequenceCb);
-		}
-	}, cb);
+	if(block.numberOfTransactions == 0){
+		//console.log("onProcessBlock - "+ block.height);
+		self.processEmptyBlock(block, cb);
+	}
+	else{
+		self.processBlock(block, cb);
+	}
 };
 
 

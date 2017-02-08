@@ -8,9 +8,9 @@ var ByteBuffer = require('bytebuffer');
 var bignum = require('../helpers/bignum.js');
 var ed = require('../helpers/ed.js');
 
-var accounts = require('./accounts.js').accounts;
+var accounts = require('../tasks/accounts.js').accounts;
 
-var genesisVote = JSON.parse(fs.readFileSync('tasks/genesisPassphrase.json'));
+//var genesisVote = JSON.parse(fs.readFileSync('./tasks/genesisPassphrase.json'));
 
 var config = {
     "port": 4000,
@@ -34,6 +34,7 @@ var config = {
         ]
     },
     "api": {
+        "mount":true,
         "access": {
             "whiteList": []
         },
@@ -273,8 +274,9 @@ for(var i in accounts){
     if(numvote<51 && account.username.startsWith("genesis_")){
       numvote++
       console.log("Voting for " + account.username);
+      console.log(totalbalance);
     	//vote for genesis_ accounts
-    	var voteTransaction = arkjs.vote.createVote(genesisVote.passphrase,["+"+account.publicKey]);
+    	var voteTransaction = arkjs.vote.createVote(genesis.passphrase,["+"+account.publicKey]);
     	voteTransaction.fee = 0;
     	voteTransaction.timestamp = 0;
       voteTransaction.senderId = genesis.address;
@@ -298,7 +300,7 @@ var genesisBlock = create({
 config.nethash = genesisBlock.payloadHash;
 
 
-fs.writeFile("_genesisBlock.json",JSON.stringify(genesisBlock, null, 2));
-fs.writeFile("_config.json",JSON.stringify(config, null, 2));
-//fs.writeFile("tasks/delegatesPassphrases.json", JSON.stringify(delegates, null, 2));
-//fs.writeFile("_genesisPassphrase.json", JSON.stringify(genesis, null, 2));
+fs.writeFile("./private/genesisBlock.testnet.json",JSON.stringify(genesisBlock, null, 2));
+fs.writeFile("./private/config.testnet.json",JSON.stringify(config, null, 2));
+//fs.writeFile("./private/delegatesPassphrases.testnet.json", JSON.stringify(delegates, null, 2));
+//fs.writeFile("./private/genesisPassphrase.testnet.json", JSON.stringify(genesis, null, 2));

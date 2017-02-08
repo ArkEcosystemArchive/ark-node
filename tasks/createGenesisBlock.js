@@ -10,8 +10,8 @@ var ed = require('../helpers/ed.js');
 
 var config = {
     "port": 4000,
-    "address": "0.0.0.0",
-    "version": "0.2.1",
+    "address": "127.0.0.1",
+    "version": "0.3.0",
     "fileLogLevel": "info",
     "logFileName": "logs/ark.log",
     "consoleLogLevel": "debug",
@@ -30,6 +30,7 @@ var config = {
         ]
     },
     "api": {
+        "mount": true,
         "access": {
             "whiteList": []
         },
@@ -43,7 +44,7 @@ var config = {
         }
     },
     "peers": {
-        "minimumNetworkReach":1,
+        "minimumNetworkReach":20,
         "list": [{"ip":"127.0.0.1", "port":4000}],
         "blackList": [],
         "options": {
@@ -293,7 +294,7 @@ for(var i=0;i<51;i++){
 config.nethash = genesisBlock.payloadHash;
 
 
-fs.writeFile("tasks/genesisBlock.json",JSON.stringify(genesisBlock, null, 2));
-fs.writeFile("tasks/config.json",JSON.stringify(config, null, 2));
-fs.writeFile("tasks/delegatesPassphrases.json", JSON.stringify(delegates, null, 2));
-fs.writeFile("tasks/genesisPassphrase.json", JSON.stringify(genesis, null, 2));
+fs.writeFile("private/genesisBlock.private.json",JSON.stringify(genesisBlock, null, 2));
+fs.writeFile("private/config.private.json",JSON.stringify(config, null, 2));
+fs.writeFile("private/delegatesPassphrases.private.json", JSON.stringify(delegates, null, 2));
+fs.writeFile("private/genesisPassphrase.private.json", JSON.stringify(genesis, null, 2));

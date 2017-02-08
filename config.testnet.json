@@ -20,6 +20,7 @@
     ]
   },
   "api": {
+    "mount":true,
     "access": {
       "whiteList": []
     },
@@ -33,14 +34,8 @@
     }
   },
   "peers": {
-    "minimumNetworkReach": 20,
-    "list": [
-      {"ip":"5.135.102.92", "port":4000},
-      {"ip":"5.135.102.88", "port":4000},
-      {"ip":"5.135.102.89", "port":4000},
-      {"ip":"5.135.102.90", "port":4000},
-      {"ip":"5.135.102.91", "port":4000}
-    ],
+    "minimumNetworkReach":1,
+    "list": [{"ip":"167.114.43.45", "port":4000}],
     "blackList": [],
     "options": {
       "limits": {
