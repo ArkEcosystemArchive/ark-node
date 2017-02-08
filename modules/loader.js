@@ -314,10 +314,13 @@ __private.loadBlocksFromNetwork = function (cb) {
 
 	//console.log("loadBlocksFromNetwork");
 
-
+	//TODO: tryCount is accounting for 2 use cases :
+	// - no more blocks downloaded
+	// - error finding common blocks
+	// should be separated because the strategies are different.
 	async.whilst(
 		function () {
-			 //console.log(loaded);
+			//console.log(loaded);
 			//console.log(tryCount);
 			return !loaded && (tryCount < 5) && (peers.length > tryCount);
 		},

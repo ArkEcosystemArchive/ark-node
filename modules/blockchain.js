@@ -349,6 +349,7 @@ Blockchain.prototype.onBlockReceived = function(block, peer) {
 
 	if(self.isOrphaned(block)){
 		__private.orphanedBlocks[block.height]?__private.orphanedBlocks[block.height].push(block):[block];
+		block.orphaned=true;
 		library.logger.info("Orphaned block received", {id: block.id, height:block.height, peer:peer.string});
 		return;
 	}

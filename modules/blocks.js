@@ -769,14 +769,27 @@ Blocks.prototype.removeSomeBlocks = function(numbers, cb){
 }
 
 
+Blocks.prototype.swapLastBlockWith = function(block, cb){
+	async.series({
+		removeLastBlock: self.removeLastBlock,
+		addOrphanedBlock: function(seriesCb){
+			delete block.orphaned;
+			block.ready=true;
+			block.verified = false;
+			block.processed = false;
+			block.broadcast = true;
+			modules.blockchain.addBlock(block);
+			library.bus.message("verifyBlock", block, seriesCb);
+		}
+	}, cb);
+};
+
 
 Blocks.prototype.removeLastBlock = function(cb){
 	if (modules.blockchain.getLastBlock().height === 1) {
-		return setImmediate(cb);
+		return cb();
 	}
-	// one block after the other
-	library.blockSequence.add(function (cb){
-
+	library.blockSequence.add(function(sequenceCb){
 		// Don't shutdown now
 		__private.noShutdownRequired = true;
 
@@ -785,8 +798,7 @@ Blocks.prototype.removeLastBlock = function(cb){
 			// We won't apply them again since we will have to resync blocks back from network
 			undoUnconfirmedList: function (seriesCb) {
 				modules.transactionPool.undoUnconfirmedList([],function (err, transactions) {
-					return setImmediate(seriesCb, err);
-
+					return seriesCb(err);
 				});
 			},
 			backwardSwap: function (seriesCb) {
@@ -799,7 +811,7 @@ Blocks.prototype.removeLastBlock = function(cb){
 						library.logger.error('Error deleting last block', block);
 						library.logger.error('Error deleting last block', err);
 					}
-					return setImmediate(cb, err);
+					return seriesCb(err);
 				});
 	   	},
 			forwardSwap: function (seriesCb) {
@@ -810,9 +822,10 @@ Blocks.prototype.removeLastBlock = function(cb){
 			self.lastReceipt(new Date());
 			// Allow shutdown, database writes are finished.
 			__private.noShutdownRequired = false;
-			return setImmediate(cb, err);
+			return sequenceCb(err);
 		});
-	}, cb);
+	},cb);
+
 }
 
 Blocks.prototype.loadLastBlock = function (cb) {

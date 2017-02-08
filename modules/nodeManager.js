@@ -259,9 +259,22 @@ NodeManager.prototype.onRebuildBlockchain = function(blocksToRemove, state, cb) 
 
 NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 	if(!block.ready){
-		library.logger.debug("Skip processing block", {id: block.id, height:block.height});
-		return cb && setImmediate(cb, null, block);
+		if(block.orphaned && __private.lastBlock.height == block.height){//all right we are at the beginning of a fork, let's swap asap if needed
+			if(block.id < __private.lastBlock.id){ // lowest id win
+				library.logger.debug("Orphaned block has a smaller id, swaping with lastBlock", {id: block.id, height:block.height});
+				return modules.blocks.swapLastBlockWith(block, cb);
+			}
+			else{
+				library.logger.info("Orphaned block has a bigger id, processing skipped", {id: block.id, height:block.height});
+				return cb && cb(null, block);
+			}
+		}
+		else{
+			library.logger.debug("Skip processing block", {id: block.id, height:block.height});
+			return cb && cb(null, block);
+		}
 	}
+
 
 	library.logger.info("New block received", {id: block.id, height:block.height, transactions: block.numberOfTransactions, peer:peer.string});
 
@@ -270,7 +283,7 @@ NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
   block.broadcast = true;
 
 	//RECEIVED empty block?
-	if(block.numberOfTransactions==0){
+	if(block.numberOfTransactions == 0){
 		library.logger.debug("processing empty block", block.id);
     library.bus.message('verifyBlock', block, cb);
 	}
