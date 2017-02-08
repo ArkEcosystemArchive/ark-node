@@ -924,7 +924,6 @@ Blocks.prototype.verifyBlockHeader = function (block) {
 };
 
 
-
 // Will return all possible errors that are intrinsic to the block.
 // NO DATABASE access
 // checkPreviousBlock: includes check if we have the previous block of the internal chain
@@ -1503,8 +1502,12 @@ Blocks.prototype.deleteBlocksBefore = function (block, cb) {
 };
 
 Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
+	//TODO: fireworks!
+	var lastBlock = modules.blockchain.getLastBlock();
+
 	var transactions = modules.transactionPool.getUnconfirmedTransactionList(false, constants.maxTxsPerBlock);
 	var ready = [];
+
 	async.eachSeries(transactions, function (transaction, cb) {
 
 		if(!transaction){
@@ -1537,10 +1540,10 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 	}, function () {
 		var block;
 
-		// ok sometimes it takes time to get there so timestamp could have been calculated before the lastBlock received.
+		// ok sometimes it takes time to get there so timestamp
+		// could have been calculated BEFORE the lastBlock received.
 		// imagine the disaster
 		// so if this is the case we push the timestamp forward
-		var lastBlock = modules.blockchain.getLastBlock();
 		if(timestamp <= lastBlock.timestamp){
 			timestamp = lastBlock.timestamp + 1;
 		}
@@ -1549,8 +1552,7 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 			block = library.logic.block.create({
 				keypair: keypair,
 				timestamp: timestamp,
-				//TODO: fireworks!
-				previousBlock: modules.blockchain.getLastBlock(),
+				previousBlock: lastBlock,
 				transactions: ready
 			});
 		} catch (e) {
@@ -1559,7 +1561,6 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 		}
 
 		setImmediate(cb, null, block);
-		//self.processBlock(block, true, cb, true);
 	});
 };
 
@@ -1567,13 +1568,15 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 
 // Events
 Blocks.prototype.onProcessBlock = function (block, cb) {
-	if(block.numberOfTransactions == 0){
-		//console.log("onProcessBlock - "+ block.height);
-		self.processEmptyBlock(block,cb);
-	}
-	else{
-		self.processBlock(block,cb);
-	}
+	library.blockSequence.add(function(sequenceCb){
+		if(block.numberOfTransactions == 0){
+			//console.log("onProcessBlock - "+ block.height);
+			self.processEmptyBlock(block,sequenceCb);
+		}
+		else{
+			self.processBlock(block,sequenceCb);
+		}
+	}, cb);
 };
 
 

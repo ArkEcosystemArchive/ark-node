@@ -215,10 +215,10 @@ NodeManager.prototype.onBlocksReceived = function(blocks, peer, cb) {
 
 NodeManager.prototype.onRebuildBlockchain = function(blocksToRemove, state, cb) {
 	return modules.loader.getNetwork(true, function(err, network){
-		if(!network){
+		var lastBlock = modules.blockchain.getLastBlock();
+		if(!network || !network.height){
 			cb("Can't find peers to sync with...");
 		}
-		var lastBlock = modules.blockchain.getLastBlock();
 		if(network.height > lastBlock.height){
 			library.logger.info("Observed network height is higher", {network: network.height, node:lastBlock.height});
 			library.logger.info("Rebuilding from network");
@@ -249,7 +249,6 @@ NodeManager.prototype.onRebuildBlockchain = function(blocksToRemove, state, cb) 
 			}
 		}
 	});
-
 };
 
 NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
