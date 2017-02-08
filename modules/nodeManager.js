@@ -261,7 +261,7 @@ NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 	if(!block.ready){
 			if(block.orphaned){
 				// usually receive a bunch of orphaned blocks, doing one after the other
-				library.orphanedBlockSequence.add(function(sequenceCb){
+				return library.orphanedBlockSequence.add(function(sequenceCb){
 					var lastBlock = modules.blockchain.getLastBlock();
 					if(lastBlock.height == block.height){
 					//all right we are at the beginning of a fork, let's swap asap if needed
@@ -273,6 +273,9 @@ NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 							library.logger.info("Orphaned block has a bigger id, processing skipped", {id: block.id, height:block.height});
 							return sequenceCb && sequenceCb(null, block);
 						}
+					}
+					else {
+						return sequenceCb();
 					}
 				}, cb);
 			}
