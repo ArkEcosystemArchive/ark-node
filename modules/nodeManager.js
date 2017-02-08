@@ -365,11 +365,7 @@ NodeManager.prototype.onBlockForged = function(block, cb) {
 
 NodeManager.prototype.onBlockVerified = function(block, cb) {
 	//console.log("onBlockVerified - "+block.height);
-	library.blockSequence.add(function(sequenceCb){
-		library.bus.message('processBlock', block, sequenceCb);
-	}, function(err,data){
-		cb && setImmediate(cb, err, data);
-	});
+	library.bus.message('processBlock', block, sequenceCb);
 }
 
 NodeManager.prototype.onBlockProcessed = function(block, cb) {

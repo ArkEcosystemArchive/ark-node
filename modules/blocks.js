@@ -1568,12 +1568,24 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 
 // Events
 Blocks.prototype.onProcessBlock = function (block, cb) {
+	//TODO: dirty, should be not used if there was a proper single thread
+	if(__private._processing){
+		return cb("Can't process 2 blocks in parallel", block);
+	}
+
+	__private._processing = block;
 	if(block.numberOfTransactions == 0){
 		//console.log("onProcessBlock - "+ block.height);
-		self.processEmptyBlock(block, cb);
+		self.processEmptyBlock(block, function(err,data){
+			__private._processing=null;
+			cb(err,data)
+		});
 	}
 	else{
-		self.processBlock(block, cb);
+		self.processBlock(block, function(err,data){
+			__private._processing=null;
+			cb(err,data)
+		});
 	}
 };
 
