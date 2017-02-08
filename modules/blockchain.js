@@ -106,7 +106,7 @@ Blockchain.prototype.upsertBlock = function(block, cb){
   if(!__private.blockchain[block.height]){
     __private.blockchain[block.height]=block;
   } else if(__private.blockchain[block.height].id!=block.id){
-		__private.orphanedBlocks[block.height]?__private.orphanedBlocks[block.height].push(block):[block];
+		__private.orphanedBlocks[block.id]=block;
     error = "upsertBlock - Orphaned Block has been added in the blockchain";
   } else {
     __private.blockchain[block.height]=block;
@@ -135,7 +135,7 @@ Blockchain.prototype.isForked = function(block){
 
 Blockchain.prototype.isPresent = function(block){
 	//console.log(__private.blockchain);
-	return (__private.blockchain[block.height] && __private.blockchain[block.height].id == block.id) || self.isOrphaned(block);
+	return (__private.blockchain[block.height] && __private.blockchain[block.height].id == block.id) || __private.orphanedBlocks[block.id];
 }
 
 Blockchain.prototype.isReady = function(block){
@@ -155,7 +155,7 @@ Blockchain.prototype.addBlock = function(block, cb){
     __private.blockchain[block.height]=block;
   }
   else if(__private.blockchain[block.height].id != block.id){
-		__private.orphanedBlocks[block.height]?__private.orphanedBlocks[block.height].push(block):[block];
+		__private.orphanedBlocks[block.id]=block;
     error = "addBlock - Orphaned Block has been added in the blockchain";
   }
 	// if same block id don't update
@@ -188,7 +188,7 @@ Blockchain.prototype.removeBlock = function(block, cb){
     delete __private.blockchain[block.height];
 		// TODO: reuse orphaned blocks sending a message to stop rebuild
 		// if one of the orphaned block is at the origin (ie block.previousBlock == orphanedBlock.previousBlock)
-		delete __private.orphanedBlocks[block.height];
+		delete __private.orphanedBlocks[block.id];
   }
   return cb && setImmediate(cb, error, block);
 };
@@ -348,14 +348,14 @@ Blockchain.prototype.onBlockReceived = function(block, peer) {
 	}
 
 	if(self.isOrphaned(block)){
-		__private.orphanedBlocks[block.height]?__private.orphanedBlocks[block.height].push(block):[block];
+		__private.orphanedBlocks[block.id]=block;
 		block.orphaned=true;
 		library.logger.info("Orphaned block received", {id: block.id, height:block.height, peer:peer.string});
 		return;
 	}
 
 	if(self.isForked(block)){
-		__private.orphanedBlocks[block.height]?__private.orphanedBlocks[block.height].push(block):[block];
+		__private.orphanedBlocks[block.id]=block;
 		var previousBlock = self.getPreviousBlock(block);
 		library.logger.info("Forked block received", {id: block.id, height:block.height, previousBlock: block.previousBlock, previousBlockchainBlock: previousBlock.id, peer:peer.string});
 		return;
