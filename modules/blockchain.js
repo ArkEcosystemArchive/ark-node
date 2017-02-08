@@ -135,7 +135,7 @@ Blockchain.prototype.isForked = function(block){
 
 Blockchain.prototype.isPresent = function(block){
 	//console.log(__private.blockchain);
-	return __private.blockchain[block.height] && __private.blockchain[block.height].id == block.id;
+	return (__private.blockchain[block.height] && __private.blockchain[block.height].id == block.id) || __private.orphanedBlocks[block.height];
 }
 
 Blockchain.prototype.isReady = function(block){

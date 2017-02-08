@@ -260,24 +260,21 @@ NodeManager.prototype.onRebuildBlockchain = function(blocksToRemove, state, cb) 
 NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 	if(!block.ready){
 			if(block.orphaned){
-				// usually receive a bunch of orphaned blocks, doing one after the other
-				return library.orphanedBlockSequence.add(function(sequenceCb){
-					var lastBlock = modules.blockchain.getLastBlock();
-					if(lastBlock.height == block.height){
-					//all right we are at the beginning of a fork, let's swap asap if needed
-						if(block.id < lastBlock.id){ // lowest id win
-							library.logger.info("Orphaned block has a smaller id, swaping with lastBlock", {id: block.id, height:block.height});
-							return modules.blocks.swapLastBlockWith(block, sequenceCb);
-						}
-						else{
-							library.logger.info("Orphaned block has a bigger id, processing skipped", {id: block.id, height:block.height});
-							return sequenceCb && sequenceCb(null, block);
-						}
+				var lastBlock = modules.blockchain.getLastBlock();
+				if(lastBlock.height == block.height){
+				  //all right we are at the beginning of a fork, let's swap asap if needed
+					if(block.id < lastBlock.id){ // lowest id win
+						library.logger.info("Orphaned block has a smaller id, swaping with lastBlock", {id: block.id, height:block.height});
+						return modules.blocks.swapLastBlockWith(block, cb);
 					}
-					else {
-						return sequenceCb && sequenceCb(null, block);
+					else{
+						library.logger.info("Orphaned block has a bigger id, processing skipped", {id: block.id, height:block.height});
+						return cb && cb(null, block);
 					}
-				}, cb);
+				}
+				else {
+					return cb && cb(null, block);
+				}
 			}
 			else{
 				library.logger.debug("Skip processing block", {id: block.id, height:block.height});
