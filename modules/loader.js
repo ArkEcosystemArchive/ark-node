@@ -278,14 +278,32 @@ __private.loadBlockChain = function () {
 	});
 };
 
+__private.shuffle = function(array) {
+	var currentIndex = array.length, temporaryValue, randomIndex;
+
+	// While there remain elements to shuffle...
+	while (0 !== currentIndex) {
+
+		// Pick a remaining element...
+		randomIndex = Math.floor(Math.random() * currentIndex);
+		currentIndex -= 1;
+
+		// And swap it with the current element.
+		temporaryValue = array[currentIndex];
+		array[currentIndex] = array[randomIndex];
+		array[randomIndex] = temporaryValue;
+	}
+
+	return array;
+}
+
 __private.loadBlocksFromNetwork = function (cb) {
 	var tryCount = 0;
 	var loaded = false;
 
 	var network = __private.network;
 
-
-	var peers=network.peers.sort(function(p1, p2){
+	var peers=__private.shuffle(network.peers).sort(function(p1, p2){
 		if(p1.height==p2.height){
 			return p1.blockheader.id<p2.blockheader.id;
 		}
@@ -345,7 +363,7 @@ __private.loadBlocksFromNetwork = function (cb) {
 					// }
 				}
 			], function (err, lastBlock) {
-				//console.log(lastBlock.height);
+				//if(lastBlock) console.log(lastBlock.height);
 				//console.log("next");
 				next();
 			});
@@ -550,24 +568,6 @@ Loader.prototype.getNetwork = function (force, cb) {
 			return setImmediate(cb, err);
 		}
 
-		function shuffle(array) {
-		  var currentIndex = array.length, temporaryValue, randomIndex;
-
-		  // While there remain elements to shuffle...
-		  while (0 !== currentIndex) {
-
-		    // Pick a remaining element...
-		    randomIndex = Math.floor(Math.random() * currentIndex);
-		    currentIndex -= 1;
-
-		    // And swap it with the current element.
-		    temporaryValue = array[currentIndex];
-		    array[currentIndex] = array[randomIndex];
-		    array[randomIndex] = temporaryValue;
-		  }
-
-		  return array;
-		}
 
 		var peers = res.body.peers;
 
@@ -576,7 +576,7 @@ Loader.prototype.getNetwork = function (force, cb) {
 				return setImmediate(cb, err);
 			}
 
-			peers = shuffle(peers);
+			peers = __private.shuffle(peers);
 
 			library.logger.debug(['Received', peers.length, 'peers from'].join(' '), res.peer.string);
 
