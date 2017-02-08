@@ -771,7 +771,9 @@ Blocks.prototype.removeSomeBlocks = function(numbers, cb){
 
 Blocks.prototype.swapLastBlockWith = function(block, cb){
 	async.series({
-		removeLastBlock: self.removeLastBlock,
+		removeLastBlock: function(seriesCb){
+			self.removeLastBlock(seriesCb);
+		},
 		addOrphanedBlock: function(seriesCb){
 			delete block.orphaned;
 			block.ready=true;

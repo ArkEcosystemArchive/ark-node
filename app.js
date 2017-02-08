@@ -186,6 +186,15 @@ d.run(function () {
 			cb(null, sequence);
 		}],
 
+		orphanedBlockSequence: ['logger', function (scope, cb) {
+			var sequence = new Sequence({
+				onWarning: function (current, limit) {
+					scope.logger.warn('Orphaned block queue', current);
+				}
+			});
+			cb(null, sequence);
+		}],
+
 		blockSequence: ['logger', function (scope, cb) {
 			var sequence = new Sequence({
 				onWarning: function (current, limit) {
