@@ -298,8 +298,9 @@ __private.prepareBlock = function(block, peer, cb){
 					 library.logger.debug("received transactions", receivedTransactions.length);
 
 					 for(var i=0;i<transactionIds.length;i++){
-						 var id=transactionIds[i]
-						 var tx=receivedTransactions.find(function(tx){return tx.id==id});
+						 var id=transactionIds[i];
+						 // assume the list may contains null element
+						 var tx=receivedTransactions.find(function(tx){return tx?tx.id==id:false});
 						 if(tx){
 							 transactionIds[i]=tx;
 						 }
@@ -355,7 +356,12 @@ NodeManager.prototype.swapLastBlockWith = function(block, peer, cb){
 			modules.blockchain.addBlock(block);
 			library.bus.message("verifyBlock", block, seriesCb);
 		}
-	], cb);
+	], function(err){
+		if(err){
+			modules.blockchain.removeBlock(block);
+		}
+		return cb && cb(err, block);
+	});
 };
 
 NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
@@ -391,6 +397,10 @@ NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 		block.processed = false;
 		block.broadcast = true;
 		__private.prepareBlock(block, peer, function(err, block){
+			if(err){
+				modules.blockchain.removeBlock(block);
+				return cb && cb(err, block);
+			}
 			library.logger.debug("processing block with "+block.transactions.length+" transactions", block.height);
 			modules.blockchain.addBlock(block);
 			return library.bus.message('verifyBlock', block, cb);
