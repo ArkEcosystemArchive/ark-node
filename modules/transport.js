@@ -28,7 +28,7 @@ function Transport (cb, scope) {
 		if(__private.broadcastTransactions.length>0){
 			var transactions=__private.broadcastTransactions;
 			__private.broadcastTransactions=[];
-			self.broadcast({limit: 10}, {api: '/transactions', data: {transactions: transactions}, method: 'POST'});
+			self.broadcast({limit: 5}, {api: '/transactions', data: {transactions: transactions}, method: 'POST'});
 		}
 	}, 1000);
 
