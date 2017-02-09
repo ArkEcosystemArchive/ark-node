@@ -363,18 +363,25 @@ NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 		if(block.orphaned){
 			// this lastBlock is "likely" not processed, but the swap anyway will occur in a block sequence.
 			var lastBlock = modules.blockchain.getBlockAtHeight(block.height);
-			//all right we are at the beginning of a fork, let's swap asap if needed
-			if(lastBlock && block.id < lastBlock.id){ // lowest id win
-				library.logger.info("Orphaned block has a smaller id, swaping with lastBlock", {id: block.id, height:block.height});
+			// all right we are at the beginning of a fork, let's swap asap if needed
+			if(lastBlock && block.timestamp < lastBlock.timestamp){
+				// lowest timestamp win: likely more spread
+				library.logger.info("Orphaned block has a smaller timestamp, swaping with lastBlock", {id: block.id, height:block.height});
+				return self.swapLastBlockWith(block, peer, cb);
+			}
+			else if(lastBlock && block.timestamp == lastBlock.timestamp && block.id < lastBlock.id){
+				// same timestamp, lowest id win: double forgery
+				library.logger.info("Orphaned block has same timestamp but smaller id, swaping with lastBlock", {id: block.id, height:block.height});
 				return self.swapLastBlockWith(block, peer, cb);
 			}
 			else {
-				library.logger.info("Orphaned block has a bigger id, processing skipped", {id: block.id, height:block.height});
+				// no swap
+				library.logger.info("Orphaned block has a bigger timestamp or bigger id, block disregarded", {id: block.id, height:block.height});
 				return cb && cb(null, block);
 			}
 		}
 		else {
-			library.logger.debug("Skip processing block", {id: block.id, height:block.height});
+			library.logger.debug("Block disregarded", {id: block.id, height:block.height});
 			return cb && cb(null, block);
 		}
 	}
