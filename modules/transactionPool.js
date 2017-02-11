@@ -419,7 +419,11 @@ __private.getMissingTransactions = function(ids, cb){
 			}
 		}
 		else{
-			transactions[i]={id:ids[i]};
+			// beware we send an incomplete transaction to be taken care of
+			transactions[i] = {
+				id:ids[i],
+				incomplete:true
+			};
 			missingtransactionsids.push(ids[i]);
 		}
 	}

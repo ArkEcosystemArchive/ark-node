@@ -300,11 +300,11 @@ __private.prepareBlock = function(block, peer, cb){
 						 }
 						 else{
 							 tx=foundTransactions.find(function(tx){return tx.id==id});
-							 if(tx){
+							 if(!tx.incomplete){
 								 transactionIds[i]=tx;
 							 }
 							 else{
-								 //Fucked
+								 // Fucked! we ignore the block waiting for another one to have it complete.
 								 return cb && cb("Cannot find all transactions to complete the block", block);
 							 }
 						 }
