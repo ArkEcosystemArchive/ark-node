@@ -722,14 +722,7 @@ Blocks.prototype.removeSomeBlocks = function(numbers, cb){
 			// Rewind any unconfirmed transactions before removing blocks.
 			// We won't apply them again since we will have to resync blocks back from network
 			undoUnconfirmedList: function (seriesCb) {
-				modules.transactionPool.undoUnconfirmedList([],function (err, transactions) {
-					if (err) {
-						// TODO: Send a numbered signal to be caught by forever to trigger a rebuild.
-						return setImmediate(seriesCb, err);
-					} else {
-						return setImmediate(seriesCb);
-					}
-				});
+				modules.transactionPool.undoUnconfirmedList([],seriesCb);
 			},
 			backwardSwap: function (seriesCb) {
 				modules.rounds.directionSwap('backward', null, seriesCb);
@@ -737,7 +730,7 @@ Blocks.prototype.removeSomeBlocks = function(numbers, cb){
 	   	popLastBlock: function (seriesCb) {
 				async.whilst(
 					function () {
-						//if numbers = 50, on average remove 50 Blocks, roughly 1 round
+						// if numbers = 50, on average remove 50 Blocks, roughly 1 round
 						return (Math.random() > 1/(numbers+1));
 					},
 					function (next) {
@@ -749,9 +742,6 @@ Blocks.prototype.removeSomeBlocks = function(numbers, cb){
 			   			}
 			   			next(err);
 			   		});
-					},
-					function (err) {
-						return setImmediate(seriesCb, err);
 					}
 				);
 	   	},
@@ -763,7 +753,7 @@ Blocks.prototype.removeSomeBlocks = function(numbers, cb){
 			self.lastReceipt(new Date());
 			// Allow shutdown, database writes are finished.
 			__private.noShutdownRequired = false;
-			return setImmediate(cb, err);
+			return cb(err, modules.blockchain.getLastBlock());
 		});
 	}, cb);
 }
@@ -860,7 +850,7 @@ Blocks.prototype.onVerifyBlock = function (block, cb) {
 		return library.bus.message("blockVerified", block, cb);
 	}
 	else{
-		return cb && setImmediate(cb, result.errors.join(" - "), block);
+		return cb && cb(result.errors.join(" - "), block);
 	}
 }
 

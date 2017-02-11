@@ -198,7 +198,7 @@ NodeManager.prototype.onBlocksReceived = function(blocks, peer, cb) {
 		if(block.height%100 == 0){
 			library.logger.info("Processing block height", block.height);
 		}
-		library.bus.message('verifyBlock', block, eachSeriesCb);
+		return library.bus.message('verifyBlock', block, eachSeriesCb);
 
 	}, function(err){
 		if(err){
@@ -206,7 +206,7 @@ NodeManager.prototype.onBlocksReceived = function(blocks, peer, cb) {
 		}
 		//console.log(currentBlock.height);
 		// we don't deal with download management, just return to say "blocks processed, go ahead"
-		return cb(err, currentBlock);
+		return cb && setImmediate(cb, err, currentBlock);
 
 		// if(!blocks || blocks.length === 0){
 		// 	return cb();
@@ -223,14 +223,12 @@ NodeManager.prototype.onRebuildBlockchain = function(blocksToRemove, state, cb) 
 	return modules.loader.getNetwork(true, function(err, network){
 		var lastBlock = modules.blockchain.getLastBlock();
 		if(!network || !network.height){
-			cb("Can't find peers to sync with...");
+			return cb && cb("Can't find peers to sync with...");
 		}
-		if(network.height > lastBlock.height){
+		else if(network.height > lastBlock.height){
 			library.logger.info("Observed network height is higher", {network: network.height, node:lastBlock.height});
 			library.logger.info("Rebuilding from network");
-			modules.blocks.removeSomeBlocks(blocksToRemove, function(error, lastBlock){
-				library.bus.message("downloadBlocks", cb);
-			});
+			return modules.blocks.removeSomeBlocks(blocksToRemove, cb);
 		}
 		else{
 			var bestBlock = modules.loader.getNetworkSmallestBlock();
@@ -238,20 +236,16 @@ NodeManager.prototype.onRebuildBlockchain = function(blocksToRemove, state, cb) 
 			if(bestBlock && bestBlock.height > lastBlock.height){
 				library.logger.info("Observed network is on same height, but some peers with bigger height", {network: {id: bestBlock.id, height:bestBlock.height}, node:{id: lastBlock.id, height:lastBlock.height}});
 				library.logger.info("Rebuilding from network");
-				modules.blocks.removeSomeBlocks(blocksToRemove, function(error, lastBlock){
-					library.bus.message("downloadBlocks", cb);
-				});
+				return modules.blocks.removeSomeBlocks(blocksToRemove, cb);
 			}
-			else if(bestBlock && bestBlock.height == lastBlock.height && bestBlock.id != lastBlock.id){
+			else if(bestBlock && bestBlock.height == lastBlock.height && bestBlock.id < lastBlock.id){
 				library.logger.info("Observed network is on same height, but found a smaller block id", {network: {id: bestBlock.id, height:bestBlock.height}, node:{id: lastBlock.id, height:lastBlock.height}});
 				library.logger.info("Rebuilding from network");
-				modules.blocks.removeSomeBlocks(blocksToRemove, function(error, lastBlock){
-					library.bus.message("downloadBlocks", cb);
-				});
+				return modules.blocks.removeSomeBlocks(blocksToRemove, cb);
 			}
 			else{
 				library.logger.info("Observed network is on same height, and same smallest block id", {network: network.height, node:lastBlock.height});
-				cb();
+				return cb && cb();
 			}
 		}
 	});

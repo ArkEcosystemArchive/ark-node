@@ -40,7 +40,7 @@ Blockchain.prototype.onStartBlockchain = function(){
 		if(state.rebuild){
 			var timedout=false;
 			library.logger.warn("Blockchain rebuild triggered", state);
-			library.bus.message("rebuildBlockchain", 10, state, function(err,block){
+			library.bus.message("rebuildBlockchain", 3, state, function(err,block){
 				if(block){ // rebuild done
 					library.logger.warn("Blockchain rebuild done", __private.timestampState());
 					if(!timedout){
