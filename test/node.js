@@ -1,5 +1,5 @@
 'use strict';
-process.env.SILENT='true';
+//process.env.SILENT='true';
 // Root object
 var node = {};
 
@@ -42,19 +42,19 @@ node.fees = {
 
 // Existing delegate account
 node.eAccount = {
-	address: 'Ab5zZfCC7ig3kS83VhsQscEeZLj12qLfGW',
-	publicKey: '026534ccddb67163e631c7667ffa2f999755281313ee396874df3cbf569e831e62',
-	password: 'upgrade lady coach symptom minor toe upper furnace master glue cement advance',
-	balance: '0',
+	address: 'ANBkoGqWeTSiaEVgVzSKZd3jS7UWzv9PSo',
+	publicKey: '03287bfebba4c7881a0509717e71b34b63f31e40021c321f89ae04f84be6d6ac37',
+	password: 'clay harbor enemy utility margin pretty hub comic piece aerobic umbrella acquire',
+	balance: '245100000000000',
 	delegateName: 'genesis_1'
 };
 
 // Genesis account, initially holding 125M total supply
 node.gAccount = {
-	address: 'AYv4BfHZc5RRkCT6xz3iCw9BbTcK2Xo57m',
-	publicKey: '03f0726b59f56ac009a8bd3f9623f681cdd5318dc4f5042b4938716c46b1b05e93',
-	password: 'peace vanish bleak box tuna woman rally manage undo royal lucky since',
-	balance: '12500000000000000'
+	address: 'AbfQq8iRSf9TFQRzQWo33dHYU7HFMS17Zd',
+	publicKey: '02def27da9336e7fbf63131b8d7e5c9f45b296235db035f1f4242c507398f0f21d',
+	password: 'venue below waste gather spin cruise title still boost mother flash tuna',
+	balance: '245098000000000'
 };
 
 // Optional logging
