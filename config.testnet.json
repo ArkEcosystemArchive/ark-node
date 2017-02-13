@@ -4,7 +4,7 @@
   "version": "0.3.0",
   "fileLogLevel": "info",
   "logFileName": "logs/ark.log",
-  "consoleLogLevel": "debug",
+  "consoleLogLevel": "info",
   "trustProxy": false,
   "db": {
     "host": "localhost",
