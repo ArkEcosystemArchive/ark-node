@@ -714,7 +714,7 @@ Blocks.prototype.removeSomeBlocks = function(numbers, cb){
 		return setImmediate(cb);
 	}
 
-	library.balanceSequence.add(function (cb){
+	library.balancesSequence.add(function (cb){
 		// Don't shutdown now
 		__private.noShutdownRequired = true;
 
