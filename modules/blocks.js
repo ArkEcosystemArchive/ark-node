@@ -350,7 +350,7 @@ __private.getPreviousBlock = function(block, cb){
 __private.popLastBlock = function (oldLastBlock, cb) {
 	library.blockSequence.add(function (cb) {
 		if(!oldLastBlock.previousBlock){
-			__private.simpleDeleteAfterBlock(oldLastBlock.id, function (err) {
+			self.simpleDeleteAfterBlock(oldLastBlock.id, function (err) {
 				library.logger.warn("removing block", oldLastBlock.height);
 				modules.blockchain.removeBlock(oldLastBlock);
 			});
@@ -362,7 +362,7 @@ __private.popLastBlock = function (oldLastBlock, cb) {
 			}
 			if (!previousBlock) {
 				// very wrong removing block from db only
-				__private.simpleDeleteAfterBlock(oldLastBlock.id, function (err) {
+				self.simpleDeleteAfterBlock(oldLastBlock.id, function (err) {
 					library.logger.warn("removing block", oldLastBlock.height);
 					modules.blockchain.removeBlock(oldLastBlock);
 				});
