@@ -34,8 +34,14 @@
     }
   },
   "peers": {
-    "minimumNetworkReach":1,
-    "list": [{"ip":"167.114.43.45", "port":4000}],
+    "minimumNetworkReach":20,
+    "list": [
+      {"ip":"5.39.9.245", "port":4000},
+      {"ip":"5.39.9.246", "port":4000},
+      {"ip":"5.39.9.247", "port":4000},
+      {"ip":"5.39.9.248", "port":4000},
+      {"ip":"5.39.9.249", "port":4000}
+    ],
     "blackList": [],
     "options": {
       "limits": {
