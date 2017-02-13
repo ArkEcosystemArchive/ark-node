@@ -446,10 +446,10 @@ __private.checkDelegates = function (publicKey, votes, state, cb) {
 
 			var total_votes = (existing_votes + additions) - removals;
 
-			if (total_votes > constants.activeDelegates) {
-				var exceeded = total_votes - constants.activeDelegates;
+			if (total_votes > constants.maximumVotes) {
+				var exceeded = total_votes - constants.maximumVotes;
 
-				return setImmediate(cb, 'Maximum number of ' + constants.activeDelegates + ' votes exceeded (' + exceeded + ' too many)');
+				return setImmediate(cb, 'Maximum number of ' + constants.maximumVotes + ' votes exceeded (' + exceeded + ' too many)');
 			} else {
 				return setImmediate(cb);
 			}

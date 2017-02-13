@@ -48,8 +48,8 @@ Vote.prototype.verify = function (trs, sender, cb) {
 		return setImmediate(cb, 'Invalid votes. Must not be empty');
 	}
 
-	if (trs.asset.votes && trs.asset.votes.length > 33) {
-		return setImmediate(cb, 'Voting limit exceeded. Maximum is 33 votes per transaction');
+	if (trs.asset.votes && trs.asset.votes.length > constants.maximumVotes) {
+		return setImmediate(cb, 'Voting limit exceeded. Maximum is '+constants.maximumVotes+' vote per transaction');
 	}
 
 	modules.delegates.checkConfirmedDelegates(trs.senderPublicKey, trs.asset.votes, function (err) {
@@ -172,7 +172,7 @@ Vote.prototype.schema = {
 		votes: {
 			type: 'array',
 			minLength: 1,
-			maxLength: constants.activeDelegates,
+			maxLength: constants.maximumVotes,
 			uniqueItems: true
 		}
 	},

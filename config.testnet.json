@@ -1,7 +1,7 @@
 {
   "port": 4000,
   "address": "0.0.0.0",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "fileLogLevel": "info",
   "logFileName": "logs/ark.log",
   "consoleLogLevel": "debug",
@@ -71,5 +71,5 @@
       "cert": "./ssl/ark.crt"
     }
   },
-  "nethash": "7dc9f1ef941e55dcc741f026634a484fd4c4e6c925d1050ffd758087ff0021ea"
+  "nethash": "4befbd4cd1f2f10cbe69ac0b494b5ce070595ed23ee7abd386867c4edcdaf3bd"
 }

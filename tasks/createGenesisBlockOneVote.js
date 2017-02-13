@@ -12,7 +12,7 @@ var ed = require('../helpers/ed.js');
 var config = {
     "port": 4000,
     "address": "0.0.0.0",
-    "version": "0.1.0",
+    "version": "0.3.0",
     "fileLogLevel": "info",
     "logFileName": "logs/ark.log",
     "consoleLogLevel": "debug",
@@ -31,6 +31,7 @@ var config = {
         ]
     },
     "api": {
+        "mount":true,
         "access": {
             "whiteList": []
         },
@@ -309,7 +310,7 @@ config.nethash = genesisBlock.payloadHash;
 
 
 
-fs.writeFile("tasks/genesisBlock.json",JSON.stringify(genesisBlock, null, 2));
-fs.writeFile("tasks/config.json",JSON.stringify(config, null, 2));
-fs.writeFile("tasks/delegatesPassphrases.json", JSON.stringify(delegates, null, 2));
-fs.writeFile("tasks/genesisPassphrase.json", JSON.stringify(genesis, null, 2));
+fs.writeFile("genesisBlock.testnet.json",JSON.stringify(genesisBlock, null, 2));
+//fs.writeFile("config.testnet.json",JSON.stringify(config, null, 2));
+fs.writeFile("private/delegatesPassphrases.testnet.json", JSON.stringify(delegates, null, 2));
+//fs.writeFile("private/genesisPassphrase.testnet.json", JSON.stringify(genesis, null, 2));
