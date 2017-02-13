@@ -348,7 +348,7 @@ __private.getPreviousBlock = function(block, cb){
 }
 
 __private.popLastBlock = function (oldLastBlock, cb) {
-	library.balancesSequence.add(function (cb) {
+	library.blockSequence.add(function (cb) {
 		if(!oldLastBlock.previousBlock){
 			__private.simpleDeleteAfterBlock(oldLastBlock.id, function (err) {
 				library.logger.warn("removing block", oldLastBlock.height);
@@ -714,7 +714,7 @@ Blocks.prototype.removeSomeBlocks = function(numbers, cb){
 		return setImmediate(cb);
 	}
 
-	library.blockSequence.add(function (cb){
+	library.balanceSequence.add(function (cb){
 		// Don't shutdown now
 		__private.noShutdownRequired = true;
 
@@ -763,43 +763,38 @@ Blocks.prototype.removeLastBlock = function(cb){
 	if (modules.blockchain.getLastBlock().height === 1) {
 		return cb();
 	}
-	library.blockSequence.add(function(sequenceCb){
-		// Don't shutdown now
-		__private.noShutdownRequired = true;
+	// Don't shutdown now
+	__private.noShutdownRequired = true;
 
-		async.series({
-			// Rewind any unconfirmed transactions before removing blocks.
-			// We won't apply them again since we will have to resync blocks back from network
-			undoUnconfirmedList: function (seriesCb) {
-				modules.transactionPool.undoUnconfirmedList([],function (err, transactions) {
-					return seriesCb(err);
-				});
-			},
-			backwardSwap: function (seriesCb) {
-				modules.rounds.directionSwap('backward', null, seriesCb);
-			},
-	   	popLastBlock: function (seriesCb) {
-				var block = modules.blockchain.getLastBlock();
-				__private.popLastBlock(block, function (err, newLastBlock) {
-					if (err) {
-						library.logger.error('Error deleting last block', block);
-						library.logger.error('Error deleting last block', err);
-					}
-					return seriesCb(err);
-				});
-	   	},
-			forwardSwap: function (seriesCb) {
-			 	modules.rounds.directionSwap('forward', modules.blockchain.getLastBlock(), seriesCb);
-			}
-		}, function (err) {
-			// Reset the last receipt
-			self.lastReceipt(new Date());
-			// Allow shutdown, database writes are finished.
-			__private.noShutdownRequired = false;
-			return sequenceCb(err);
-		});
-	},cb);
-
+	async.series({
+		// Rewind any unconfirmed transactions before removing blocks.
+		// We won't apply them again since we will have to resync blocks back from network
+		undoUnconfirmedList: function (seriesCb) {
+			modules.transactionPool.undoUnconfirmedList([], seriesCb);
+		},
+		backwardSwap: function (seriesCb) {
+			modules.rounds.directionSwap('backward', null, seriesCb);
+		},
+   	popLastBlock: function (seriesCb) {
+			var block = modules.blockchain.getLastBlock();
+			__private.popLastBlock(block, function (err, newLastBlock) {
+				if (err) {
+					library.logger.error('Error deleting last block', block);
+					library.logger.error('Error deleting last block', err);
+				}
+				return seriesCb(err);
+			});
+   	},
+		forwardSwap: function (seriesCb) {
+		 	modules.rounds.directionSwap('forward', modules.blockchain.getLastBlock(), seriesCb);
+		}
+	}, function (err) {
+		// Reset the last receipt
+		self.lastReceipt(new Date());
+		// Allow shutdown, database writes are finished.
+		__private.noShutdownRequired = false;
+		return sequenceCb(err);
+	});
 }
 
 Blocks.prototype.loadLastBlock = function (cb) {

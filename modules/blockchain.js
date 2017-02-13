@@ -233,8 +233,9 @@ Blockchain.prototype.getLastIncludedBlock = function(){
 
 // to deprecate, kept for info
 Blockchain.prototype.onReceiveBlock = function (block, peer) {
+
 	//we make sure we process one block at a time
-	library.sequence.add(function (cb) {
+	library.receiveBlockSequence.add(function (cb) {
 		var lastBlock = self.getLastBlock();
 
 		if (block.previousBlock === lastBlock.id && lastBlock.height + 1 === block.height) {
@@ -461,7 +462,7 @@ __private.timestampState = function (lastReceipt) {
 	var timeNow = new Date().getTime();
 	__private.lastReceipt.secondsAgo = Math.floor((timeNow -  __private.lastReceipt.date.getTime()) / 1000);
 	if(modules.delegates.isActiveDelegate()){
-		__private.lastReceipt.stale = __private.lastReceipt.secondsAgo > 8;
+		__private.lastReceipt.stale = __private.lastReceipt.secondsAgo > 10;
 		__private.lastReceipt.rebuild = __private.lastReceipt.secondsAgo > 60;
 	}
 

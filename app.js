@@ -177,6 +177,9 @@ d.run(function () {
 			});
 		}],
 
+		//TODO: to move to modules/transactions.js ?
+		//To be deprecated in favor of blocksequence, encapsulating unconfirmed tx application in a blocksequence.
+		//To balance transaction application (unconfirmed and confirmed)
 		transactionSequence: ['logger', function (scope, cb) {
 			var sequence = new Sequence({
 				onWarning: function (current, limit) {
@@ -186,15 +189,7 @@ d.run(function () {
 			cb(null, sequence);
 		}],
 
-		orphanedBlockSequence: ['logger', function (scope, cb) {
-			var sequence = new Sequence({
-				onWarning: function (current, limit) {
-					scope.logger.warn('Orphaned block queue', current);
-				}
-			});
-			cb(null, sequence);
-		}],
-
+		//To balance block processing
 		blockSequence: ['logger', function (scope, cb) {
 			var sequence = new Sequence({
 				onWarning: function (current, limit) {
@@ -204,6 +199,7 @@ d.run(function () {
 			cb(null, sequence);
 		}],
 
+		//To balance db write
 		dbSequence: ['logger', function (scope, cb) {
 			var sequence = new Sequence({
 				onWarning: function (current, limit) {
@@ -213,15 +209,17 @@ d.run(function () {
 			cb(null, sequence);
 		}],
 
-		sequence: ['logger', function (scope, cb) {
+		//To balance block reception via API
+		receiveBlockSequence: ['logger', function (scope, cb) {
 			var sequence = new Sequence({
 				onWarning: function (current, limit) {
-					scope.logger.warn('Main queue', current);
+					scope.logger.warn('Receive Block queue', current);
 				}
 			});
 			cb(null, sequence);
 		}],
 
+		//To balance API calls
 		balancesSequence: ['logger', function (scope, cb) {
 			var sequence = new Sequence({
 				onWarning: function (current, limit) {
@@ -389,7 +387,7 @@ d.run(function () {
 			}, cb);
 		}],
 
-		modules: ['network', 'connect', 'config', 'logger', 'bus', 'sequence', 'dbSequence', 'balancesSequence', 'db', 'logic', function (scope, cb) {
+		modules: ['network', 'connect', 'config', 'logger', 'bus', 'receiveBlockSequence', 'blockSequence', 'transactionSequence', 'dbSequence', 'balancesSequence', 'db', 'logic', function (scope, cb) {
 			var tasks = {};
 
 			Object.keys(config.modules).forEach(function (name) {

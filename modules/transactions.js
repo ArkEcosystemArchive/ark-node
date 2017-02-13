@@ -208,8 +208,8 @@ __private.getVotesById = function (transaction, cb) {
 // Public methods
 
 Transactions.prototype.apply = function (transaction, block, cb) {
-	library.logger.debug('Applying confirmed transaction', transaction.id);
 	library.transactionSequence.add(function (cb){
+		library.logger.debug('Applying confirmed transaction', transaction.id);
 		modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, function (err, sender) {
 			if (err) {
 				return setImmediate(eachSeriesCb, err);
@@ -220,8 +220,8 @@ Transactions.prototype.apply = function (transaction, block, cb) {
 };
 
 Transactions.prototype.undo = function (transaction, block, cb) {
-	library.logger.debug('Undoing confirmed transaction', transaction.id);
 	library.transactionSequence.add(function (cb){
+		library.logger.debug('Undoing confirmed transaction', transaction.id);
 		modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, function (err, sender) {
 			if (err) {
 				return setImmediate(eachSeriesCb, err);
@@ -232,12 +232,12 @@ Transactions.prototype.undo = function (transaction, block, cb) {
 };
 
 Transactions.prototype.applyUnconfirmed = function (transaction, cb) {
-	library.logger.debug('Applying unconfirmed transaction', transaction.id);
 	modules.accounts.setAccountAndGet({publicKey: transaction.senderPublicKey}, function (err, sender) {
 		if (!sender && transaction.blockId !== genesisblock.block.id) {
 			return setImmediate(cb, 'Invalid block id');
 		} else {
 			library.transactionSequence.add(function (cb){
+				library.logger.debug('Applying unconfirmed transaction', transaction.id);
 				if (transaction.requesterPublicKey) {
 					modules.accounts.getAccount({publicKey: transaction.requesterPublicKey}, function (err, requester) {
 						if (err) {
@@ -259,8 +259,8 @@ Transactions.prototype.applyUnconfirmed = function (transaction, cb) {
 };
 
 Transactions.prototype.undoUnconfirmed = function (transaction, cb) {
-	library.logger.debug('Undoing unconfirmed transaction', transaction.id);
 	library.transactionSequence.add(function (cb){
+		library.logger.debug('Undoing unconfirmed transaction', transaction.id);
 		modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, function (err, sender) {
 			if (err) {
 				return setImmediate(cb, err);

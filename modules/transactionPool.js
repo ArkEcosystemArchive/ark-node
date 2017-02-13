@@ -419,7 +419,7 @@ __private.getMissingTransactions = function(ids, cb){
 			}
 		}
 		else{
-			// beware we send an incomplete transaction to be taken care of
+			// beware we send an incomplete transaction, to be taken care of
 			transactions[i] = {
 				id:ids[i],
 				incomplete:true
