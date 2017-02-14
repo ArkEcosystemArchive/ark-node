@@ -793,7 +793,7 @@ Blocks.prototype.removeLastBlock = function(cb){
 		self.lastReceipt(new Date());
 		// Allow shutdown, database writes are finished.
 		__private.noShutdownRequired = false;
-		return sequenceCb(err);
+		return cb(err);
 	});
 }
 
