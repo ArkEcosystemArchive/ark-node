@@ -18,7 +18,7 @@ function NodeManager (cb, scope) {
 	}
 	else{
 		// TODO: to decrease when bloom filters are implemented
-		__private.maxhop = 10;
+		__private.maxhop = 4;
 	}
 	setImmediate(cb, null, self);
 }

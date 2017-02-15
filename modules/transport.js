@@ -25,9 +25,14 @@ function Transport (cb, scope) {
 	self = this;
 
 	setInterval(function(){
-		if(__private.broadcastTransactions.length>0){
-			var transactions=__private.broadcastTransactions;
-			__private.broadcastTransactions=[];
+		if(__private.broadcastTransactions.length > 0){
+			var transactions = __private.broadcastTransactions;
+			if(__private.broadcastTransactions.length > 2){
+				transactions = __private.broadcastTransactions.splice(0,2);
+			}
+			else{
+				__private.broadcastTransactions=[];
+			}
 			self.broadcast({limit: 5}, {api: '/transactions', data: {transactions: transactions}, method: 'POST'});
 		}
 	}, 3000);

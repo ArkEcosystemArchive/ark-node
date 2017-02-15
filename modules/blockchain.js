@@ -58,14 +58,14 @@ Blockchain.prototype.onStartBlockchain = function(){
 					library.logger.warn("# Network looks stopped");
 					if(!timedout){
 						timedout=true;
-						setTimeout(listenBlockchainState, 1000);
+						setTimeout(listenBlockchainState, 10000);
 					}
 				}
 				else{
 					library.logger.error("Error rebuilding blockchain. You need to restart the node to get in sync", __private.timestampState());
 					if(!timedout){
 						timedout=true;
-						setTimeout(listenBlockchainState, 1000);
+						setTimeout(listenBlockchainState, 10000);
 					}
 				}
 			});
