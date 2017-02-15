@@ -189,8 +189,18 @@ d.run(function () {
 			cb(null, sequence);
 		}],
 
-		//To balance block processing
+		// To balance block processing
 		blockSequence: ['logger', function (scope, cb) {
+			var sequence = new Sequence({
+				onWarning: function (current, limit) {
+					scope.logger.warn('Block queue', current);
+				}
+			});
+			cb(null, sequence);
+		}],
+
+		// To balance logic (rebuilding, syncing, downloading blocks, swapping blocks, etc...)
+		managementSequence: ['logger', function (scope, cb) {
 			var sequence = new Sequence({
 				onWarning: function (current, limit) {
 					scope.logger.warn('Block queue', current);
@@ -387,7 +397,7 @@ d.run(function () {
 			}, cb);
 		}],
 
-		modules: ['network', 'connect', 'config', 'logger', 'bus', 'receiveBlockSequence', 'blockSequence', 'transactionSequence', 'dbSequence', 'balancesSequence', 'db', 'logic', function (scope, cb) {
+		modules: ['network', 'connect', 'config', 'logger', 'bus', 'managementSequence', 'blockSequence', 'transactionSequence', 'dbSequence', 'balancesSequence', 'db', 'logic', function (scope, cb) {
 			var tasks = {};
 
 			Object.keys(config.modules).forEach(function (name) {

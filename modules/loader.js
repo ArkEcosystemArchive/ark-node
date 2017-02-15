@@ -299,7 +299,7 @@ __private.shuffle = function(array) {
 
 __private.loadBlocksFromNetwork = function (cb) {
 	var tryCount = 0;
-	var loaded = false;
+	//var loaded = false;
 
 	var network = __private.network;
 
@@ -322,7 +322,8 @@ __private.loadBlocksFromNetwork = function (cb) {
 		function () {
 			//console.log(loaded);
 			//console.log(tryCount);
-			return !loaded && (tryCount < 5) && (peers.length > tryCount);
+			//return !loaded && (tryCount < 5) && (peers.length > tryCount);
+			return modules.blockchain.isMissingNewBlock() && tryCount < 5;
 		},
 		function (next) {
 
@@ -345,7 +346,7 @@ __private.loadBlocksFromNetwork = function (cb) {
 						else if (!commonBlock) {
 							tryCount += 1;
 							modules.peers.remove(peer.ip, peer.port);
-							return setImmediate(seriesCb, "Detected forked chain, no common block with: " + peer.string);
+							return seriesCb("Detected forked chain, no common block with: " + peer.string);
 						} else {
 							library.logger.info(['Found common block:', commonBlock.id, 'with:', peer.string].join(' '));
 							return seriesCb();
@@ -353,17 +354,7 @@ __private.loadBlocksFromNetwork = function (cb) {
 					});
 				},
 				function loadBlocks (seriesCb) {
-
-					modules.blocks.loadBlocksFromPeer(peer, function(err, lastBlock){
-						//console.log(lastBlock);
-						loaded=!lastBlock;
-						seriesCb(err, lastBlock);
-					});
-					//}
-					// else{
-					//  	tryCount += 1;
-					//  	seriesCb(null, lastBlock);
-					// }
+					modules.blocks.loadBlocksFromPeer(peer, seriesCb);
 				}
 			], function (err, lastBlock) {
 				//if(lastBlock) console.log(lastBlock.height);

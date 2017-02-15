@@ -714,48 +714,49 @@ Blocks.prototype.removeSomeBlocks = function(numbers, cb){
 		return setImmediate(cb);
 	}
 
-	library.balancesSequence.add(function (cb){
-		// Don't shutdown now
-		__private.noShutdownRequired = true;
+	// Don't shutdown now
+	__private.noShutdownRequired = true;
 
-		async.series({
-			// Rewind any unconfirmed transactions before removing blocks.
-			// We won't apply them again since we will have to resync blocks back from network
-			undoUnconfirmedList: function (seriesCb) {
-				modules.transactionPool.undoUnconfirmedList([],seriesCb);
-			},
-			backwardSwap: function (seriesCb) {
-				modules.rounds.directionSwap('backward', null, seriesCb);
-			},
-	   	popLastBlock: function (seriesCb) {
-				async.whilst(
-					function () {
-						// if numbers = 50, on average remove 50 Blocks, roughly 1 round
-						return (Math.random() > 1/(numbers+1));
-					},
-					function (next) {
-						var block = modules.blockchain.getLastBlock();
-						__private.popLastBlock(block, function (err, newLastBlock) {
-			   			if (err) {
-			   				library.logger.error('Error deleting last block', block);
-								library.logger.error('Error deleting last block', err);
-			   			}
-			   			next(err);
-			   		});
-					}
-				);
-	   	},
-			forwardSwap: function (seriesCb) {
-			 	modules.rounds.directionSwap('forward', modules.blockchain.getLastBlock(), seriesCb);
-			}
-		}, function (err) {
-			// Reset the last receipt
-			self.lastReceipt(new Date());
-			// Allow shutdown, database writes are finished.
-			__private.noShutdownRequired = false;
-			return cb(err, modules.blockchain.getLastBlock());
-		});
-	}, cb);
+	async.series({
+		// Rewind any unconfirmed transactions before removing blocks.
+		// We won't apply them again since we will have to resync blocks back from network
+		undoUnconfirmedList: function (seriesCb) {
+			modules.transactionPool.undoUnconfirmedList([],seriesCb);
+		},
+		backwardSwap: function (seriesCb) {
+			modules.rounds.directionSwap('backward', null, seriesCb);
+		},
+   	popLastBlock: function (seriesCb) {
+			async.whilst(
+				function () {
+					// if numbers = 50, on average remove 50 Blocks, roughly 1 round
+					return (Math.random() > 1/(numbers+1));
+				},
+				function (next) {
+					var block = modules.blockchain.getLastBlock();
+					__private.popLastBlock(block, function (err, newLastBlock) {
+		   			if (err) {
+		   				library.logger.error('Error deleting last block', block);
+							library.logger.error('Error deleting last block', err);
+		   			}
+		   			next(err);
+		   		});
+				},
+				function(err) {
+					return seriesCb(err);
+				}
+			);
+   	},
+		forwardSwap: function (seriesCb) {
+		 	modules.rounds.directionSwap('forward', modules.blockchain.getLastBlock(), seriesCb);
+		}
+	}, function (err) {
+		// Reset the last receipt
+		self.lastReceipt(new Date());
+		// Allow shutdown, database writes are finished.
+		__private.noShutdownRequired = false;
+		return cb(err, modules.blockchain.getLastBlock());
+	});
 }
 
 
@@ -1478,7 +1479,7 @@ Blocks.prototype.deleteBlocksBefore = function (block, cb) {
 		function (err) {
 			// reset the last receipt and try to rebuild now
 			self.lastReceipt(new Date());
-			return setImmediate(cb, err, blocks);
+			return cb(err, blocks);
 		}
 	);
 };
@@ -1575,11 +1576,13 @@ Blocks.prototype.onAttachPublicApi = function () {
 Blocks.prototype.cleanup = function (cb) {
 	__private.cleanup = true;
 
+	var count = 0;
+
 	if (!__private.noShutdownRequired) {
 		return setImmediate(cb);
 	} else {
 		setImmediate(function nextWatch () {
-			if (__private.noShutdownRequired) {
+			if (__private.noShutdownRequired || count++ > 10) {
 				library.logger.info('Waiting for block processing to finish...');
 				setTimeout(nextWatch, 1 * 1000);
 			} else {

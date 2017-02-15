@@ -366,9 +366,8 @@ __private.banPeer = function (options) {
 };
 
 __private.removePeer = function (options) {
-	modules.peers.remove(options.peer.ip, options.peer.port, function (err) {
-		library.logger.warn([options.code, 'Removing peer', options.peer.string, options.req.method, options.req.url].join(' '));
-	});
+	library.logger.warn([options.code, 'Removing peer', options.peer.string, options.req.method, options.req.url].join(' '));
+	modules.peers.remove(options.peer.ip, options.peer.port);
 };
 
 // Public methods

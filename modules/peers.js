@@ -327,17 +327,18 @@ Peers.prototype.releaseTimeoutPeers = function(){
 	});
 }
 
-Peers.prototype.remove = function (pip, port, cb) {
-	var isFrozenList = _.find(library.config.peers.list, function (peer) {
+Peers.prototype.remove = function (pip, port) {
+	var isFrozenList = library.config.peers.list.find(function (peer) {
 		return peer.ip === pip && peer.port === port;
 	});
-	if (isFrozenList !== undefined && cb) {
-		return setImmediate(cb, 'Peer in white list');
+	if (isFrozenList) {
+		return false;
 	}
 
 	// to prevent from reappearing too often
 	removed.push(pip+":"+port);
 	delete __private.peers[pip+":"+port];
+	return true;
 	// library.db.query(sql.remove, params).then(function (res) {
 	// 	library.logger.debug('Removed peer', params);
 	// 	return cb && setImmediate(cb, null, res);

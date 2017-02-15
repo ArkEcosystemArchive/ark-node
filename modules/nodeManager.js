@@ -17,6 +17,7 @@ function NodeManager (cb, scope) {
 		__private.maxhop = library.config.maxhop;
 	}
 	else{
+		// TODO: to decrease when bloom filters are implemented
 		__private.maxhop = 10;
 	}
 	setImmediate(cb, null, self);
@@ -32,11 +33,21 @@ NodeManager.prototype.startApp = function(){
   library.bus.message('loadDatabase');
 }
 
-
 NodeManager.prototype.onDatabaseLoaded = function(lastBlock) {
   library.bus.message('loadDelegates');
 	library.bus.message('startTransactionPool');
 	library.bus.message('startBlockchain');
+
+	// Mount the network API
+	library.logger.info("# Mounting Network API");
+	library.bus.message('attachNetworkApi');
+
+	// If configured, mount the public API (not recommanded for forging node on long term).
+	// Ideally we should only mount it when node is synced with network
+	if(library.config.api.mount){
+		library.logger.info("# Mounting Public API");
+		library.bus.message('attachPublicApi');
+	}
 };
 
 NodeManager.prototype.onDelegatesLoaded = function(keypairs) {
@@ -52,15 +63,6 @@ NodeManager.prototype.onDelegatesLoaded = function(keypairs) {
     library.logger.info("# Started as a relay node");
   }
 
-	// Mount the network API
-	library.logger.info("# Mounting Network API");
-	library.bus.message('attachNetworkApi');
-
-	// If configured, mount the public API (not recommanded for forging node on long term).
-	if(library.config.api.mount){
-		library.logger.info("# Mounting Public API");
-		library.bus.message('attachPublicApi');
-	}
 };
 
 NodeManager.prototype.onNetworkApiAttached = function(){
@@ -79,177 +81,86 @@ NodeManager.prototype.onNetworkObserved = function(network){
 	}
 }
 
-
-// deprecated, not used, here for info
-// NodeManager.prototype.onReceiveBlock = function (block, peer) {
-// 	//we make sure we process one block at a time
-// 	library.sequence.add(function (cb) {
-// 		var lastBlock = modules.blockchain.getLastBlock();
-//
-// 		if (block.previousBlock === lastBlock.id && lastBlock.height + 1 === block.height) {
-// 			library.logger.info([
-// 				'Received new block id:', block.id,
-// 				'height:', block.height,
-// 				'round:',  modules.rounds.calc(block.height),
-// 				'slot:', slots.getSlotNumber(block.timestamp),
-// 				'reward:', block.reward,
-// 				'transactions', block.numberOfTransactions
-// 			].join(' '));
-//
-// 			self.lastReceipt(new Date());
-// 			//library.logger.debug("Received block", block);
-// 			//RECEIVED full block?
-// 			if(block.numberOfTransactions==0 || block.numberOfTransactions==block.transactions.length){
-// 				library.logger.debug("processing full block",block.id);
-// 				self.processBlock(block, cb);
-// 			}
-// 			else {
-// 				//let's download the full block transactions
-// 				modules.transport.getFromPeer(peer, {
-// 					 method: 'GET',
-// 					 api: '/block?id=' + block.id
-// 				 }, function (err, res) {
-// 					 if (err || res.body.error) {
-// 						 library.logger.debug('Cannot get block', block.id);
-// 						 return setImmediate(cb, err);
-// 					 }
-// 					 library.logger.debug("calling "+peer.ip+":"+peer.port+"/peer/block?id=" + block.id);
-// 					 library.logger.debug("received transactions",res.body);
-//
-// 					 if(res.body.transactions.length==block.numberOfTransactions){
-// 						 block.transactions=res.body.transactions
-// 						 self.processBlock(block, cb);
-// 					 }
-// 					 else{
-// 						 return setImmediate(cb, "Block transactions could not be downloaded.");
-// 					 }
-// 				 }
-// 			 );
-// 			}
-// 		} else if (block.previousBlock !== lastBlock.id && lastBlock.height + 1 === block.height) {
-// 			// Fork: consecutive height but different previous block id
-// 			library.bus.message("fork",block, 1);
-// 			// Uncle forging: decide winning chain
-// 			// -> winning chain is smallest block id (comparing with lexicographic order)
-// 			if(block.previousBlock < lastBlock.id){
-// 				// we should verify the block first:
-// 				// - forging delegate is legit
-// 				modules.delegates.validateBlockSlot(block, function (err) {
-// 					if (err) {
-// 						library.logger.warn("received block is not forged by a legit delegate", err);
-// 						return setImmediate(cb, err);
-// 					}
-// 					modules.loader.triggerBlockRemoval(1);
-// 					return  setImmediate(cb);
-// 				});
-// 			}
-// 			else {
-// 				// we are on winning chain, ignoring block
-// 				return setImmediate(cb);
-// 			}
-// 		} else if (block.previousBlock === lastBlock.previousBlock && block.height === lastBlock.height && block.id !== lastBlock.id) {
-// 			// Fork: Same height and previous block id, but different block id
-// 			library.logger.info("last block", lastBlock);
-// 			library.logger.info("received block", block);
-// 			library.bus.message("fork", block, 5);
-//
-// 			// Orphan Block: Decide winning branch
-// 			// -> winning chain is smallest block id (comparing with lexicographic order)
-// 			if(block.id < lastBlock.id){
-// 				// we should verify the block first:
-// 				// - forging delegate is legit
-// 				modules.delegates.validateBlockSlot(block, function (err) {
-// 					if (err) {
-// 						library.logger.warn("received block is not forged by a legit delegate", err);
-// 						return setImmediate(cb, err);
-// 					}
-// 					modules.loader.triggerBlockRemoval(1);
-// 					return  setImmediate(cb);
-// 				});
-// 			}
-// 			else {
-// 				// we are on winning chain, ignoring block
-// 				return  setImmediate(cb);
-// 			}
-// 		} else {
-// 			//Dunno what this block coming from, ignoring block
-// 			return setImmediate(cb);
-// 		}
-// 	});
-// };
-
 NodeManager.prototype.onBlocksReceived = function(blocks, peer, cb) {
-	var currentBlock;
-	async.eachSeries(blocks, function (block, eachSeriesCb) {
-		block.reward = parseInt(block.reward);
-		block.totalAmount = parseInt(block.totalAmount);
-		block.totalFee = parseInt(block.totalFee);
-		block.verified = false;
-	  block.processed = false;
+	library.managementSequence.add(function (mSequence) {
 
-		// rationale: onBlocksReceived received is called within another thread than onBlockReceived
-		// so we prevent from processing blocks we asked for and we received in the between via normal broadcast
-		if(block.height <= modules.blockchain.getLastIncludedBlock().height){
-			return eachSeriesCb(null, block);
-		}
+		var currentBlock;
 
-		modules.blockchain.addBlock(block);
-		currentBlock=block;
-		if(block.height%100 == 0){
-			library.logger.info("Processing block height", block.height);
-		}
-		return library.bus.message('verifyBlock', block, eachSeriesCb);
+		async.eachSeries(blocks, function (block, eachSeriesCb) {
+			block.reward = parseInt(block.reward);
+			block.totalAmount = parseInt(block.totalAmount);
+			block.totalFee = parseInt(block.totalFee);
+			block.verified = false;
+		  block.processed = false;
 
-	}, function(err){
-		if(err){
-			library.logger.error(err, currentBlock);
-		}
-		//console.log(currentBlock.height);
-		// we don't deal with download management, just return to say "blocks processed, go ahead"
-		return cb && setImmediate(cb, err, currentBlock);
+			// rationale: onBlocksReceived received is called within another thread than onBlockReceived
+			// so we prevent from processing blocks we asked for and we received in the between via normal broadcast
+			if(block.height <= modules.blockchain.getLastIncludedBlock().height){
+				return eachSeriesCb(null, block);
+			}
 
-		// if(!blocks || blocks.length === 0){
-		// 	return cb();
-		// }
-		// else{
-		// 	return cb();
-		// 	return library.bus.message("downloadBlocks", cb);
-		// }
+			modules.blockchain.addBlock(block);
+			currentBlock=block;
+			if(block.height%100 == 0){
+				library.logger.info("Processing block height", block.height);
+			}
+			return library.bus.message('verifyBlock', block, eachSeriesCb);
 
-	});
+		}, function(err){
+			if(err){
+				library.logger.error(err, currentBlock);
+			}
+			//console.log(currentBlock.height);
+			// we don't deal with download management, just return to say "blocks processed, go ahead"
+			return mSequence && setImmediate(mSequence, err, currentBlock);
+
+			// if(!blocks || blocks.length === 0){
+			// 	return cb();
+			// }
+			// else{
+			// 	return cb();
+			// 	return library.bus.message("downloadBlocks", cb);
+			// }
+
+		});
+
+	}, cb);
 }
 
 NodeManager.prototype.onRebuildBlockchain = function(blocksToRemove, state, cb) {
-	return modules.loader.getNetwork(true, function(err, network){
-		var lastBlock = modules.blockchain.getLastBlock();
-		if(!network || !network.height){
-			return cb && cb("Can't find peers to sync with...");
-		}
-		else if(network.height > lastBlock.height){
-			library.logger.info("Observed network height is higher", {network: network.height, node:lastBlock.height});
-			library.logger.info("Rebuilding from network");
-			return modules.blocks.removeSomeBlocks(blocksToRemove, cb);
-		}
-		else{
-			var bestBlock = modules.loader.getNetworkSmallestBlock();
-			//network.height is some kind of "conservative" estimation, so some peers can have bigger height
-			if(bestBlock && bestBlock.height > lastBlock.height){
-				library.logger.info("Observed network is on same height, but some peers with bigger height", {network: {id: bestBlock.id, height:bestBlock.height}, node:{id: lastBlock.id, height:lastBlock.height}});
-				library.logger.info("Rebuilding from network");
-				return modules.blocks.removeSomeBlocks(blocksToRemove, cb);
+	library.managementSequence.add(function (mSequence) {
+		modules.loader.getNetwork(true, function(err, network){
+			var lastBlock = modules.blockchain.getLastBlock();
+			if(!network || !network.height){
+				return mSequence && mSequence("Can't find peers to sync with...");
 			}
-			else if(bestBlock && bestBlock.height == lastBlock.height && bestBlock.id < lastBlock.id){
-				library.logger.info("Observed network is on same height, but found a smaller block id", {network: {id: bestBlock.id, height:bestBlock.height}, node:{id: lastBlock.id, height:lastBlock.height}});
+			else if(network.height > lastBlock.height){
+				library.logger.info("Observed network height is higher", {network: network.height, node:lastBlock.height});
 				library.logger.info("Rebuilding from network");
-				return modules.blocks.removeSomeBlocks(blocksToRemove, cb);
+				return modules.blocks.removeSomeBlocks(blocksToRemove, mSequence);
 			}
 			else{
-				library.logger.info("Observed network is on same height, and same smallest block id", {network: network.height, node:lastBlock.height});
-				return cb && cb();
+				var bestBlock = modules.loader.getNetworkSmallestBlock();
+				//network.height is some kind of "conservative" estimation, so some peers can have bigger height
+				if(bestBlock && bestBlock.height > lastBlock.height){
+					library.logger.info("Observed network is on same height, but some peers with bigger height", {network: {id: bestBlock.id, height:bestBlock.height}, node:{id: lastBlock.id, height:lastBlock.height}});
+					library.logger.info("Rebuilding from network");
+					return modules.blocks.removeSomeBlocks(blocksToRemove, mSequence);
+				}
+				else if(bestBlock && bestBlock.height == lastBlock.height && bestBlock.id < lastBlock.id){
+					library.logger.info("Observed network is on same height, but found a smaller block id", {network: {id: bestBlock.id, height:bestBlock.height}, node:{id: lastBlock.id, height:lastBlock.height}});
+					library.logger.info("Rebuilding from network");
+					return modules.blocks.removeSomeBlocks(blocksToRemove, mSequence);
+				}
+				else{
+					library.logger.info("Observed network is on same height, and same smallest block id", {network: network.height, node:lastBlock.height});
+					return mSequence && mSequence();
+				}
 			}
-		}
-	});
+		});
+	}, cb);
 };
+
 
 
 //make sure the block transaction list is complete, otherwise try to find transactions
@@ -359,61 +270,65 @@ NodeManager.prototype.swapLastBlockWith = function(block, peer, cb){
 };
 
 NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
-	if(!block.ready){
-		if(block.orphaned){
-			// this lastBlock is "likely" not processed, but the swap anyway will occur in a block sequence.
-			var lastBlock = modules.blockchain.getBlockAtHeight(block.height);
-			// all right we are at the beginning of a fork, let's swap asap if needed
-			if(lastBlock && block.timestamp < lastBlock.timestamp){
-				// lowest timestamp win: likely more spread
-				library.logger.info("Orphaned block has a smaller timestamp, swaping with lastBlock", {id: block.id, height:block.height});
-				return self.swapLastBlockWith(block, peer, cb);
-			}
-			else if(lastBlock && block.timestamp == lastBlock.timestamp && block.id < lastBlock.id){
-				// same timestamp, lowest id win: double forgery
-				library.logger.info("Orphaned block has same timestamp but smaller id, swaping with lastBlock", {id: block.id, height:block.height});
-				return self.swapLastBlockWith(block, peer, cb);
+	library.managementSequence.add(function (mSequence) {
+		if(!block.ready){
+			if(block.orphaned){
+				// this lastBlock is "likely" not processed, but the swap anyway will occur in a block sequence.
+				var lastBlock = modules.blockchain.getBlockAtHeight(block.height);
+				// all right we are at the beginning of a fork, let's swap asap if needed
+				if(lastBlock && block.timestamp < lastBlock.timestamp){
+					// lowest timestamp win: likely more spread
+					library.logger.info("Orphaned block has a smaller timestamp, swaping with lastBlock", {id: block.id, height:block.height});
+					return self.swapLastBlockWith(block, peer, mSequence);
+				}
+				else if(lastBlock && block.timestamp == lastBlock.timestamp && block.id < lastBlock.id){
+					// same timestamp, lowest id win: double forgery
+					library.logger.info("Orphaned block has same timestamp but smaller id, swaping with lastBlock", {id: block.id, height:block.height});
+					return self.swapLastBlockWith(block, peer, mSequence);
+				}
+				else {
+					// no swap
+					library.logger.info("Orphaned block has a bigger timestamp or bigger id, block disregarded", {id: block.id, height:block.height});
+					return mSequence && mSequence(null, block);
+				}
 			}
 			else {
-				// no swap
-				library.logger.info("Orphaned block has a bigger timestamp or bigger id, block disregarded", {id: block.id, height:block.height});
-				return cb && cb(null, block);
+				library.logger.debug("Block disregarded", {id: block.id, height:block.height});
+				return mSequence && mSequence(null, block);
 			}
 		}
 		else {
-			library.logger.debug("Block disregarded", {id: block.id, height:block.height});
-			return cb && cb(null, block);
+			library.logger.info("New block received", {id: block.id, height:block.height, transactions: block.numberOfTransactions, peer:peer.string});
+			block.verified = false;
+			block.processed = false;
+			block.broadcast = true;
+			__private.prepareBlock(block, peer, function(err, block){
+				if(err){
+					modules.blockchain.removeBlock(block);
+					return mSequence && mSequence(err, block);
+				}
+				library.logger.debug("processing block with "+block.transactions.length+" transactions", block.height);
+				modules.blockchain.addBlock(block);
+				return library.bus.message('verifyBlock', block, mSequence);
+			});
 		}
-	}
-	else {
-		library.logger.info("New block received", {id: block.id, height:block.height, transactions: block.numberOfTransactions, peer:peer.string});
-		block.verified = false;
-		block.processed = false;
-		block.broadcast = true;
-		__private.prepareBlock(block, peer, function(err, block){
-			if(err){
-				modules.blockchain.removeBlock(block);
-				return cb && cb(err, block);
-			}
-			library.logger.debug("processing block with "+block.transactions.length+" transactions", block.height);
-			modules.blockchain.addBlock(block);
-			return library.bus.message('verifyBlock', block, cb);
-		});
-	}
+	}, cb);
 };
 
 NodeManager.prototype.onBlockForged = function(block, cb) {
-	if(!block.ready){
-		library.logger.debug("Skip processing block", {id: block.id, height:block.height});
-		return cb && cb(null, block);
-	}
-	block.verified = true;
-	block.forged = true;
-  block.processed = false;
-	block.broadcast = true;
+	library.managementSequence.add(function (mSequence) {
+		if(!block.ready){
+			library.logger.debug("Skip processing block", {id: block.id, height:block.height});
+			return mSequence && mSequence(null, block);
+		}
+		block.verified = true;
+		block.forged = true;
+	  block.processed = false;
+		block.broadcast = true;
 
-	library.logger.info("Processing forged block", block.id);
-	library.bus.message('processBlock', block, cb);
+		library.logger.info("Processing forged block", block.id);
+		library.bus.message('processBlock', block, mSequence);
+	}, cb);
 }
 
 NodeManager.prototype.onBlockVerified = function(block, cb) {
@@ -431,30 +346,29 @@ NodeManager.prototype.onBlockProcessed = function(block, cb) {
 }
 
 NodeManager.prototype.onTransactionsReceived = function(transactions, source, cb) {
-	if(!source || typeof source !== "string"){
-		cb && setImmediate(cb, "Rejecting not sourced transactions", transactions);
-	}
-	// node created the transaction so it is safe include it (data integrity and fee is assumed to be correct)
-	if(source.toLowerCase() == "api"){
-		transactions.forEach(function(tx){
-			tx.id = library.logic.transaction.getId(tx);
-			tx.broadcast = true;
-			tx.hop = 0;
-		});
-		//console.log(transactions);
-		library.bus.message("addTransactionsToPool", transactions, cb);
-	}
-	// we need sanity check of the transaction list
-	else if(source.toLowerCase() == "network"){
-
-		var report = library.schema.validate(transactions, schema.transactions);
-
-		if (!report) {
-			return setImmediate(cb, "Transactions list is not conform", transactions);
+	library.managementSequence.add(function(mSequence){
+		if(!source || typeof source !== "string"){
+			mSequence && setImmediate(mSequence, "Rejecting not sourced transactions", transactions);
+		}
+		// node created the transaction so it is safe include it (data integrity and fee is assumed to be correct)
+		if(source.toLowerCase() == "api"){
+			transactions.forEach(function(tx){
+				tx.id = library.logic.transaction.getId(tx);
+				tx.broadcast = true;
+				tx.hop = 0;
+			});
+			//console.log(transactions);
+			library.bus.message("addTransactionsToPool", transactions, mSequence);
 		}
 
-		//encapsulating in blockSequence so unconfirmed transactions are not applied while processing block
-		library.blockSequence.add(function(sequenceCb){
+		// we need sanity check of the transaction list
+		else if(source.toLowerCase() == "network"){
+
+			var report = library.schema.validate(transactions, schema.transactions);
+
+			if (!report) {
+				return mSequence && setImmediate(mSequence, "Transactions list is not conform", transactions);
+			}
 
 			var skimmedtransactions = [];
 			async.eachSeries(transactions, function (transaction, cb) {
@@ -462,12 +376,11 @@ NodeManager.prototype.onTransactionsReceived = function(transactions, source, cb
 					transaction = library.logic.transaction.objectNormalize(transaction);
 					transaction.id = library.logic.transaction.getId(transaction);
 				} catch (e) {
-					return setImmediate(cb, e);
+					return cb(e);
 				}
 
-
 				if(!library.logic.transaction.verifyFee(transaction)){
-					return setImmediate(cb, "Transaction fee is too low");
+					return cb("Transaction fee is too low");
 				}
 
 				library.db.query(sql.getTransactionId, { id: transaction.id }).then(function (rows) {
@@ -489,28 +402,26 @@ NodeManager.prototype.onTransactionsReceived = function(transactions, source, cb
 						}
 						skimmedtransactions.push(transaction);
 					}
-					return setImmediate(cb);
+					return cb();
 				});
 			}, function (err) {
 				if(err){
-					return setImmediate(sequenceCb, err);
+					return mSequence && mSequence(err);
 				}
 				if(skimmedtransactions.length>0){
-					library.bus.message("addTransactionsToPool", skimmedtransactions, sequenceCb);
+					library.bus.message("addTransactionsToPool", skimmedtransactions, mSequence);
 				}
 				else{
-					return setImmediate(sequenceCb);
+					return mSequence && mSequence();
 				}
 			});
-		}, cb);
 
-
-	}
-	else {
-		library.logger.error("Unknown sourced transactions", source);
-		setImmediate(cb, "Rejecting unknown sourced transactions", transactions);
-	}
-
+		}
+		else {
+			library.logger.error("Unknown sourced transactions", source);
+			mSequence && mSequence("Rejecting unknown sourced transactions", transactions);
+		}
+	}, cb);
 };
 
 module.exports = NodeManager;
