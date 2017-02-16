@@ -109,6 +109,7 @@ NodeManager.prototype.onBlocksReceived = function(blocks, peer, cb) {
 		}, function(err){
 			if(err){
 				library.logger.error(err, currentBlock);
+				modules.blockchain.removeBlock(currentBlock);
 			}
 			//console.log(currentBlock.height);
 			// we don't deal with download management, just return to say "blocks processed, go ahead"
@@ -309,7 +310,13 @@ NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 				}
 				modules.blockchain.upsertBlock(block);
 				library.logger.debug("processing block with "+block.transactions.length+" transactions", block.height);
-				return library.bus.message('verifyBlock', block, mSequence);
+				return library.bus.message('verifyBlock', block, function(err){
+					if(err){
+						library.logger.error("Error processing block at height", block.height);
+						modules.blockchain.removeBlock(block);
+					}
+					return mSequence && mSequence(err, block);
+				});
 			});
 		}
 	}, cb);
@@ -348,7 +355,7 @@ NodeManager.prototype.onBlockProcessed = function(block, cb) {
 NodeManager.prototype.onTransactionsReceived = function(transactions, source, cb) {
 	library.managementSequence.add(function(mSequence){
 		if(!source || typeof source !== "string"){
-			mSequence && setImmediate(mSequence, "Rejecting not sourced transactions", transactions);
+			mSequence && mSequence("Rejecting not sourced transactions", transactions);
 		}
 		// node created the transaction so it is safe include it (data integrity and fee is assumed to be correct)
 		if(source.toLowerCase() == "api"){
@@ -367,7 +374,7 @@ NodeManager.prototype.onTransactionsReceived = function(transactions, source, cb
 			var report = library.schema.validate(transactions, schema.transactions);
 
 			if (!report) {
-				return mSequence && setImmediate(mSequence, "Transactions list is not conform", transactions);
+				return mSequence && mSequence("Transactions list is not conform", transactions);
 			}
 
 			var skimmedtransactions = [];

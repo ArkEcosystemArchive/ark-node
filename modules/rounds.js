@@ -206,8 +206,9 @@ Rounds.prototype.onBind = function (scope) {
 };
 
 Rounds.prototype.onDatabaseLoaded = function (lastBlock) {
-	var round = self.calc(lastBlock.height);
 
+	var round = self.calc(lastBlock.height);
+	
 	__private.sumRound(round, function (err) {
  		if (!err) {
 

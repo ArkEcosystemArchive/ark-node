@@ -473,6 +473,7 @@ __private.readDbRows = function (rows) {
 };
 
 __private.applyGenesisTransaction = function (block, transaction, sender, cb) {
+	transaction.blockId=block.id;
 	modules.transactions.applyUnconfirmed(transaction, function (err) {
 		if (err) {
 			return setImmediate(cb, {
@@ -530,7 +531,7 @@ Blocks.prototype.lastReceipt = function (lastReceipt) {
 Blocks.prototype.getTransactionsFromIds = function(blockid, ids, cb){
 	__private.getById(blockid, function (err, block) {
 		if (!block || err) {
-			return setImmediate(cb, 'Block not found');
+			return cb('Block not found');
 		}
 		var transactions=[];
 		for(var i=0;i<block.transactions.length;i++){
@@ -538,7 +539,7 @@ Blocks.prototype.getTransactionsFromIds = function(blockid, ids, cb){
 				transactions.push[block.transactions[i]];
 			}
 		}
-		return setImmediate(cb, null, transactions);
+		return cb(null, transactions);
 	});
 }
 
@@ -546,7 +547,7 @@ Blocks.prototype.getCommonBlock = function (peer, height, cb) {
 	async.waterfall([
 		function (waterCb) {
 			__private.getIdSequence(height, function (err, res) {
-				return setImmediate(waterCb, err, res);
+				return waterCb(err, res);
 			});
 		},
 		function (res, waterCb) {
@@ -557,11 +558,11 @@ Blocks.prototype.getCommonBlock = function (peer, height, cb) {
 				method: 'GET'
 			}, function (err, res) {
 				if (err || res.body.error) {
-					return setImmediate(waterCb, err || res.body.error.toString());
+					return waterCb(err || res.body.error.toString());
 				} else if (!res.body.common) {
-					return setImmediate(waterCb, ['Chain comparison failed with peer:', peer.string, 'using ids:', ids].join(' '));
+					return waterCb(['Chain comparison failed with peer:', peer.string, 'using ids:', ids].join(' '));
 				} else {
-					return setImmediate(waterCb, null, res);
+					return waterCb(null, res);
 				}
 			});
 		},
@@ -573,17 +574,17 @@ Blocks.prototype.getCommonBlock = function (peer, height, cb) {
 				height: res.body.common.height
 			}).then(function (rows) {
 				if (!rows.length || !rows[0].count) {
-					return setImmediate(waterCb, ['Chain comparison failed with peer:', peer.string, 'using block:', JSON.stringify(res.body.common)].join(' '));
+					return waterCb(['Chain comparison failed with peer:', peer.string, 'using block:', JSON.stringify(res.body.common)].join(' '));
 				} else {
-					return setImmediate(waterCb, null, res.body.common);
+					return waterCb(null, res.body);
 				}
 			}).catch(function (err) {
 				library.logger.error("stack", err.stack);
-				return setImmediate(waterCb, 'Blocks#getCommonBlock error');
+				return waterCb('Blocks#getCommonBlock error');
 			});
 		}
 	], function (err, res) {
-		return setImmediate(cb, err, res);
+		return cb(err, res);
 	});
 };
 
@@ -591,10 +592,10 @@ Blocks.prototype.count = function (cb) {
 	library.db.query(sql.countByRowId).then(function (rows) {
 		var res = rows.length ? rows[0].count : 0;
 
-		return setImmediate(cb, null, res);
+		return cb(null, res);
 	}).catch(function (err) {
 		library.logger.error("stack", err.stack);
-		return setImmediate(cb, 'Blocks#count error');
+		return cb('Blocks#count error');
 	});
 };
 
@@ -609,7 +610,7 @@ Blocks.prototype.loadBlocksData = function (filter, options, cb) {
 	var params = { limit: filter.limit || 1 };
 
 	if (filter.id && filter.lastId) {
-		return setImmediate(cb, 'Invalid filter: Received both id and lastId');
+		return cb('Invalid filter: Received both id and lastId');
 	} else if (filter.id) {
 		params.id = filter.id;
 	} else if (filter.lastId) {
@@ -628,11 +629,11 @@ Blocks.prototype.loadBlocksData = function (filter, options, cb) {
 			params.height = height;
 
 			library.db.query(sql.loadBlocksData(filter), params).then(function (rows) {
-				return setImmediate(cb, null, rows);
+				return cb(null, rows);
 			});
 		}).catch(function (err ) {
 			library.logger.error("stack", err.stack);
-			return setImmediate(cb, 'Blocks#loadBlockData error');
+			return cb('Blocks#loadBlockData error');
 		});
 	}, cb);
 };
@@ -645,7 +646,7 @@ Blocks.prototype.loadBlocksPart = function (filter, cb) {
 			blocks = __private.readDbRows(rows);
 		}
 
-		return setImmediate(cb, err, blocks);
+		return cb(err, blocks);
 	});
 };
 
@@ -654,59 +655,59 @@ Blocks.prototype.loadBlocksOffset = function (limit, offset, verify, cb) {
 	var params = { limit: newLimit, offset: offset || 0 };
 
 	library.logger.debug('Loading blocks offset', {limit: limit, offset: offset, verify: verify});
-	library.dbSequence.add(function (cb) {
-		var lastBlock;
-		library.db.query(sql.loadBlocksOffset, params).then(function (rows) {
-			var blocks = __private.readDbRows(rows);
 
-			async.eachSeries(blocks, function (block, cb) {
-				if (__private.cleanup) {
-					return setImmediate(cb);
-				}
+	var lastBlock;
+	library.db.query(sql.loadBlocksOffset, params).then(function (blocks) {
 
-				if(block.height%100 == 0){
-					library.logger.info("Processing block height", block.height);
-				}
-				if (verify && block.id !== genesisblock.block.id) {
-					// Sanity check of the block, if values are coherent.
-					// No access to database.
-					var check = self.verifyBlock(block, true);
+		//var blocks = __private.readDbRows(rows);
 
-					if (!check.verified) {
-						library.logger.error(['loadBlocksOffset: Block ', block.id, 'verification failed'].join(' '), check.errors.join(', '));
-						return setImmediate(cb, check.errors[0], block);
-					}
+		async.eachSeries(blocks, function (block, seriesCb) {
+			// TODO: dirty fix due to ill sql request
+			block.reward = parseInt(block.reward);
+			block.totalAmount = parseInt(block.totalAmount);
+			block.totalFee = parseInt(block.totalFee);
+			if(block.height%100 == 0){
+				library.logger.info("Processing block height", block.height);
+			}
+			if (verify && block.id !== genesisblock.block.id) {
+				// Sanity check of the block, if values are coherent.
+				// No access to database.
+				var check = self.verifyBlock(block, true);
+
+				if (!check.verified) {
+					library.logger.error(['loadBlocksOffset: Block ', block.id, 'verification failed'].join(' '), check.errors.join(', '));
+					return seriesCb(check.errors[0], block);
 				}
-				block.verified = true;
-				block.processed = true;
-				modules.blockchain.upsertBlock(block);
-				if (block.id === genesisblock.block.id) {
-					__private.applyGenesisBlock(block, cb);
-				}
-				else {
-					async.waterfall([
-						function(cb){
-							if(block.numberOfTransactions>0){
-								__private.applyBlock(block, cb);
-							}
-							else{
-								setImmediate(cb);
-							}
-						},
-						function(cb){
-							modules.rounds.tick(block, cb);
+			}
+			block.verified = true;
+			block.processed = true;
+			modules.blockchain.upsertBlock(block);
+			if (block.id === genesisblock.block.id) {
+				__private.applyGenesisBlock(block, seriesCb);
+			}
+			else {
+				async.waterfall([
+					function(waterfallCb){
+						if(block.numberOfTransactions>0){
+							__private.applyBlock(block, waterfallCb);
 						}
-					],cb);
-				}
-				lastBlock = block;
-			}, function (err) {
-				return setImmediate(cb, err, lastBlock);
-			});
-		}).catch(function (err) {
-			library.logger.error("stack", err.stack);
-			return setImmediate(cb, 'Blocks#loadBlocksOffset error');
+						else{
+							return waterfallCb();
+						}
+					},
+					function(waterfallCb){
+						modules.rounds.tick(block, waterfallCb);
+					}
+				], seriesCb);
+			}
+			lastBlock = block;
+		}, function (err) {
+			return cb(err, lastBlock);
 		});
-	}, cb);
+	}).catch(function (err) {
+		library.logger.error(err.stack, lastBlock);
+		return cb('Blocks#loadBlocksOffset error', lastBlock);
+	});
 };
 
 Blocks.prototype.removeSomeBlocks = function(numbers, cb){
@@ -801,21 +802,14 @@ Blocks.prototype.removeLastBlock = function(cb){
 Blocks.prototype.loadLastBlock = function (cb) {
 	library.dbSequence.add(function (cb) {
 		library.db.query(sql.loadLastBlock).then(function (rows) {
-			var block = __private.readDbRows(rows)[0];
-
-			block.transactions = block.transactions.sort(function (a, b) {
-				if (block.id === genesisblock.block.id) {
-					if (a.type === transactionTypes.VOTE) {
-						return 1;
-					}
-				}
-
-				if (a.type === transactionTypes.SIGNATURE) {
-					return 1;
-				}
-
-				return 0;
-			});
+			var block=rows[0];
+			// TODO: dirty fix due to ill sql request
+			block.reward = parseInt(block.reward);
+			block.totalAmount = parseInt(block.totalAmount);
+			block.totalFee = parseInt(block.totalFee);
+			if(!block.transactions){
+				block.transactions=[];
+			}
 			return setImmediate(cb, null, block);
 		}).catch(function (err) {
 			library.logger.error("stack", err.stack);
@@ -1192,7 +1186,7 @@ __private.applyGenesisBlock = function (block, cb) {
 // * Apply the block to database if both verifications are ok
 Blocks.prototype.processBlock = function (block, cb) {
 	if (__private.cleanup) {
-		return setImmediate(cb, 'Cleaning up');
+		return cb('Cleaning up');
 	}
 
 	// be sure to apply only one block after the other
@@ -1213,7 +1207,7 @@ Blocks.prototype.processBlock = function (block, cb) {
 		// DATABASE: read only
 		library.db.query(sql.getBlockId, { id: block.id }).then(function (rows) {
 			if (rows.length > 0) {
-				return setImmediate(cb, ['Block', block.id, 'already exists'].join(' '));
+				return cb(['Block', block.id, 'already exists'].join(' '));
 			}
 
 			// Check if block was generated by the right active delagate. Otherwise, fork 3.
@@ -1221,13 +1215,13 @@ Blocks.prototype.processBlock = function (block, cb) {
 			modules.delegates.validateBlockSlot(block, function (err) {
 				if (err) {
 					library.bus.message("fork",block, 3);
-					return setImmediate(cb, err);
+					return cb(err);
 				}
 
 				// Check against the mem_* tables that we can perform the transactions included in the block.
 				async.eachSeries(block.transactions, function (transaction, cb) {
 					async.waterfall([
-						function (cb) {
+						function (waterfallCb) {
 							// Removed LOC because it makes no sense
 							// try {
 							// 	transaction.id = library.logic.transaction.getId(transaction);
@@ -1243,50 +1237,50 @@ Blocks.prototype.processBlock = function (block, cb) {
 								if (rows.length > 0) {
 									library.bus.message("fork",block, 0);
 									//we just don't process tx
-									return setImmediate(cb, "Transaction already applied");
+									return waterfallCb("Transaction already applied");
 								}
 								// Get account from database if any (otherwise cold wallet).
 								// DATABASE: read only
 								modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, cb);
 							}).catch(function (err) {
 								library.logger.error("stack", err.stack);
-								return setImmediate(cb, 'Blocks#processBlock error');
+								return waterfallCb('Blocks#processBlock error');
 							});
 						},
-						function (sender, cb) {
+						function (sender, waterfallCb) {
 							// Check if transaction id valid against database state (mem_* tables).
 							// DATABASE: read only
 
 							if(block.height!=1){
-								library.logic.transaction.verify(transaction, sender, cb);
+								library.logic.transaction.verify(transaction, sender, waterfallCb);
 							}
 							else{
-								// Don't verify transaction in Genesis block unless there is a signature
-								return setImmediate(cb);
+								// Don't verify transaction in Genesis block
+								return waterfallCb();
 							}
 						}
 					],
 					function (err) {
-						return setImmediate(cb, err);
+						return cb(err);
 					});
 				},
 				function (err) {
 					if (err) {
-						return setImmediate(cb, err);
+						return cb(err);
 					} else {
 						// The block and the transactions are OK i.e:
 						// * Block and transactions have valid values (signatures, block slots, etc...)
 						// * The check against database state passed (for instance sender has enough ARK, votes are under 101, etc...)
 						// We thus update the database with the transactions values, save the block and tick it.
 						async.waterfall([
-							function(cb){
-								__private.applyBlock(block, cb);
+							function(waterfallCb){
+								__private.applyBlock(block, waterfallCb);
 							},
 							function(cb){
-								__private.saveBlock(block, cb);
+								__private.saveBlock(block, waterfallCb);
 							},
 							function(cb){
-								modules.rounds.tick(block, cb);
+								modules.rounds.tick(block, waterfallCb);
 							}
 						],function(error, errblock){
 							if(error){
@@ -1304,10 +1298,10 @@ Blocks.prototype.processBlock = function (block, cb) {
 
 Blocks.prototype.processEmptyBlock = function (block, cb) {
 	if (__private.cleanup) {
-		return setImmediate(cb, 'Cleaning up');
+		return cb('Cleaning up');
 	}
 	if(block.numberOfTransactions>0){
-		return setImmediate(cb, 'Not an empty block', block);
+		return cb('Not an empty block', block);
 	}
 
 	//console.log("processEmptyBlock - "+ block.height);
@@ -1337,7 +1331,7 @@ Blocks.prototype.processEmptyBlock = function (block, cb) {
 	block,
 	function(error, errblock){
 		if(error){
-			return setImmediate(cb, error, errblock);
+			return cb(error, errblock);
 		}
 		else{
 			return library.bus.message("blockProcessed", block, cb)

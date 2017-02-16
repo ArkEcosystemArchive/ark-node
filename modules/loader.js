@@ -336,19 +336,24 @@ __private.loadBlocksFromNetwork = function (cb) {
 						return seriesCb();
 					}
 					__private.blocksToSync = peer.height - lastBlock.height;
-					library.logger.info('Looking for common block with: ' + peer.string);
-					modules.blocks.getCommonBlock(peer, lastBlock.height, function (err, commonBlock) {
+					library.logger.debug('Looking for common block with: ' + peer.string);
+					modules.blocks.getCommonBlock(peer, lastBlock.height, function (err, result) {
 						if (err) {
 							tryCount++;
-							library.logger.error("stack", err);
+							library.logger.error(err, result);
 							return seriesCb(err);
 						}
-						else if (!commonBlock) {
+						else if (result.lastBlockHeight && result.lastBlockHeight <= lastBlock.height){
+							tryCount++;
+							return seriesCb("No new block from " + peer.string);
+						}
+						else if (!result.common) {
 							tryCount++;
 							modules.peers.remove(peer.ip, peer.port);
 							return seriesCb("Detected forked chain, no common block with " + peer.string);
-						} else {
-							library.logger.info(['Found common block ', commonBlock.height, 'with', peer.string].join(' '));
+						}
+						else{
+							library.logger.info(['Found common block ', result.common.height, 'with', peer.string].join(' '));
 							return seriesCb();
 						}
 					});

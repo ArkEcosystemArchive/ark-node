@@ -132,8 +132,9 @@ __private.attachApi = function () {
 				return res.json({success: false, error: 'Invalid block id sequence'});
 			}
 
+			var lastBlock = modules.blockchain.getLastBlock()
 			library.db.query(sql.getCommonBlock, escapedIds).then(function (rows) {
-				return res.json({ success: true, common: rows[0] || null });
+				return res.json({ success: true, common: rows[0] || null, lastBlockHeight: (lastBlock ? lastBlock.height : 0) });
 			}).catch(function (err) {
 				library.logger.error("error",err.stack);
 				return res.json({success: false, error: 'Failed to get common block'});

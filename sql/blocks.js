@@ -53,23 +53,23 @@ var BlocksSql = {
     var limitPart;
 
     if (!params.id && !params.lastId) {
-      limitPart = 'WHERE "b_height" < ${limit}';
+      limitPart = 'WHERE height < ${limit}';
     }
 
     return [
-      'SELECT * FROM full_blocks_list',
+      'SELECT id, version, height, timestamp, "previousBlock", "numberOfTransactions" ,"totalAmount", "totalFee", reward, "payloadLength", encode("payloadHash", \'hex\') as "payloadHash", encode("generatorPublicKey", \'hex\') as "generatorPublicKey",  encode("blockSignature", \'hex\') as "blockSignature", rawtxs::json as transactions from blocks',
       limitPart,
       (params.id || params.lastId ? 'WHERE' : ''),
-      (params.id ? '"b_id" = ${id}' : ''),
+      (params.id ? 'id = ${id}' : ''),
       (params.id && params.lastId ? ' AND ' : ''),
-      (params.lastId ? '"b_height" > ${height} AND "b_height" < ${limit}' : ''),
-      'ORDER BY "b_height", "t_rowId"'
+      (params.lastId ? 'height > ${height} AND height < ${limit}' : ''),
+      'ORDER BY height'
     ].filter(Boolean).join(' ');
   },
 
-  loadBlocksOffset: 'SELECT * FROM full_blocks_list WHERE "b_height" >= ${offset} AND "b_height" < ${limit} ORDER BY "b_height", "t_rowId"',
+  loadBlocksOffset: 'SELECT id, version, height, timestamp, "previousBlock", "numberOfTransactions" ,"totalAmount", "totalFee", reward, "payloadLength", encode("payloadHash", \'hex\') as "payloadHash", encode("generatorPublicKey", \'hex\') as "generatorPublicKey",  encode("blockSignature", \'hex\') as "blockSignature", rawtxs::json as transactions from blocks WHERE height >= ${offset} AND height < ${limit} ORDER BY height',
 
-  loadLastBlock: 'SELECT * FROM full_blocks_list WHERE "b_height" = (SELECT MAX("height") FROM blocks) ORDER BY "b_height", "t_rowId"',
+  loadLastBlock: 'SELECT id, version, height, timestamp, "previousBlock", "numberOfTransactions" ,"totalAmount", "totalFee", reward, "payloadLength", encode("payloadHash", \'hex\') as "payloadHash", encode("generatorPublicKey", \'hex\') as "generatorPublicKey",  encode("blockSignature", \'hex\') as "blockSignature", rawtxs::json as transactions from blocks WHERE height = (SELECT MAX("height") FROM blocks)',
 
   getBlockId: 'SELECT "id" FROM blocks WHERE "id" = ${id}',
 

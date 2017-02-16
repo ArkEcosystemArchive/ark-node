@@ -441,7 +441,7 @@ d.run(function () {
 					if (typeof(module.cleanup) === 'function') {
 						module.cleanup(cb);
 					} else {
-						setImmediate(cb);
+						cb();
 					}
 				}, function (err) {
 					if (err) {
