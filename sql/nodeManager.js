@@ -1,7 +1,7 @@
 'use strict';
 
 var NodeManagerSql = {
-  getTransactionId: 'SELECT "id" FROM trs WHERE "id" = ${id}'
+  getTransactionId: 'SELECT "id" FROM transactions WHERE "id" = ${id}'
 };
 
 module.exports = NodeManagerSql;

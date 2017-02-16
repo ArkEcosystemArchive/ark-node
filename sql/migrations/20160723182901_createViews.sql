@@ -65,7 +65,7 @@ SELECT b."id" AS "b_id",
 
 FROM blocks b
 
-LEFT OUTER JOIN trs AS t ON t."blockId" = b."id"
+LEFT OUTER JOIN transactions AS t ON t."blockId" = b."id"
 LEFT OUTER JOIN delegates AS d ON d."transactionId" = t."id"
 LEFT OUTER JOIN votes AS v ON v."transactionId" = t."id"
 LEFT OUTER JOIN signatures AS s ON s."transactionId" = t."id"
@@ -91,7 +91,7 @@ SELECT t."id" AS "t_id",
        t."signatures" AS "t_signatures",
        (SELECT MAX("height") + 1 FROM blocks) - b."height" AS "confirmations"
 
-FROM trs t
+FROM transactions t
 
 INNER JOIN blocks b ON t."blockId" = b."id";
 

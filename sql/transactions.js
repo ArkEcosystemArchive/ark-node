@@ -15,12 +15,11 @@ var TransactionsSql = {
     'height'
   ],
 
-  countById: 'SELECT COUNT("id")::int AS "count" FROM trs WHERE "id" = ${id}',
+  countById: 'SELECT COUNT("id")::int AS "count" FROM transactions WHERE "id" = ${id}',
 
   countList: function (params) {
     return [
-      'SELECT COUNT("t_id") FROM trs_list',
-      'INNER JOIN blocks b ON "t_blockId" = b."id"',
+      'SELECT COUNT("id") FROM transactions',
       (params.where.length || params.owner ? 'WHERE' : ''),
       (params.where.length ? '(' + params.where.join(' OR ') + ')' : ''),
       (params.where.length && params.owner ? ' AND ' + params.owner : params.owner)
@@ -30,7 +29,7 @@ var TransactionsSql = {
   list: function (params) {
     // Need to fix 'or' or 'and' in query
     return [
-      'SELECT * FROM trs_list',
+      'SELECT id, "blockId", type, timestamp, amount, fee, "vendorField", "senderId", "recipientId", encode("senderPublicKey", \'hex\') as "senderPublicKey", encode("requesterPublicKey", \'hex\') as "requesterPublicKey",  encode("signature", \'hex\') as "signature", encode("signSignature", \'hex\') as "signSignature", signatures::json as signatures, rawasset::json as asset FROM transactions',
       (params.where.length || params.owner ? 'WHERE' : ''),
       (params.where.length ? '(' + params.where.join(' OR ') + ')' : ''),
       (params.where.length && params.owner ? ' AND ' + params.owner : params.owner),
@@ -39,10 +38,10 @@ var TransactionsSql = {
     ].filter(Boolean).join(' ');
   },
 
-  getById: 'SELECT * FROM trs_list WHERE "t_id" = ${id}',
+  getById: 'SELECT id, "blockId", type, timestamp, amount, fee, "vendorField", "senderId", "recipientId", encode("senderPublicKey", \'hex\') as "senderPublicKey", encode("requesterPublicKey", \'hex\') as "requesterPublicKey",  encode("signature", \'hex\') as "signature", encode("signSignature", \'hex\') as "signSignature", signatures::json as signatures, rawasset::json as asset FROM transactions WHERE id = ${id}',
 
   getVotesById: 'SELECT * FROM votes WHERE "transactionId" = ${id}'
-  
+
 };
 
 module.exports = TransactionsSql;

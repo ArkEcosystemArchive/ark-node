@@ -103,6 +103,16 @@ Transaction.prototype.getHash = function (trs) {
 	return crypto.createHash('sha256').update(this.getBytes(trs)).digest();
 };
 
+// TODO: unfinished
+Transaction.prototype.fromBytes = function(buffer){
+	var tx = {};
+	tx.type = buffer.readByte();
+	tx.timestamp = buffer.readInt();
+	return tx;
+}
+
+
+
 Transaction.prototype.getBytes = function (trs, skipSignature, skipSecondSignature) {
 	if (!__private.types[trs.type]) {
 		throw 'Unknown transaction type ' + trs.type;
@@ -704,7 +714,7 @@ Transaction.prototype.undoUnconfirmed = function (trs, sender, cb) {
 	}.bind(this));
 };
 
-Transaction.prototype.dbTable = 'trs';
+Transaction.prototype.dbTable = 'transactions';
 
 Transaction.prototype.dbFields = [
 	'id',
@@ -720,7 +730,8 @@ Transaction.prototype.dbFields = [
 	'fee',
 	'signature',
 	'signSignature',
-	'signatures'
+	'signatures',
+	'rawasset'
 ];
 
 Transaction.prototype.dbSave = function (trs) {
@@ -758,7 +769,8 @@ Transaction.prototype.dbSave = function (trs) {
 				fee: trs.fee,
 				signature: signature,
 				signSignature: signSignature,
-				signatures: trs.signatures ? trs.signatures.join(',') : null,
+				signatures: trs.signatures ? JSON.stringify(trs.signatures) : null,
+				rawasset: JSON.stringify(trs.asset)
 			}
 		}
 	];
@@ -879,41 +891,22 @@ Transaction.prototype.objectNormalize = function (trs) {
 };
 
 Transaction.prototype.dbRead = function (raw) {
-	if (!raw.t_id) {
-		return null;
-	} else {
-		var tx = {
-			id: raw.t_id,
-			height: raw.b_height,
-			blockId: raw.b_id || raw.t_blockId,
-			type: parseInt(raw.t_type),
-			timestamp: parseInt(raw.t_timestamp),
-			senderPublicKey: raw.t_senderPublicKey,
-			requesterPublicKey: raw.t_requesterPublicKey,
-			vendorField:raw.t_vendorField,
-			senderId: raw.t_senderId,
-			recipientId: raw.t_recipientId,
-			amount: parseInt(raw.t_amount),
-			fee: parseInt(raw.t_fee),
-			signature: raw.t_signature,
-			signSignature: raw.t_signSignature,
-			signatures: raw.t_signatures ? raw.t_signatures.split(',') : [],
-			confirmations: parseInt(raw.confirmations),
-			asset: {}
-		};
+	var tx = raw;
 
-		if (!__private.types[tx.type]) {
-			throw 'Unknown transaction type ' + tx.type;
-		}
+	tx.amount=parseInt(raw.amount);
+	tx.fee=parseInt(raw.fee);
 
-		var asset = __private.types[tx.type].dbRead.call(this, raw);
+	// if (!__private.types[tx.type]) {
+	// 	throw 'Unknown transaction type ' + tx.type;
+	// }
+	//
+	// var asset = __private.types[tx.type].dbRead.call(this, raw);
+	//
+	// if (asset) {
+	// 	tx.asset = _.extend(tx.asset, asset);
+	// }
 
-		if (asset) {
-			tx.asset = _.extend(tx.asset, asset);
-		}
-
-		return tx;
-	}
+	return self.objectNormalize(tx);
 };
 
 // Export

@@ -66,33 +66,33 @@ __private.list = function (filter, cb) {
 	var params = {}, where = [], owner = '';
 
 	if (filter.blockId) {
-		where.push('"t_blockId" = ${blockId}');
+		where.push('"blockId" = ${blockId}');
 		params.blockId = filter.blockId;
 	}
 
 	if (filter.senderPublicKey) {
-		where.push('"t_senderPublicKey"::bytea = ${senderPublicKey}');
+		where.push('"senderPublicKey"::bytea = ${senderPublicKey}');
 		params.senderPublicKey = filter.senderPublicKey;
 	}
 
 	if (filter.senderId) {
-		where.push('"t_senderId" = ${senderId}');
+		where.push('"senderId" = ${senderId}');
 		params.senderId = filter.senderId;
 	}
 
 	if (filter.recipientId) {
-		where.push('"t_recipientId" = ${recipientId}');
+		where.push('"recipientId" = ${recipientId}');
 		params.recipientId = filter.recipientId;
 	}
 
 	if (filter.ownerAddress && filter.ownerPublicKey) {
-		owner = '("t_senderPublicKey"::bytea = ${ownerPublicKey} OR "t_recipientId" = ${ownerAddress})';
+		owner = '("senderPublicKey"::bytea = ${ownerPublicKey} OR "recipientId" = ${ownerAddress})';
 		params.ownerPublicKey = filter.ownerPublicKey;
 		params.ownerAddress = filter.ownerAddress;
 	}
 
 	if (filter.type >= 0) {
-		where.push('"t_type" = ${type}');
+		where.push('"type" = ${type}');
 		params.type = filter.type;
 	}
 
@@ -117,9 +117,9 @@ __private.list = function (filter, cb) {
 			sortFields: sql.sortFields,
 			fieldPrefix: function (sortField) {
 				if (['height', 'blockId', 'confirmations'].indexOf(sortField) > -1) {
-					return 'b_' + sortField;
+					return sortField;
 				} else {
-					return 't_' + sortField;
+					return sortField;
 				}
 			}
 		}
@@ -142,7 +142,7 @@ __private.list = function (filter, cb) {
 			sortMethod: orderBy.sortMethod
 		}), params).then(function (rows) {
 			var transactions = [];
-
+			//console.log(rows);
 			for (var i = 0; i < rows.length; i++) {
 				transactions.push(library.logic.transaction.dbRead(rows[i]));
 			}
@@ -169,11 +169,11 @@ __private.getById = function (id, cb) {
 			return setImmediate(cb, 'Transaction not found: ' + id);
 		}
 
-		var transacton = library.logic.transaction.dbRead(rows[0]);
+		var transaction = library.logic.transaction.dbRead(rows[0]);
 
-		return setImmediate(cb, null, transacton);
+		return setImmediate(cb, null, transaction);
 	}).catch(function (err) {
-		library.logger.error("stack", err.stack);
+		library.logger.error("stack", err);
 		return setImmediate(cb, 'Transactions#getById error');
 	});
 };

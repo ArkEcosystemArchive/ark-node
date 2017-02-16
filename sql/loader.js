@@ -13,7 +13,7 @@ var LoaderSql = {
 
   getDelegates: 'SELECT ENCODE("publicKey", \'hex\') FROM mem_accounts WHERE "isDelegate" = 1',
 
-  getTransactionId: 'SELECT "id" FROM trs WHERE "id" = ${id}'
+  getTransactionId: 'SELECT "id" FROM transactions WHERE "id" = ${id}'
 };
 
 module.exports = LoaderSql;

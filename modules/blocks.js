@@ -452,7 +452,7 @@ __private.readDbRows = function (rows) {
 			}
 
 			var transaction = library.logic.transaction.dbRead(rows[i]);
-			blocks[block.id].transactions = blocks[block.id].transactions || {};
+			blocks[block.id].transactions = blocks[block.id].transactions || [];
 
 			if (transaction) {
 				if (!blocks[block.id].transactions[transaction.id]) {
@@ -1276,10 +1276,10 @@ Blocks.prototype.processBlock = function (block, cb) {
 							function(waterfallCb){
 								__private.applyBlock(block, waterfallCb);
 							},
-							function(cb){
+							function(waterfallCb){
 								__private.saveBlock(block, waterfallCb);
 							},
-							function(cb){
+							function(waterfallCb){
 								modules.rounds.tick(block, waterfallCb);
 							}
 						],function(error, errblock){
