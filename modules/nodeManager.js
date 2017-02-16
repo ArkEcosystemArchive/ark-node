@@ -112,7 +112,7 @@ NodeManager.prototype.onBlocksReceived = function(blocks, peer, cb) {
 			}
 			//console.log(currentBlock.height);
 			// we don't deal with download management, just return to say "blocks processed, go ahead"
-			return mSequence && setImmediate(mSequence, err, currentBlock);
+			return mSequence && mSequence(err, currentBlock);
 
 			// if(!blocks || blocks.length === 0){
 			// 	return cb();
@@ -273,8 +273,8 @@ NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 	library.managementSequence.add(function (mSequence) {
 		if(!block.ready){
 			if(block.orphaned){
-				// this lastBlock is "likely" not processed, but the swap anyway will occur in a block sequence.
-				var lastBlock = modules.blockchain.getBlockAtHeight(block.height);
+				// this lastBlock is processed because of managementSequence.
+				var lastBlock = modules.blockchain.getLastBlock();
 				// all right we are at the beginning of a fork, let's swap asap if needed
 				if(lastBlock && block.timestamp < lastBlock.timestamp){
 					// lowest timestamp win: likely more spread
@@ -307,8 +307,8 @@ NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 					modules.blockchain.removeBlock(block);
 					return mSequence && mSequence(err, block);
 				}
+				modules.blockchain.upsertBlock(block);
 				library.logger.debug("processing block with "+block.transactions.length+" transactions", block.height);
-				modules.blockchain.addBlock(block);
 				return library.bus.message('verifyBlock', block, mSequence);
 			});
 		}
