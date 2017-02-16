@@ -27,8 +27,8 @@ function Transport (cb, scope) {
 	setInterval(function(){
 		if(__private.broadcastTransactions.length > 0){
 			var transactions = __private.broadcastTransactions;
-			if(__private.broadcastTransactions.length > 2){
-				transactions = __private.broadcastTransactions.splice(0,2);
+			if(__private.broadcastTransactions.length > 10){
+				transactions = __private.broadcastTransactions.splice(0,10);
 			}
 			else{
 				__private.broadcastTransactions=[];
