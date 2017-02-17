@@ -356,14 +356,15 @@ function Account (scope, cb) {
 }
 
 Account.prototype.createTables = function (cb) {
-	var sql = new pgp.QueryFile(path.join('sql', 'memoryTables.sql'), {minify: true});
-
-	db.query(sql).then(function () {
-		return setImmediate(cb);
-	}).catch(function (err) {
-		library.logger.error("stack", err.stack);
-		return setImmediate(cb, 'Account#createTables error');
-	});
+	// var sql = new pgp.QueryFile(path.join('sql', 'memoryTables.sql'), {minify: true});
+	//
+	// db.query(sql).then(function () {
+	// 	return setImmediate(cb);
+	// }).catch(function (err) {
+	// 	library.logger.error("stack", err.stack);
+	// 	return setImmediate(cb, 'Account#createTables error');
+	// });
+	return cb();
 };
 
 Account.prototype.removeTables = function (cb) {

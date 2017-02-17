@@ -1214,7 +1214,7 @@ Blocks.prototype.processBlock = function (block, cb) {
 			// DATABASE: Read only to mem_accounts to extract active delegate list
 			modules.delegates.validateBlockSlot(block, function (err) {
 				if (err) {
-					library.bus.message("fork",block, 3);
+					library.bus.message("fork", block, 3);
 					return cb(err);
 				}
 
@@ -1331,6 +1331,7 @@ Blocks.prototype.processEmptyBlock = function (block, cb) {
 	block,
 	function(error, errblock){
 		if(error){
+			library.logger.debug("error", error)
 			return cb(error, errblock);
 		}
 		else{

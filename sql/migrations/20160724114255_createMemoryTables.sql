@@ -38,6 +38,14 @@ CREATE TABLE IF NOT EXISTS "mem_accounts"(
 
 CREATE INDEX IF NOT EXISTS "mem_accounts_balance" ON "mem_accounts"("balance");
 
+CREATE TABLE IF NOT EXISTS "mem_delegates"(
+  "publicKey" VARCHAR(66) NOT NULL,
+  "vote" BIGINT NOT NULL,
+  "round" BIGINT NOT NULL,
+  "producedblocks" int,
+  "missedblocks" int
+);
+
 CREATE TABLE IF NOT EXISTS "mem_round"(
   "address" VARCHAR(36),
   "amount" BIGINT,

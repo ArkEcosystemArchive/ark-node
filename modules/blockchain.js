@@ -260,7 +260,7 @@ Blockchain.prototype.getLastIncludedBlock = function(){
 // 			library.logger.info([
 // 				'Received new block id:', block.id,
 // 				'height:', block.height,
-// 				'round:',  modules.rounds.calc(block.height),
+// 				'round:',  modules.rounds.getRoundFromHeight(block.height),
 // 				'slot:', slots.getSlotNumber(block.timestamp),
 // 				'reward:', block.reward,
 // 				'transactions', block.numberOfTransactions

@@ -3,7 +3,7 @@
 var async = require('async');
 var schema = require('../schema/nodeManager.js');
 var sql = require('../sql/nodeManager.js');
-
+var os = require('os');
 
 var self, library, modules;
 
@@ -55,9 +55,17 @@ NodeManager.prototype.onDelegatesLoaded = function(keypairs) {
 
 	// If there are some delegates configured, start forging, else just relay tx and blocks
   if(numberOfDelegates>0){
-    __private.keypairs=keypairs;
-    library.logger.info("# Loaded "+numberOfDelegates+" delegate(s). Started as a forging node");
-    library.bus.message('startForging');
+		var arch = os.arch()
+		if(arch == "x64" || arch == "x86"){
+			__private.keypairs=keypairs;
+	    library.logger.info("# Loaded "+numberOfDelegates+" delegate(s). Started as a forging node");
+	    library.bus.message('startForging');
+		}
+		else {
+			library.logger.info("Your architecture '"+ arch + "' is not supported for forging");
+			library.logger.info("# Started as a relay node");
+		}
+
   }
   else{
     library.logger.info("# Started as a relay node");
@@ -249,6 +257,9 @@ __private.prepareBlock = function(block, peer, cb){
 NodeManager.prototype.swapLastBlockWith = function(block, peer, cb){
 	async.waterfall([
 		function(seriesCb){
+			modules.delegates.validateBlockSlot(block, seriesCb);
+		},
+		function(data, seriesCb){
 			__private.prepareBlock(block, peer, seriesCb);
 		},
 		function(data, seriesCb){

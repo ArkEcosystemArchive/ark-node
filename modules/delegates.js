@@ -218,7 +218,7 @@ __private.getKeysSortByVote = function (cb) {
 // 1. we are not sure we have the last block height!
 // 2. corner case: height last block of the round? we may get the very wrong delegate list
 __private.getBlockSlotData = function (slot, height, cb) {
-	self.generateDelegateList(height, function (err, activeDelegates) {
+	modules.rounds.getActiveDelegates(function (err, activeDelegates) {
 		if (err) {
 			return setImmediate(cb, err);
 		}
@@ -358,7 +358,7 @@ __private.forge = function (cb) {
 								library.logger.info([
 									'Forged new block id:', b.id,
 									'height:', b.height,
-									'round:', modules.rounds.calc(b.height),
+									'round:', modules.rounds.getRoundFromHeight(b.height),
 									'slot:', slots.getSlotNumber(currentBlockData.time),
 									'reward:' + b.reward,
 									'transactions:' + b.numberOfTransactions
@@ -500,10 +500,10 @@ Delegates.prototype.isAForgingDelegatesPublicKey = function(publicKey) {
 Delegates.prototype.generateDelegateList = function (height, cb) {
 	__private.getKeysSortByVote(function (err, truncDelegateList) {
 		if (err) {
-			return setImmediate(cb, err);
+			return cb(err);
 		}
 
-		var seedSource = modules.rounds.calc(height).toString();
+		var seedSource = modules.rounds.getRoundFromHeight(height).toString();
 		var currentSeed = crypto.createHash('sha256').update(seedSource, 'utf8').digest();
 
 		for (var i = 0, delCount = truncDelegateList.length; i < delCount; i++) {
@@ -516,7 +516,7 @@ Delegates.prototype.generateDelegateList = function (height, cb) {
 			currentSeed = crypto.createHash('sha256').update(currentSeed).digest();
 		}
 
-		return setImmediate(cb, null, truncDelegateList);
+		return cb(null, truncDelegateList);
 	});
 };
 
@@ -583,9 +583,9 @@ Delegates.prototype.checkUnconfirmedDelegates = function (publicKey, votes, cb) 
 };
 
 Delegates.prototype.validateBlockSlot = function (block, cb) {
-	self.generateDelegateList(block.height, function (err, activeDelegates) {
+	modules.rounds.getActiveDelegates(function (err, activeDelegates) {
 		if (err) {
-			return setImmediate(cb, err);
+			return cb(err);
 		}
 
 		var currentSlot = slots.getSlotNumber(block.timestamp);
@@ -594,10 +594,10 @@ Delegates.prototype.validateBlockSlot = function (block, cb) {
 		// var previousDelegate_id = activeDelegates[(currentSlot - 1) % slots.delegates];
 
 		if (delegate_id && block.generatorPublicKey === delegate_id) {
-			return setImmediate(cb);
+			return cb(null, block);
 		} else {
 			library.logger.error('Expected generator: ' + delegate_id + ' Received generator: ' + block.generatorPublicKey);
-			return setImmediate(cb, 'Failed to verify slot: ' + currentSlot);
+			return cb('Failed to verify slot: ' + currentSlot);
 		}
 	});
 };
@@ -692,7 +692,7 @@ Delegates.prototype.onAttachPublicApi = function () {
 
 // To trigger a blockchain update from network
 Delegates.prototype.cleanup = function (cb) {
-	return setImmediate(cb);
+	return cb();
 };
 
 // Ready to forge when it is its slot
@@ -701,8 +701,19 @@ Delegates.prototype.isForging = function(){
 }
 
 // Is node active at current height of internal blockchain
-Delegates.prototype.isActiveDelegate = function(cb){
+Delegates.prototype.isActiveDelegate = function(){
 	return __private.isActiveDelegate;
+}
+
+Delegates.prototype.updateActiveDelegate = function(activeDelegatesKeys){
+	var registeredDelegatesPublicKeys = Object.keys(__private.keypairs);
+	var isActive = false;
+
+	for(var i in activeDelegatesKeys){
+		isActive |= registeredDelegatesPublicKeys.indexOf(activeDelegatesKeys[i]) > -1;
+	}
+
+	__private.isActiveDelegate = isActive;
 }
 
 Delegates.prototype.enableForging = function () {
@@ -780,7 +791,7 @@ shared.getNextForgers = function (req, cb) {
 	var currentBlock = modules.blockchain.getLastBlock();
 	var limit = req.body.limit || 10;
 
-	modules.delegates.generateDelegateList(currentBlock.height, function (err, activeDelegates) {
+	modules.rounds.getActiveDelegates(function (err, activeDelegates) {
 		if (err) {
 			return setImmediate(cb, err);
 		}

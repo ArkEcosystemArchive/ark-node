@@ -133,6 +133,7 @@ __private.loadUnconfirmedTransactions = function (cb) {
 };
 
 __private.loadBlockChain = function () {
+
 	var offset = 0, limit = Number(library.config.loading.loadPerIteration) || 1000;
 	var verify = Boolean(library.config.loading.verifyOnLoading);
 
@@ -189,80 +190,12 @@ __private.loadBlockChain = function () {
 		load(count);
 	}
 
-	function checkMemTables (t) {
-		var promises = [
-			t.one(sql.countBlocks),
-			t.one(sql.countMemAccounts),
-			t.query(sql.getMemRounds)
-		];
-
-		return t.batch(promises);
-	}
-
-	library.db.task(checkMemTables).then(function (results) {
-		library.logger.info('checkMemTables', results);
-		var count = results[0].count;
-		var missed = !(results[1].count);
-
-		library.logger.info('Blocks ' + count);
-
-		var round = modules.rounds.calc(count);
-
-		if (library.config.loading.snapshot !== undefined || library.config.loading.snapshot > 0) {
-			library.logger.info('Snapshot mode enabled');
-			verify = true;
-
-			if (isNaN(library.config.loading.snapshot) || library.config.loading.snapshot >= round) {
-				library.config.loading.snapshot = round;
-
-				if ((count === 1) || (count % constants.activeDelegates > 0)) {
-					library.config.loading.snapshot = (round > 1) ? (round - 1) : 1;
-				}
-			}
-
-			library.logger.info('Snapshotting to end of round: ' + library.config.loading.snapshot);
+	library.db.query(sql.countBlocks).then(function(rows){
+		console.log(rows);
+		if(rows[0].count == 1){
+			load(rows[0].count);
 		}
-
-		if (count === 1) {
-			return reload(count);
-		}
-
-		if (verify) {
-			return reload(count, 'Blocks verification enabled');
-		}
-
-		if (missed) {
-			return reload(count, 'Detected missed blocks in mem_accounts');
-		}
-
-		var unapplied = results[2].filter(function (row) {
-			return (row.round !== String(round));
-		});
-
-		if (unapplied.length > 0) {
-
-			return reload(count, 'Detected unapplied rounds in mem_round');
-		}
-
-		function updateMemAccounts (t) {
-			var promises = [
-				t.none(sql.updateMemAccounts),
-				t.query(sql.getOrphanedMemAccounts),
-				t.query(sql.getDelegates)
-			];
-
-			return t.batch(promises);
-		}
-
-		library.db.task(updateMemAccounts).then(function (results) {
-			if (results[1].length > 0) {
-				return reload(count, 'Detected orphaned blocks in mem_accounts');
-			}
-
-			if (results[2].length === 0) {
-				return reload(count, 'No delegates found');
-			}
-
+		else {
 			modules.blocks.loadLastBlock(function (err, block) {
 				if (err) {
 					return reload(count, err || 'Failed to load last block');
@@ -271,11 +204,97 @@ __private.loadBlockChain = function () {
 					library.bus.message('databaseLoaded', block);
 				}
 			});
-		});
-	}).catch(function (err) {
-		library.logger.error("error:",err);
-		return process.exit(0);
+		}
 	});
+
+	//
+	// function checkMemTables (t) {
+	// 	var promises = [
+	// 		t.one(sql.countBlocks),
+	// 		t.one(sql.countMemAccounts),
+	// 		t.query(sql.getMemRounds)
+	// 	];
+	//
+	// 	return t.batch(promises);
+	// }
+	//
+	// library.db.task(checkMemTables).then(function (results) {
+	// 	library.logger.info('checkMemTables', results);
+	// 	var count = results[0].count;
+	// 	var missed = !(results[1].count);
+	//
+	// 	library.logger.info('Blocks ' + count);
+	//
+	// 	var round = modules.rounds.getRoundFromHeight(count);
+	//
+	// 	if (library.config.loading.snapshot !== undefined || library.config.loading.snapshot > 0) {
+	// 		library.logger.info('Snapshot mode enabled');
+	// 		verify = true;
+	//
+	// 		if (isNaN(library.config.loading.snapshot) || library.config.loading.snapshot >= round) {
+	// 			library.config.loading.snapshot = round;
+	//
+	// 			if ((count === 1) || (count % constants.activeDelegates > 0)) {
+	// 				library.config.loading.snapshot = (round > 1) ? (round - 1) : 1;
+	// 			}
+	// 		}
+	//
+	// 		library.logger.info('Snapshotting to end of round: ' + library.config.loading.snapshot);
+	// 	}
+	//
+	// 	if (count === 1) {
+	// 		return reload(count);
+	// 	}
+	//
+	// 	if (verify) {
+	// 		return reload(count, 'Blocks verification enabled');
+	// 	}
+	//
+	// 	if (missed) {
+	// 		return reload(count, 'Detected missed blocks in mem_accounts');
+	// 	}
+	//
+	// 	var unapplied = results[2].filter(function (row) {
+	// 		return (row.round !== String(round));
+	// 	});
+	//
+	// 	if (unapplied.length > 0) {
+	//
+	// 		return reload(count, 'Detected unapplied rounds in mem_round');
+	// 	}
+	//
+	// 	function updateMemAccounts (t) {
+	// 		var promises = [
+	// 			t.none(sql.updateMemAccounts),
+	// 			t.query(sql.getOrphanedMemAccounts),
+	// 			t.query(sql.getDelegates)
+	// 		];
+	//
+	// 		return t.batch(promises);
+	// 	}
+	//
+	// 	library.db.task(updateMemAccounts).then(function (results) {
+	// 		if (results[1].length > 0) {
+	// 			return reload(count, 'Detected orphaned blocks in mem_accounts');
+	// 		}
+	//
+	// 		if (results[2].length === 0) {
+	// 			return reload(count, 'No delegates found');
+	// 		}
+	//
+	// 		modules.blocks.loadLastBlock(function (err, block) {
+	// 			if (err) {
+	// 				return reload(count, err || 'Failed to load last block');
+	// 			} else {
+	// 				__private.lastBlock = block;
+	// 				library.bus.message('databaseLoaded', block);
+	// 			}
+	// 		});
+	// 	});
+	// }).catch(function (err) {
+	// 	library.logger.error("error:",err);
+	// 	return process.exit(0);
+	// });
 };
 
 __private.shuffle = function(array) {
