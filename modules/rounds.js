@@ -11,13 +11,13 @@ var crypto = require('crypto');
 var modules, library, self, __private = {}, shared = {};
 
 
-
-__private.feesByRound = {};
-__private.rewardsByRound = {};
-__private.delegatesByRound = {};
-__private.unFeesByRound = {};
-__private.unRewardsByRound = {};
-__private.unDelegatesByRound = {};
+//
+// __private.feesByRound = {};
+// __private.rewardsByRound = {};
+// __private.delegatesByRound = {};
+// __private.unFeesByRound = {};
+// __private.unRewardsByRound = {};
+// __private.unDelegatesByRound = {};
 
 /************************************************************************************
 Database Structure:
@@ -89,6 +89,7 @@ Rounds.prototype.tick = function(block, cb){
 			return cb(err, block);
 		}
 		else {
+			// maybe to update every round just before generating the new delegate list
 			__private.updateTotalVotesOnDatabase(function(err){
 				if(err){
 					return cb(err, block);
@@ -192,24 +193,28 @@ __private.generateDelegateList = function (round, cb) {
 			return cb(err);
 		}
 
-		// pseudorandom (?!) permutation algorithm.
-		// TODO: useless?
-		var seedSource = round.toString();
-		var currentSeed = crypto.createHash('sha256').update(seedSource, 'utf8').digest();
-
-		for (var i = 0, delCount = activedelegates.length; i < delCount; i++) {
-			for (var x = 0; x < 4 && i < delCount; i++, x++) {
-				var newIndex = currentSeed[x] % delCount;
-				var b = activedelegates[newIndex];
-				activedelegates[newIndex] = activedelegates[i];
-				activedelegates[i] = b;
-			}
-			currentSeed = crypto.createHash('sha256').update(currentSeed).digest();
-		}
-
-		return cb(null, activedelegates);
+		return cb(null, __private.randomizeDelegateList(activedelegates, round));
 	});
 };
+
+__private.randomizeDelegateList = function (activedelegates, round) {
+	// pseudorandom (?!) permutation algorithm.
+	// TODO: useless?
+	var seedSource = round.toString();
+	var currentSeed = crypto.createHash('sha256').update(seedSource, 'utf8').digest();
+
+	for (var i = 0, delCount = activedelegates.length; i < delCount; i++) {
+		for (var x = 0; x < 4 && i < delCount; i++, x++) {
+			var newIndex = currentSeed[x] % delCount;
+			var b = activedelegates[newIndex];
+			activedelegates[newIndex] = activedelegates[i];
+			activedelegates[i] = b;
+		}
+		currentSeed = crypto.createHash('sha256').update(currentSeed).digest();
+	}
+
+	return activedelegates;
+}
 
 __private.getKeysSortByVote = function (cb) {
 	modules.accounts.getAccounts({
@@ -233,13 +238,16 @@ Rounds.prototype.getRoundFromHeight = function (height) {
 
 Rounds.prototype.getActiveDelegates = function(cb) {
 	var round = __private.current;
+	// console.log(round);
+	// if(__private.activedelegates[round]) console.log(__private.activedelegates[round][0]);
 	if(__private.activedelegates[round]){
-		return cb(null,__private.activedelegates[round]);
+		return cb(null, __private.activedelegates[round]);
 	}
 	else {
 		// let's get active delegates from database if any
 		library.db.query(sql.getActiveDelegates, {round: round}).then(function(rows){
 			if(rows.length == constants.activeDelegates){
+				rows=__private.randomizeDelegateList(rows, round);
 				__private.activedelegates[round]=rows.map(function(row){return row.publicKey;});
 				return cb(null, __private.activedelegates[round]);
 			}
