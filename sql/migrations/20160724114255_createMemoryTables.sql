@@ -46,14 +46,6 @@ CREATE TABLE IF NOT EXISTS "mem_delegates"(
   "missedblocks" int
 );
 
-CREATE TABLE IF NOT EXISTS "mem_round"(
-  "address" VARCHAR(36),
-  "amount" BIGINT,
-  "delegate" VARCHAR(66),
-  "blockId" VARCHAR(64),
-  "round" BIGINT
-);
-
 CREATE TABLE IF NOT EXISTS "mem_accounts2delegates"(
   "accountId" VARCHAR(36) NOT NULL,
   "dependentId" VARCHAR(66) NOT NULL,
@@ -79,9 +71,9 @@ CREATE TABLE IF NOT EXISTS "mem_accounts2u_multisignatures"(
 );
 
 
-CREATE INDEX IF NOT EXISTS "mem_round_address" ON "mem_round"("address");
+CREATE INDEX IF NOT EXISTS "mem_delegates_vote" ON "mem_delegates"("vote");
 
-CREATE INDEX IF NOT EXISTS "mem_round_round" ON "mem_round"("round");
+CREATE INDEX IF NOT EXISTS "mem_delegates_round" ON "mem_delegates"("round");
 
 CREATE INDEX IF NOT EXISTS "mem_accounts2delegates_accountId" ON "mem_accounts2delegates"("accountId");
 
