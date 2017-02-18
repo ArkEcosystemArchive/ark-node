@@ -381,7 +381,7 @@ __private.popLastBlock = function (oldLastBlock, cb) {
 			}, function (err) {
 				// TODO: reinject transaction into pool: better than this
 				// library.bus.message("receiveTransactions")
-				modules.rounds.backwardTick(oldLastBlock, previousBlock, function () {
+				modules.rounds.backwardTick(oldLastBlock, function () {
 					__private.deleteBlock(oldLastBlock.id, function (err) {
 						library.logger.warn("removing block", oldLastBlock.height);
 						modules.blockchain.removeBlock(oldLastBlock, cb);
@@ -724,9 +724,6 @@ Blocks.prototype.removeSomeBlocks = function(numbers, cb){
 		undoUnconfirmedList: function (seriesCb) {
 			modules.transactionPool.undoUnconfirmedList([],seriesCb);
 		},
-		backwardSwap: function (seriesCb) {
-			modules.rounds.directionSwap('backward', null, seriesCb);
-		},
    	popLastBlock: function (seriesCb) {
 			async.whilst(
 				function () {
@@ -747,10 +744,7 @@ Blocks.prototype.removeSomeBlocks = function(numbers, cb){
 					return seriesCb(err);
 				}
 			);
-   	},
-		forwardSwap: function (seriesCb) {
-		 	modules.rounds.directionSwap('forward', modules.blockchain.getLastBlock(), seriesCb);
-		}
+   	}
 	}, function (err) {
 		// Reset the last receipt
 		self.lastReceipt(new Date());
@@ -774,9 +768,6 @@ Blocks.prototype.removeLastBlock = function(cb){
 		undoUnconfirmedList: function (seriesCb) {
 			modules.transactionPool.undoUnconfirmedList([], seriesCb);
 		},
-		backwardSwap: function (seriesCb) {
-			modules.rounds.directionSwap('backward', null, seriesCb);
-		},
    	popLastBlock: function (seriesCb) {
 			var block = modules.blockchain.getLastBlock();
 			__private.popLastBlock(block, function (err, newLastBlock) {
@@ -786,10 +777,7 @@ Blocks.prototype.removeLastBlock = function(cb){
 				}
 				return seriesCb(err);
 			});
-   	},
-		forwardSwap: function (seriesCb) {
-		 	modules.rounds.directionSwap('forward', modules.blockchain.getLastBlock(), seriesCb);
-		}
+   	}
 	}, function (err) {
 		// Reset the last receipt
 		self.lastReceipt(new Date());

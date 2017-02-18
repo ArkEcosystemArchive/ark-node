@@ -7,7 +7,7 @@ var RoundsSql = {
       return "('"+ad.publicKey+"', (${round})::bigint, ("+ad.vote+")::bigint)";
     }).join(",");
 
-    return 'INSERT INTO mem_delegates ("publicKey", round, vote) VALUES ' + values;
+    return 'DELETE FROM mem_delegates where round = (${round})::bigint; INSERT INTO mem_delegates ("publicKey", round, vote) VALUES ' + values;
   },
 
   getActiveDelegates: 'SELECT * FROM mem_delegates WHERE round = (${round})::bigint ORDER BY vote DESC, "publicKey" ASC;',

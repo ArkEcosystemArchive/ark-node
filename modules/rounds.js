@@ -100,35 +100,7 @@ Rounds.prototype.tick = function(block, cb){
 
 					// last block of the round? we prepare next round
 					if(self.getRoundFromHeight(block.height+1) == round + 1){
-						var nextround = __private.current + 1;
-						__private.generateDelegateList(nextround, function(err, fullactivedelegates){
-							if(err){
-								return cb(err, block);
-							}
-							else {
-								__private.collectedfees[nextround] = 0;
-								__private.forgers[nextround] = [];
-								__private.activedelegates[nextround] = fullactivedelegates.map(function(ad){return ad.publicKey});
-								__private.updateActiveDelegatesStats(function(err){
-									if(err){
-										return cb(err, block);
-									}
-									else{
-										__private.saveActiveDelegatesOnDatabase(fullactivedelegates, nextround, function(err){
-											if(err){
-												return cb(err, block);
-											}
-											else{
-												// we are good to go, let's move to the new round
-												__private.current = nextround;
-												return cb(null, block);
-											}
-										});
-
-									}
-								});
-							}
-						});
+						return __private.changeRoundForward(block, cb);
 					}
 					else {
 						return cb(null, block);
@@ -140,7 +112,70 @@ Rounds.prototype.tick = function(block, cb){
 }
 
 Rounds.prototype.backwardTick = function(block, cb){
+	var round = __private.current;
 
+	// remove block rewards + fees from the block forger
+	modules.accounts.mergeAccountAndGet({
+		publicKey: block.generatorPublicKey,
+		balance: -(block.reward + block.totalFee),
+		u_balance: -(block.reward + block.totalFee),
+		producedblocks: -1,
+		blockId: block.id,
+		round: round
+	}, function (err) {
+		if(err){
+			return cb(err, block);
+		}
+		else {
+			// TODO: maybe to update only every round just before generating the new delegate list
+			__private.updateTotalVotesOnDatabase(function(err){
+				if(err){
+					return cb(err, block);
+				}
+				else {
+					__private.collectedfees[round] -= block.totalFee;
+					var generator = __private.forgers[round].pop();
+					if(generator != block.generatorPublicKey){
+						return cb("Expecting to remove forger "+block.generatorPublicKey+" but removed "+generator, block)
+					}
+					else {
+						return cb(null, block);
+					}
+				}
+			});
+		}
+	});
+};
+
+__private.changeRoundForward = function(block, cb){
+	var nextround = __private.current + 1;
+	__private.generateDelegateList(nextround, function(err, fullactivedelegates){
+		if(err){
+			return cb(err, block);
+		}
+		else {
+			__private.collectedfees[nextround] = 0;
+			__private.forgers[nextround] = [];
+			__private.activedelegates[nextround] = fullactivedelegates.map(function(ad){return ad.publicKey});
+			__private.updateActiveDelegatesStats(function(err){
+				if(err){
+					return cb(err, block);
+				}
+				else{
+					__private.saveActiveDelegatesOnDatabase(fullactivedelegates, nextround, function(err){
+						if(err){
+							return cb(err, block);
+						}
+						else{
+							// we are good to go, let's move to the new round
+							__private.current = nextround;
+							return cb(null, block);
+						}
+					});
+				}
+			});
+		}
+	});
 };
 
 __private.updateActiveDelegatesStats = function(cb){
