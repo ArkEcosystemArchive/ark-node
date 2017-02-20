@@ -21,6 +21,11 @@ var RoundsSql = {
       statement += 'missedblocks = '+stat.missedblocks+',';
       statement += 'producedblocks = '+stat.producedblocks;
       statement += ' WHERE "publicKey" = \''+pk+'\' AND round = (${round})::bigint;';
+      if(stat.missedblocks > 0){
+        statement += 'UPDATE mem_accounts SET ';
+        statement += 'missedblocks = missedblocks + ' + stat.missedblocks;
+        statement += ' WHERE ENCODE("publicKey", \'hex\') = \''+pk+'\';';
+      }
       return statement;
     });
 
