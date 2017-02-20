@@ -1377,7 +1377,7 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, cb) {
 	modules.transport.getFromPeer(peer, {
 		method: 'GET',
 		api: '/blocks?lastBlockHeight=' + lastValidBlock.height,
-		timeout: 10000
+		timeout: 60000
 	}, function (err, res) {
 		if (err || res.body.error) {
 			return cb(err, lastValidBlock);
