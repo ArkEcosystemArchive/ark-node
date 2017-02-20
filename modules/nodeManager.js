@@ -29,7 +29,7 @@ NodeManager.prototype.onBind = function (scope) {
 
 //Main entry point of the node app
 NodeManager.prototype.startApp = function(){
-	library.logger.info("# Starting App");
+	library.logger.info("Starting Node Manager");
   library.bus.message('loadDatabase');
 }
 
@@ -39,13 +39,13 @@ NodeManager.prototype.onDatabaseLoaded = function(lastBlock) {
 	library.bus.message('startBlockchain');
 
 	// Mount the network API
-	library.logger.info("# Mounting Network API");
+	library.logger.info("Mounting Network API");
 	library.bus.message('attachNetworkApi');
 
 	// If configured, mount the public API (not recommanded for forging node on long term).
 	// Ideally we should only mount it when node is synced with network
 	if(library.config.api.mount){
-		library.logger.info("# Mounting Public API");
+		library.logger.info("Mounting Public API");
 		library.bus.message('attachPublicApi');
 	}
 };

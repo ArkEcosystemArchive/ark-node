@@ -101,14 +101,14 @@ TransactionPool.prototype.onStartTransactionPool = function () {
 				kept++;
 			}
 		}
-		library.logger.info("# Mempool cleaned: "+removed+" transaction(s) removed, "+kept+" transaction(s) kept");
+		library.logger.info("Mempool cleaned: "+removed+" transaction(s) removed, "+kept+" transaction(s) kept");
 
 		if(__private.active){
 			return setTimeout(cleanMempool, __private.mempoolConfig.intervalInSeconds);
 		}
 	});
 
-	library.logger.info('# Transaction pool started');
+	library.logger.info('Transaction pool started');
 };
 
 TransactionPool.prototype.onStopTransactionPool = function () {

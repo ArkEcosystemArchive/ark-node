@@ -14,6 +14,7 @@ var program = require('commander');
 var Sequence = require('./helpers/sequence.js');
 var util = require('util');
 var z_schema = require('./helpers/z_schema.js');
+var colors = require('colors');
 
 process.stdin.resume();
 
@@ -108,6 +109,15 @@ d.on('error', function (err) {
 
 d.run(function () {
 	var modules = [];
+	console.log(colors.cyan("\n\
+      {_       {_______    {__   {__       {___     {__    {____     {_____    {________\n\
+     {_ __     {__    {__  {__  {__        {_ {__   {__  {__    {__  {__   {__ {__\n\
+    {_  {__    {__    {__  {__ {__         {__ {__  {__{__        {__{__    {__{__\n\
+   {__   {__   {_ {__      {_ {_           {__  {__ {__{__        {__{__    {__{______\n\
+  {______ {__  {__  {__    {__  {__        {__   {_ {__{__        {__{__    {__{__\n\
+ {__       {__ {__    {__  {__   {__       {__    {_ __  {__     {__ {__   {__ {__\n\
+{__         {__{__      {__{__     {__     {__      {__    {____     {_____    {________\n\
+"));
 	async.auto({
 		config: function (cb) {
 			try {
@@ -313,7 +323,7 @@ d.run(function () {
 			});
 
 			scope.network.server.listen(scope.config.port, scope.config.address, function (err) {
-				scope.logger.info('Ark started: ' + scope.config.address + ':' + scope.config.port);
+				scope.logger.info('# Ark node server started on: ' + scope.config.address + ':' + scope.config.port);
 
 				if (!err) {
 					if (scope.config.ssl.enabled) {
@@ -409,7 +419,7 @@ d.run(function () {
 					});
 
 					d.run(function () {
-						logger.info('Loading module', name);
+						logger.debug('Loading module', name);
 						var Klass = require(config.modules[name]);
 						var obj = new Klass(cb, scope);
 						modules.push(obj);

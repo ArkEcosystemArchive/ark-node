@@ -191,7 +191,7 @@ __private.loadBlockChain = function () {
 	}
 
 	library.db.query(sql.countBlocks).then(function(rows){
-		console.log(rows);
+		//console.log(rows);
 		if(rows[0].count == 1){
 			load(rows[0].count);
 		}
@@ -644,7 +644,7 @@ Loader.prototype.getNetwork = function (force, cb) {
 							return setImmediate(cb);
 						}
 						else{
-							library.logger.info(['Received height:', res.body.header.height, ', block_id: ', res.body.header.id,'from peer'].join(' '), peer.string);
+							library.logger.debug(['Received height:', res.body.header.height, ', block_id: ', res.body.header.id,'from peer'].join(' '), peer.string);
 							return setImmediate(cb, null, {peer: peer, height: res.body.header.height, header:res.body.header});
 						}
 					});

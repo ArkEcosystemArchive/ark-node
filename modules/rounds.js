@@ -272,9 +272,13 @@ __private.getKeysSortByVote = function (cb) {
 __private.getCurrentRoundForgers = function(cb) {
 	var round = __private.current;
 	var lastBlock = modules.blockchain.getLastBlock();
-	var firstHeightOfround = (round-1) * slots.delegates;
-	library.db.query(sql.getRoundForgers, {minheight: firstHeightOfround, maxheight: lastBlock.height}).then(function(rows){
 
+	// well exactly the last height of previous round,
+	// but using '>' in sql query will actually select the first block of the current round
+	var firstHeightOfround = (round-1) * slots.delegates;
+
+	library.db.query(sql.getRoundForgers, {minheight: firstHeightOfround, maxheight: lastBlock.height}).then(function(rows){
+		return cb(null, rows);
 	}).catch(cb);
 
 }
@@ -325,7 +329,6 @@ Rounds.prototype.getActiveDelegates = function(cb) {
 // Events
 Rounds.prototype.onBind = function (scope) {
 	modules = scope;
-	__private.forgers["1"]=[];
 };
 
 Rounds.prototype.onDatabaseLoaded = function (lastBlock) {
@@ -335,8 +338,19 @@ Rounds.prototype.onDatabaseLoaded = function (lastBlock) {
 	__private.current = round;
 
 	self.getActiveDelegates(function(err, delegates){
-		//TODO find from forged blocks of the current round
-		__private.forgers[round]=__private.forgers[round] || [];
+		if(self.getRoundFromHeight(lastBlock.height+1) == round+1){
+			__private.changeRoundForward(lastBlock, function(err, block){
+				library.logger.info("End of round detected, next round prepared");
+			});
+		}
+		library.logger.info("loaded "+delegates.length+" active delegates of round "+round);
+	});
+
+	__private.getCurrentRoundForgers(function(err, forgers){
+		__private.forgers[round]=forgers.map(function(forger){
+			return forger.publicKey;
+		});
+		library.logger.info("loaded "+__private.forgers[round].length+" forgers of round "+round);
 	});
 
 
