@@ -113,31 +113,39 @@ Rounds.prototype.tick = function(block, cb){
 }
 
 Rounds.prototype.backwardTick = function(block, cb){
-	var round = __private.current;
-
-	// remove block rewards + fees from the block forger
-	modules.accounts.mergeAccountAndGet({
-		publicKey: block.generatorPublicKey,
-		balance: -(block.reward + block.totalFee),
-		u_balance: -(block.reward + block.totalFee),
-		producedblocks: -1,
-		blockId: block.id,
-		round: round
-	}, function (err) {
+	__private.checkAndChangeRoundBackward(block, function(err){
 		if(err){
 			return cb(err, block);
 		}
-		else {
-			__private.collectedfees[round] -= block.totalFee;
-			var generator = __private.forgers[round].pop();
-			if(generator != block.generatorPublicKey){
-				return cb("Expecting to remove forger "+block.generatorPublicKey+" but removed "+generator, block)
-			}
-			else {
-				return cb(null, block);
-			}
+		else{
+			var round = __private.current;
+			// remove block rewards + fees from the block forger
+			modules.accounts.mergeAccountAndGet({
+				publicKey: block.generatorPublicKey,
+				balance: -(block.reward + block.totalFee),
+				u_balance: -(block.reward + block.totalFee),
+				producedblocks: -1,
+				blockId: block.id,
+				round: round
+			}, function (err) {
+				if(err){
+					return cb(err, block);
+				}
+				else {
+					__private.collectedfees[round] -= block.totalFee;
+					var generator = __private.forgers[round].pop();
+					if(generator != block.generatorPublicKey){
+						return cb("Expecting to remove forger "+block.generatorPublicKey+" but removed "+generator, block)
+					}
+					else {
+						return cb(null, block);
+					}
+				}
+			});
 		}
 	});
+
+
 };
 
 __private.changeRoundForward = function(block, cb){
@@ -179,8 +187,37 @@ __private.changeRoundForward = function(block, cb){
 };
 
 
-__private.changeRoundBackward = function(block, cb){
+__private.checkAndChangeRoundBackward = function(block, cb){
+	var round = __private.current;
+	var blockround = self.getRoundFromHeight(block.height);
 
+	//no round change, do nothing
+	if(round == blockround){
+		return cb(null, block);
+	}
+	// round change prepare the previous round data
+	else {
+		library.logger.info("Detected backward round change, preparing data for round", blockround);
+		delete __private.activedelegates[round];
+		delete __private.forgers[round];
+		__private.current = blockround;
+
+		return async.series([
+			function (seriesCb) {
+				self.getActiveDelegates(seriesCb);
+			},
+			function (seriesCb) {
+				__private.getCurrentRoundForgers(function(err, forgers){
+					__private.forgers[blockround]=forgers.map(function(forger){
+						return forger.publicKey;
+					});
+					return seriesCb(err, block);
+				});
+			}
+		], function(err){
+			return cb(err, block);
+		});
+	}
 };
 
 __private.updateActiveDelegatesStats = function(cb){
