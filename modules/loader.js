@@ -386,6 +386,9 @@ __private.loadBlocksFromNetwork = function (cb) {
 					library.logger.info("No new block received from " + peer.string);
 				}
 				else{
+					if(err){
+						library.logger.error(err, lastBlock);
+					}
 					library.logger.info("Processsed blocks to height " + lastBlock.height + " from " + peer.string);
 				}
 				//console.log(lastBlock.height);

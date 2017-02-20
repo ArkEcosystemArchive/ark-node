@@ -12,7 +12,7 @@ var RoundsSql = {
 
   getActiveDelegates: 'SELECT * FROM mem_delegates WHERE round = (${round})::bigint ORDER BY vote DESC, "publicKey" ASC;',
 
-  getRoundForgers: 'SELECT ENCODE("generatorPublicKey", \'hex\') FROM blocks WHERE height > (${round}-1)*${activeDelegates} AND height < ${round}*${activeDelegates} + 1 ORDER BY height desc;',
+  getRoundForgers: 'SELECT ENCODE("generatorPublicKey", \'hex\') FROM blocks WHERE height > (${minheight} AND height < ${maxheight} ORDER BY height desc;',
 
   updateActiveDelegatesStats: function (stats) {
     var statements = Object.keys(stats).map(function(pk){

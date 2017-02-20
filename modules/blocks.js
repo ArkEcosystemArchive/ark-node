@@ -1373,12 +1373,14 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, cb) {
 	peer = modules.peers.inspect(peer);
 	library.logger.info('Loading blocks from: ' + peer.string);
 
+	// we increase timeout as it can be a big payload
 	modules.transport.getFromPeer(peer, {
 		method: 'GET',
-		api: '/blocks?lastBlockHeight=' + lastValidBlock.height
+		api: '/blocks?lastBlockHeight=' + lastValidBlock.height,
+		timeout: 10000
 	}, function (err, res) {
 		if (err || res.body.error) {
-			return setImmediate(cb, err, lastValidBlock);
+			return cb(err, lastValidBlock);
 		}
 		var blocks = res.body.blocks;
 		// update with last version of peer data (height, blockheader)
@@ -1391,51 +1393,9 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, cb) {
 		var report = library.schema.validate(res.body.blocks, schema.loadBlocksFromPeer);
 
 		if (!report) {
-			return setImmediate(cb, 'Received invalid blocks data', lastValidBlock);
+			return cb('Received invalid blocks data', lastValidBlock);
 		}
 		return library.bus.message("blocksReceived", blocks, peer, cb);
-		// if (blocks.length === 0) {
-		// 	return cb(null, lastValidBlock);
-		// } else {
-		// 	return library.bus.message("blocksReceived", blocks, peer, cb);
-			// async.eachSeries(blocks, function (block, cb) {
-			// 	if (__private.cleanup) {
-			// 		return setImmediate(cb);
-			// 	}
-			// 	library.bus.message("blockReceived", block, peer, function(err){
-			// 		return cb(err);
-			// 	});
-
-				// block.reward=parseInt(block.reward);
-				// block.totalAmount=parseInt(block.totalAmount);
-				// block.totalFee=parseInt(block.totalFee);
-				// self.processBlock(block, function (err) {
-				// 	if (!err) {
-				// 		self.lastReceipt(new Date());
-				// 		lastValidBlock = block;
-				// 		library.logger.info(['Block', block.id, 'loaded from:', peer.string, "transactions:", block.numberOfTransactions].join(' '), 'height: ' + block.height);
-				// 	} else {
-				// 		var id = (block ? block.id : 'null');
-				// 		library.logger.error(['Block', id].join(' '), err.toString());
-				// 		if (block) { library.logger.error('Block', block); }
-				//
-				// 		library.logger.warn(['Block', id, 'is not valid, ban 60 min'].join(' '), peer.string);
-				// 		modules.peers.state(peer.ip, peer.port, 0, 3600);
-				// 	}
-				// 	return cb(err);
-				// });
-			// }, function (err) {
-			// 	// Nullify large array of blocks.
-			// 	// Prevents memory leak during synchronisation.
-			// 	res = blocks = null;
-			//
-			// 	if (err) {
-			// 		return setImmediate(cb, 'Error loading blocks: ' + (err.message || err), lastValidBlock);
-			// 	} else {
-			// 		return setImmediate(cb, null, lastValidBlock);
-			// 	}
-			// });
-		// }
 	});
 };
 

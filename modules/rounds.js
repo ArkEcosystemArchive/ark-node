@@ -75,39 +75,41 @@ function Rounds (cb, scope) {
 Rounds.prototype.tick = function(block, cb){
 	var round = __private.current;
 
-	// give block rewards + fees to the block forger
-	modules.accounts.mergeAccountAndGet({
-		publicKey: block.generatorPublicKey,
-		balance: block.reward + block.totalFee,
-		u_balance: block.reward + block.totalFee,
-		producedblocks: 1,
-		blockId: block.id,
-		round: round
-	}, function (err) {
-		if(err){
-			return cb(err, block);
-		}
-		else {
-			// maybe to update every round just before generating the new delegate list
-			__private.updateTotalVotesOnDatabase(function(err){
-				if(err){
-					return cb(err, block);
+	// if genesis block, nothing to do about the forger
+	// but make sure votes are updated properly to start the round
+	if(block.height == 1){
+		__private.updateTotalVotesOnDatabase(function(err){
+			cb(err, block);
+		});
+	}
+
+	else{
+		// give block rewards + fees to the block forger
+		modules.accounts.mergeAccountAndGet({
+			publicKey: block.generatorPublicKey,
+			balance: block.reward + block.totalFee,
+			u_balance: block.reward + block.totalFee,
+			producedblocks: 1,
+			blockId: block.id,
+			round: round
+		}, function (err) {
+			if(err){
+				return cb(err, block);
+			}
+			else {
+				__private.collectedfees[round] += block.totalFee;
+				__private.forgers[round].push(block.generatorPublicKey);
+
+				// last block of the round? we prepare next round
+				if(self.getRoundFromHeight(block.height+1) == round + 1){
+					return __private.changeRoundForward(block, cb);
 				}
 				else {
-					__private.collectedfees[round] += block.totalFee;
-					__private.forgers[round].push(block.generatorPublicKey);
-
-					// last block of the round? we prepare next round
-					if(self.getRoundFromHeight(block.height+1) == round + 1){
-						return __private.changeRoundForward(block, cb);
-					}
-					else {
-						return cb(null, block);
-					}
+					return cb(null, block);
 				}
-			});
-		}
-	});
+			}
+		});
+	}
 }
 
 Rounds.prototype.backwardTick = function(block, cb){
@@ -126,55 +128,59 @@ Rounds.prototype.backwardTick = function(block, cb){
 			return cb(err, block);
 		}
 		else {
-			// TODO: maybe to update only every round just before generating the new delegate list
-			__private.updateTotalVotesOnDatabase(function(err){
-				if(err){
-					return cb(err, block);
-				}
-				else {
-					__private.collectedfees[round] -= block.totalFee;
-					var generator = __private.forgers[round].pop();
-					if(generator != block.generatorPublicKey){
-						return cb("Expecting to remove forger "+block.generatorPublicKey+" but removed "+generator, block)
-					}
-					else {
-						return cb(null, block);
-					}
-				}
-			});
+			__private.collectedfees[round] -= block.totalFee;
+			var generator = __private.forgers[round].pop();
+			if(generator != block.generatorPublicKey){
+				return cb("Expecting to remove forger "+block.generatorPublicKey+" but removed "+generator, block)
+			}
+			else {
+				return cb(null, block);
+			}
 		}
 	});
 };
 
 __private.changeRoundForward = function(block, cb){
 	var nextround = __private.current + 1;
-	__private.generateDelegateList(nextround, function(err, fullactivedelegates){
+	__private.updateTotalVotesOnDatabase(function(err){
 		if(err){
 			return cb(err, block);
 		}
 		else {
-			__private.collectedfees[nextround] = 0;
-			__private.forgers[nextround] = [];
-			__private.activedelegates[nextround] = fullactivedelegates.map(function(ad){return ad.publicKey});
-			__private.updateActiveDelegatesStats(function(err){
+			__private.generateDelegateList(nextround, function(err, fullactivedelegates){
 				if(err){
 					return cb(err, block);
 				}
-				else{
-					__private.saveActiveDelegatesOnDatabase(fullactivedelegates, nextround, function(err){
+				else {
+					__private.collectedfees[nextround] = 0;
+					__private.forgers[nextround] = [];
+					__private.activedelegates[nextround] = fullactivedelegates.map(function(ad){return ad.publicKey});
+					__private.updateActiveDelegatesStats(function(err){
 						if(err){
 							return cb(err, block);
 						}
 						else{
-							// we are good to go, let's move to the new round
-							__private.current = nextround;
-							return cb(null, block);
+							__private.saveActiveDelegatesOnDatabase(fullactivedelegates, nextround, function(err){
+								if(err){
+									return cb(err, block);
+								}
+								else{
+									// we are good to go, let's move to the new round
+									__private.current = nextround;
+									return cb(null, block);
+								}
+							});
 						}
 					});
 				}
 			});
 		}
 	});
+};
+
+
+__private.changeRoundBackward = function(block, cb){
+
 };
 
 __private.updateActiveDelegatesStats = function(cb){
@@ -233,7 +239,7 @@ __private.generateDelegateList = function (round, cb) {
 
 __private.randomizeDelegateList = function (activedelegates, round) {
 	// pseudorandom (?!) permutation algorithm.
-	// TODO: useless?
+	// TODO: useless? to improve?
 	var seedSource = round.toString();
 	var currentSeed = crypto.createHash('sha256').update(seedSource, 'utf8').digest();
 
@@ -266,8 +272,11 @@ __private.getKeysSortByVote = function (cb) {
 __private.getCurrentRoundForgers = function(cb) {
 	var round = __private.current;
 	var lastBlock = modules.blockchain.getLastBlock();
+	var firstHeightOfround = (round-1) * slots.delegates;
+	library.db.query(sql.getRoundForgers, {minheight: firstHeightOfround, maxheight: lastBlock.height}).then(function(rows){
 
-	
+	}).catch(cb);
+
 }
 
 // height = 1                   ; round = 1
