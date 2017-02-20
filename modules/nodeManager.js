@@ -217,7 +217,7 @@ __private.prepareBlock = function(block, peer, cb){
 						 var tx=receivedTransactions.find(function(tx){return tx?tx.id==id:false});
 						 if(tx){
 							 transactionIds[i]=tx;
-							 modules.transactionPool.addToMempool(transaction);
+							 modules.transactionPool.addToMempool(tx);
 						 }
 						 else{
 							 tx=foundTransactions.find(function(tx){return tx.id==id});
