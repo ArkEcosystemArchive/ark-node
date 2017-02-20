@@ -232,6 +232,10 @@ TransactionPool.prototype.countMultisignature = function () {
 	return Object.keys(self.multisignature).length;
 };
 
+TransactionPool.prototype.addToMempool = function(transaction){
+	__private.mempool[transaction.id]=transaction;
+};
+
 TransactionPool.prototype.receiveTransactions = function (transactions, cb) {
 	//console.log(transactions);
 	var expirationdate=slots.getTime()-__private.mempoolConfig.maximumAgeInMinutes*60;
