@@ -640,6 +640,7 @@ Loader.prototype.getNetwork = function (force, cb) {
 							library.logger.warn('# Received invalid block header from peer. Can be a tentative to attack the network!');
 							library.logger.warn(peer.string + " sent header",res.body.header);
 							library.logger.warn("errors", verification);
+							modules.peers.remove(peer.ip, peer.port);
 
 							return setImmediate(cb);
 						}
