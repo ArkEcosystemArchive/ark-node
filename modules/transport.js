@@ -385,7 +385,6 @@ Transport.prototype.broadcast = function (config, options, cb) {
 		if (!config.all && peers.length > config.limit) {
 			peers = peers.slice(0,config.limit);
 		}
-		console.log(peers);
 		if (!err) {
 			// TODO: use a good bloom filter lib
 			// filtering out the peers likely already reached
@@ -408,11 +407,14 @@ Transport.prototype.broadcast = function (config, options, cb) {
 				}
 			}, function (err) {
 				if (cb) {
-					return setImmediate(cb, null, {body: null, peer: peers});
+					return cb(err, {body: null, peer: peers});
 				}
 			});
 		} else if (cb) {
-			return setImmediate(cb, err);
+			return cb(err);
+		}
+		else{
+			library.logger.error("Error boradcasting", err);
 		}
 	});
 };
