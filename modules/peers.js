@@ -367,8 +367,16 @@ Peers.prototype.update = function (peer) {
 
 	if(__private.peers[(peer.ip+":"+peer.port)]){
 		if(peer.blockheader){
-			__private.peers[(peer.ip+":"+peer.port)] = peer;
-			__private.peers[(peer.ip+":"+peer.port)].height = peer.blockheader.height;
+			var lastBlock = modules.blockchain.getLastBlock()
+			if(peer.blockheader.height > lastBlock.height && peer.blockheader.timestamp > lastBlock.timestamp){
+				__private.peers[(peer.ip+":"+peer.port)] = peer;
+				__private.peers[(peer.ip+":"+peer.port)].height = peer.blockheader.height;
+			}
+			else{
+				delete __private.peers[(peer.ip+":"+peer.port)];
+				removed.push(peer.ip+":"+peer.port);
+
+			}
 		}
 		else if(peer.height){
 			__private.peers[(peer.ip+":"+peer.port)].height = peer.height

@@ -854,6 +854,12 @@ Blocks.prototype.verifyBlockHeader = function (block) {
 		result.errors.push(['Invalid block reward:', block.reward, 'expected:', expectedReward].join(' '));
 	}
 
+	var lastBlock = modules.blockchain.getLastBlock();
+
+	if( block.height > lastBlock.height && block.timestamp < lastBlock.timestamp){
+		result.errors.push('Invalid block timestamp, likely from another chain');
+	}
+
 	var valid;
 
 	try {
