@@ -382,9 +382,6 @@ Transport.prototype.broadcast = function (config, options, cb) {
 
 	config.limit = config.limit || 1;
 	modules.peers.list(config, function (err, peers) {
-		peers = peers.filter(function(peer){
-			return !!peer.blockheader;
-		})
 		if (!config.all && peers.length > config.limit) {
 			peers = peers.slice(0,config.limit);
 		}
