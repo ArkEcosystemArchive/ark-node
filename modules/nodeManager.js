@@ -100,6 +100,7 @@ NodeManager.prototype.onBlocksReceived = function(blocks, peer, cb) {
 			block.totalFee = parseInt(block.totalFee);
 			block.verified = false;
 		  block.processed = false;
+			block.broadcast = blocks.length == 1;
 
 			// rationale: onBlocksReceived received is called within another thread than onBlockReceived
 			// so we prevent from processing blocks we asked for and we received in the between via normal broadcast
