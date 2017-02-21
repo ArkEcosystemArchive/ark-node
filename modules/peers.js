@@ -246,7 +246,7 @@ Peers.prototype.list = function (options, cb) {
 	var list = peers.map(function (key) {
     return __private.peers[key];
 	});
-	
+
 	function shuffle(array) {
 	  var currentIndex = array.length, temporaryValue, randomIndex;
 
@@ -266,7 +266,7 @@ Peers.prototype.list = function (options, cb) {
 	  return array;
 	}
 
-	var list = shuffle(list).sort(function(a, b){
+	list = shuffle(list).sort(function(a, b){
 		if(a.blockheader){
 			return -1;
 		}
@@ -278,7 +278,7 @@ Peers.prototype.list = function (options, cb) {
 		}
 	});
 
-	return setImmediate(cb, null, list);
+	return cb(null, list);
 	// options.limit = options.limit || 100;
 	//
 	// library.db.query(sql.randomList(options), options).then(function (rows) {
