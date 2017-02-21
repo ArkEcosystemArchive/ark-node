@@ -246,6 +246,7 @@ Peers.prototype.list = function (options, cb) {
 	var list = peers.map(function (key) {
     return __private.peers[key];
 	});
+	
 	function shuffle(array) {
 	  var currentIndex = array.length, temporaryValue, randomIndex;
 
