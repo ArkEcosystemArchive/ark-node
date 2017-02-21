@@ -385,7 +385,7 @@ Transport.prototype.broadcast = function (config, options, cb) {
 		if (!config.all && peers.length > config.limit) {
 			peers = peers.slice(0,config.limit);
 		}
-		log(peers);
+		console.log(peers);
 		if (!err) {
 			// TODO: use a good bloom filter lib
 			// filtering out the peers likely already reached
