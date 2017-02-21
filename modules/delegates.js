@@ -231,7 +231,17 @@ __private.getBlockSlotData = function (slot, height, cb) {
 			var delegate_id = activeDelegates[delegate_pos];
 
 			if (delegate_id && __private.keypairs[delegate_id]) {
-				return setImmediate(cb, null, {time: slots.getSlotTime(currentSlot), keypair: __private.keypairs[delegate_id]});
+				// If expected slot delegate is configured but not a delegate - refresh state
+				if (!__private.keypairs[delegate_id].isDelegate) {
+					__private.checkPendingDelegate(__private.keypairs[delegate_id], function (err) {
+						if (err) {
+							return setImmediate(cb, err);
+						}
+					});
+				}
+				if (__private.keypairs[delegate_id].isDelegate) {
+					return setImmediate(cb, null, {time: slots.getSlotTime(currentSlot), keypair: __private.keypairs[delegate_id]});
+				}
 			}
 		}
 
@@ -264,7 +274,6 @@ __private.forge = function (cb) {
 			err = 'Skipping delegate slot';
 			return setImmediate(cb, err);
 		}
-
 
 		var coldstart = library.config.forging.coldstart ? library.config.forging.coldstart : 60;
 		if ((slots.getSlotNumber(currentBlockData.time) === slots.getSlotNumber()) && (new Date().getTime()-__private.coldstart > coldstart*1000)) {
@@ -466,30 +475,38 @@ __private.loadMyDelegates = function (cb) {
 	async.eachSeries(secrets, function (secret, cb) {
 		var keypair = library.ed.makeKeypair(secret);
 
-		modules.accounts.getAccount({
-			publicKey: new Buffer(keypair.publicKey, "hex")
-		}, function (err, account) {
-			if (err) {
-				return setImmediate(cb, err);
-			}
-
-			if (!account) {
-				return setImmediate(cb, 'Account ' + keypair.publicKey.toString('hex') + ' not found');
-			}
-
-			if (account.isDelegate) {
-				__private.keypairs[keypair.publicKey.toString('hex')] = keypair;
-				library.logger.info('Forging enabled on account: ' + account.address);
-			} else {
-				library.logger.warn('Delegate with this public key not found: ' + keypair.publicKey.toString('hex'));
-			}
-			return setImmediate(cb);
-		});
+		return __private.checkPendingDelegate(keypair, cb);
 	}, function(err){
 		return setImmediate(cb, err, __private.keypairs);
 	});
 };
 
+__private.checkPendingDelegate = function (keypair, cb) {
+	var publicKey = keypair.publicKey.toString('hex');
+
+	modules.accounts.getAccount({
+		publicKey: new Buffer(keypair.publicKey, "hex")
+	}, function (err, account) {
+		if (err) {
+			return setImmediate(cb, err);
+		}
+
+		__private.keypairs[publicKey] = keypair;
+		__private.keypairs[publicKey].isDelegate = false;
+
+		if (!account) {
+			return setImmediate(cb, 'Account ' + publicKey + ' not found');
+		}
+
+		if (account.isDelegate) {
+			__private.keypairs[publicKey].isDelegate = true;
+			library.logger.info('Forging enabled on account: ' + account.address);
+		} else {
+			library.logger.warn('Delegate with this public key not found: ' + publicKey);
+		}
+		return setImmediate(cb);
+	});
+};
 
 // Public methods
 Delegates.prototype.isAForgingDelegatesPublicKey = function(publicKey) {
