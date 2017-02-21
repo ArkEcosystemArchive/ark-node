@@ -274,7 +274,7 @@ Peers.prototype.list = function (options, cb) {
 			return 1;
 		}
 		else {
-			return -10000;
+			return 10000;
 		}
 	});
 
@@ -350,8 +350,10 @@ Peers.prototype.remove = function (pip, port) {
 		return false;
 	}
 
-	// to prevent from reappearing too often
-	removed.push(pip+":"+port);
+	// to prevent from reappearing too often it is added to "removed"
+	if(removed.indexOf(pip+":"+port) == -1){
+		removed.push(pip+":"+port);
+	}
 	delete __private.peers[pip+":"+port];
 	return true;
 	// library.db.query(sql.remove, params).then(function (res) {
@@ -379,7 +381,9 @@ Peers.prototype.update = function (peer) {
 	// } else {
 	// 	query = sql.upsertWithoutState;
 	// }
-
+	if(removed.indexOf(peer.ip+":"+peer.port) > -1){
+		return;
+	}
 	if(__private.peers[(peer.ip+":"+peer.port)]){
 		if(peer.blockheader){
 			var lastBlock = modules.blockchain.getLastBlock()
@@ -388,8 +392,7 @@ Peers.prototype.update = function (peer) {
 				__private.peers[(peer.ip+":"+peer.port)].height = peer.blockheader.height;
 			}
 			else{
-				delete __private.peers[(peer.ip+":"+peer.port)];
-				removed.push(peer.ip+":"+peer.port);
+				self.remove(peer.ip,peer.port);
 			}
 		}
 		else if(peer.height){
