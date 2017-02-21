@@ -238,6 +238,7 @@ Peers.prototype.inspect = function (peer) {
 	return peer;
 };
 
+// send peers, with in priority peers that seems to be in same chain
 Peers.prototype.list = function (options, cb) {
 
 	var peers=Object.keys(__private.peers);
@@ -263,7 +264,20 @@ Peers.prototype.list = function (options, cb) {
 
 	  return array;
 	}
-	return setImmediate(cb, null, shuffle(list));
+
+	var list = shuffle(list).sort(function(a, b){
+		if(a.blockheader){
+			return -1;
+		}
+		else if(b.blockheader){
+			return 1;
+		}
+		else {
+			return -10000;
+		}
+	});
+
+	return setImmediate(cb, null, list);
 	// options.limit = options.limit || 100;
 	//
 	// library.db.query(sql.randomList(options), options).then(function (rows) {
