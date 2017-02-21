@@ -382,7 +382,6 @@ Transport.prototype.broadcast = function (config, options, cb) {
 
 	config.limit = config.limit || 1;
 	modules.peers.list(config, function (err, peers) {
-		console.log(err);
 		if (!config.all && peers.length > config.limit) {
 			peers = peers.slice(0,config.limit);
 		}
@@ -415,7 +414,7 @@ Transport.prototype.broadcast = function (config, options, cb) {
 			return cb(err);
 		}
 		else{
-			library.logger.error("Error boradcasting", err);
+			library.logger.error("Error broadcasting", err);
 		}
 	});
 };
