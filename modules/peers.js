@@ -389,7 +389,6 @@ Peers.prototype.update = function (peer) {
 			else{
 				delete __private.peers[(peer.ip+":"+peer.port)];
 				removed.push(peer.ip+":"+peer.port);
-
 			}
 		}
 		else if(peer.height){
