@@ -6,30 +6,48 @@ The Token Exchange Campaign is up at https://tec.ark.io
 
 This version is still alpha, use at your own risks
 
+## Install, Upgrade etc...
+You need to provision a linux (ubuntu tested) server (digital ocean, vultur or other).
+
+Then use the excellent ark-commander script
+```
+cd
+wget https://ark.io/ARKcommander.sh
+bash ARKcommander.sh
+```
+
+For developers, please read below in section "Developer Installation"
+
 ## Details
 
 This is a fork from Lisk with the following features:
-- Removed sidechains
+- Removed sidechains (deprecated in favor of smartbridge)
 - Removed custom node version
 - Removed UI for stability and security reasons
 - Changed some constants (block rewards, blocktime etc...)
 - Added simple PBFT before forging new block
-- Ditch addresses from the protocol in favor of bitcoin like system, enabling HD Wallet
+- Ditch addresses from the protocol in favor of bitcoin like system, enabling HD Wallet as for BIP32
+- Completely rewritten node management using a single NodeManager and messaging system
+- Completely rewritten round management (removed mem_round, reward block fees to forger)
 - Added 64 bytes vendorField as first iteration of smart bridge
 - Made peers management entirely in-memory for efficiency
 - Strengthened the transaction management and broadcast (reject often, reject soon)
-- Rearchitect with relay nodes and forging nodes, relay nodes broadcasting only block headers (still ongoing).
+- Rearchitect with relay nodes and forging nodes
+- Nodes broadcast only block headers.
 
-Planned features:
+### Planned features:
+- Simple blockchain validation for SPV and use in lite clients
 - Add IPFS as first class citizen (using smartbridge addressing)
 - Protocol improvements (uncle forging, voting weights).
 - Remove unsecured API
 - Routing tables
 
+### Performance
+- stable on testnet at 5tx/s
+- pushed to 10tx/s on devnet
 
-## Installation
 
-**NOTE:** The following is applicable to: **Ubuntu 14.04 (LTS) - x86_64**.
+## Developer Installation
 
 Install essentials:
 
@@ -46,7 +64,7 @@ sudo -u postgres createuser --createdb --password $USER
 createdb ark_test
 ```
 
-Install Node.js (tested with version 6.9.2, but any recent should do):
+Install Node.js (tested with version 6.9.2, but any recent LTS release should do):
 
 ```
 sudo apt-get install -y nodejs
@@ -68,22 +86,24 @@ cd ark-node
 
 Install node modules:
 ```
+npm install libpq secp256k1
 npm install
 ```
 
-Optionally if you want to perform tests, load git submodule [ark-js](https://github.com/arkecosystem/ark-js):
-```
-git submodule init
-git submodule update
-```
-
 ## Launch
-To launch Ark on official testnet:
+To launch Ark on testnet:
 ```
 createdb ark_testnet
 node run start:testnet
 ```
-To launch Ark on official mainnet (when launched):
+
+To launch Ark on devtnet:
+```
+createdb ark_devnet
+node run start:devnet
+```
+
+To launch Ark on mainnet (when launched):
 ```
 createdb ark_mainnet
 node run start:mainnet
@@ -119,6 +139,12 @@ Then you can distribute the config.json (without the delegates secrets inside, a
 
 
 ## Tests
+Load git submodule [ark-js](https://github.com/arkecosystem/ark-js):
+```
+git submodule init
+git submodule update
+```
+
 You should run using test configurations
 
 ```
