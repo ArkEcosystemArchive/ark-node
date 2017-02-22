@@ -32,6 +32,10 @@ function Field (validator, path, value, rules, thisArg) {
  * @param {*} thisArg Value used as this reference within rule callback calls.
  * @returns {Validator.Field}
  */
+//
+//__API__ `child`
+
+//
 Field.prototype.child = function (path, value, rules, thisArg) {
 	var field = this.validator.createField(this.path.concat(path), value, rules, thisArg);
 	field.report = this.report;
@@ -42,6 +46,10 @@ Field.prototype.child = function (path, value, rules, thisArg) {
  * Validate field value and trigger callback on result
  * @param callback
  */
+//
+//__API__ `validate`
+
+//
 Field.prototype.validate = function(callback) {
 	var stack = this._stack;
 	// TODO copy value
@@ -122,6 +130,10 @@ Field.prototype.validate = function(callback) {
  * End validation. Drop validation stack.
  * @param {Error} err Report and error if passed. Optional
  */
+//
+//__API__ `end`
+
+//
 Field.prototype.end = function(err) {
 	this._stack = [];
 
@@ -141,6 +153,10 @@ Field.prototype.end = function(err) {
  * Create validation async. Callback get done function to emit validation end.
  * @param {function(done:function)} callback
  */
+//
+//__API__ `async`
+
+//
 Field.prototype.async = function(callback) {
 	this.isAsync = true;
 	var self = this;
@@ -170,6 +186,10 @@ Field.prototype.async = function(callback) {
  * Report an invalid validation result
  * @param {{}} report Validation report object
  */
+//
+//__API__ `issue`
+
+//
 Field.prototype.issue = function(report){
 	this.hasError = true;
 	report.path = this.path.concat(report.path);

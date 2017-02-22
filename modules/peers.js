@@ -215,6 +215,10 @@ __private.getByFilter = function (filter, cb) {
 };
 
 // Public methods
+//
+//__API__ `inspect`
+
+//
 Peers.prototype.inspect = function (peer) {
 	if(peer == -1){
 		return {};
@@ -239,6 +243,10 @@ Peers.prototype.inspect = function (peer) {
 };
 
 // send peers, with in priority peers that seems to be in same chain
+//
+//__API__ `list`
+
+//
 Peers.prototype.list = function (options, cb) {
 
 	var peers=Object.keys(__private.peers);
@@ -289,6 +297,10 @@ Peers.prototype.list = function (options, cb) {
 	// });
 };
 
+//
+//__API__ `state`
+
+//
 Peers.prototype.state = function (pip, port, state, timeoutSeconds, cb) {
 	var isFrozenList = _.find(library.config.peers, function (peer) {
 		return peer.ip === pip && peer.port === port;
@@ -318,6 +330,10 @@ Peers.prototype.state = function (pip, port, state, timeoutSeconds, cb) {
 	});
 };
 
+//
+//__API__ `timeoutPeer`
+
+//
 Peers.prototype.timeoutPeer = function(peer){
 	if(__private.coldstart+10000 < new Date().getTime()){
 		__private.timeoutPeers[peer.ip+":"+peer.port] = peer;
@@ -325,6 +341,10 @@ Peers.prototype.timeoutPeer = function(peer){
 	}
 }
 
+//
+//__API__ `releaseTimeoutPeers`
+
+//
 Peers.prototype.releaseTimeoutPeers = function(){
 	async.each(Object.keys(__private.timeoutPeers), function (peerstring, cb) {
 		var peer = __private.timeoutPeers[peerstring];
@@ -342,6 +362,10 @@ Peers.prototype.releaseTimeoutPeers = function(){
 	});
 }
 
+//
+//__API__ `remove`
+
+//
 Peers.prototype.remove = function (pip, port) {
 	var isFrozenList = library.config.peers.list.find(function (peer) {
 		return peer.ip === pip && peer.port === port;
@@ -365,6 +389,10 @@ Peers.prototype.remove = function (pip, port) {
 	// });
 };
 
+//
+//__API__ `update`
+
+//
 Peers.prototype.update = function (peer) {
 	// var params = {
 	// 	ip: peer.ip,
@@ -413,11 +441,19 @@ Peers.prototype.update = function (peer) {
 	// });
 };
 
+//
+//__API__ `getFreshPeer`
+
+//
 Peers.prototype.getFreshPeer = function(peer) {
 	return __private.peers[peer.ip+":"+peer.port];
 }
 
 // Events
+//
+//__API__ `onBind`
+
+//
 Peers.prototype.onBind = function (scope) {
 	modules = scope;
 	for(var i=0;i<library.config.peers.list.length;i++){
@@ -427,10 +463,18 @@ Peers.prototype.onBind = function (scope) {
 };
 
 
+//
+//__API__ `onAttachPublicApi`
+
+//
 Peers.prototype.onAttachPublicApi = function () {
  	__private.attachApi();
 };
 
+//
+//__API__ `onUpdatePeers`
+
+//
 Peers.prototype.onUpdatePeers = function () {
 	__private.updatePeersList(function (err) {
 		if (err) {
@@ -449,6 +493,10 @@ Peers.prototype.onUpdatePeers = function () {
 	});
 };
 
+//
+//__API__ `onPeersReady`
+
+//
 Peers.prototype.onPeersReady = function () {
 
 

@@ -15,7 +15,7 @@ var __private = {
 	keypairs: {}
 };
 
-// Constructor
+// ## Constructor
 function NodeManager (cb, scope) {
 	library = scope;
 	self = this;
@@ -29,16 +29,31 @@ function NodeManager (cb, scope) {
 	setImmediate(cb, null, self);
 }
 
+
+
+//
+//__API__ `onBind`
+
+//
 NodeManager.prototype.onBind = function (scope) {
 	modules = scope;
 };
 
-//Main entry point of the node app
+// ## Main entry point of the node app
+//
+//
+//__API__ `startApp`
+
+//
 NodeManager.prototype.startApp = function(){
 	library.logger.info("Starting Node Manager");
   library.bus.message('loadDatabase');
 }
 
+//
+//__API__ `onDatabaseLoaded`
+
+//
 NodeManager.prototype.onDatabaseLoaded = function(lastBlock) {
 	library.bus.message('startTransactionPool');
 	library.bus.message('startBlockchain');
@@ -58,11 +73,19 @@ NodeManager.prototype.onDatabaseLoaded = function(lastBlock) {
 	library.bus.message('loadDelegates');
 };
 
+//
+//__API__ `onBlockchainReady`
+
+//
 NodeManager.prototype.onBlockchainReady = function() {
 	library.logger.info("Blockchain in sync. Loading delegates");
 	library.bus.message('loadDelegates');
 }
 
+//
+//__API__ `onDelegatesLoaded`
+
+//
 NodeManager.prototype.onDelegatesLoaded = function(keypairs) {
   var numberOfDelegates = Object.keys(keypairs).length;
 	var loadedPairs = Object.keys(__private.keypairs).length;
@@ -91,22 +114,38 @@ NodeManager.prototype.onDelegatesLoaded = function(keypairs) {
 
 };
 
+//
+//__API__ `onNetworkApiAttached`
+
+//
 NodeManager.prototype.onNetworkApiAttached = function(){
   library.bus.message('updatePeers');
 }
 
+//
+//__API__ `onPeersUpdated`
+
+//
 NodeManager.prototype.onPeersUpdated = function() {
 	library.bus.message('observeNetwork');
 };
 
+//
+//__API__ `onNetworkObserved`
+
+//
 NodeManager.prototype.onNetworkObserved = function(network){
 	if(!__private.lastBlock || network.height > __private.lastBlock.height){
 		library.bus.message('downloadBlocks', function(err,lastBlock){
-			//console.log("bla");
+
 		});
 	}
 }
 
+//
+//__API__ `onBlocksReceived`
+
+//
 NodeManager.prototype.onBlocksReceived = function(blocks, peer, cb) {
 	// we had to pull several blocks from network? means we are not in sync anymore
 	if(blocks.length > 0){
@@ -142,7 +181,7 @@ NodeManager.prototype.onBlocksReceived = function(blocks, peer, cb) {
 				library.logger.error(err, currentBlock);
 				modules.blockchain.removeBlock(currentBlock);
 			}
-			//console.log(currentBlock.height);
+
 			// we don't deal with download management, just return to say "blocks processed, go ahead"
 			return mSequence && mSequence(err, currentBlock);
 
@@ -159,6 +198,10 @@ NodeManager.prototype.onBlocksReceived = function(blocks, peer, cb) {
 	}, cb);
 }
 
+//
+//__API__ `onRebuildBlockchain`
+
+//
 NodeManager.prototype.onRebuildBlockchain = function(blocksToRemove, state, cb) {
 	library.managementSequence.add(function (mSequence) {
 		modules.loader.getNetwork(true, function(err, network){
@@ -278,6 +321,10 @@ __private.prepareBlock = function(block, peer, cb){
 	}
 }
 
+//
+//__API__ `swapLastBlockWith`
+
+//
 NodeManager.prototype.swapLastBlockWith = function(block, peer, cb){
 	async.waterfall([
 		function(seriesCb){
@@ -305,6 +352,10 @@ NodeManager.prototype.swapLastBlockWith = function(block, peer, cb){
 	});
 };
 
+//
+//__API__ `onBlockReceived`
+
+//
 NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 	library.managementSequence.add(function (mSequence) {
 		if(!block.ready){
@@ -365,6 +416,10 @@ NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 	}, cb);
 };
 
+//
+//__API__ `onBlockForged`
+
+//
 NodeManager.prototype.onBlockForged = function(block, cb) {
 	library.managementSequence.add(function (mSequence) {
 		if(!block.ready){
@@ -381,20 +436,32 @@ NodeManager.prototype.onBlockForged = function(block, cb) {
 	}, cb);
 }
 
+//
+//__API__ `onBlockVerified`
+
+//
 NodeManager.prototype.onBlockVerified = function(block, cb) {
-	//console.log("onBlockVerified - "+block.height);
+
 	library.bus.message('processBlock', block, cb);
 }
 
+//
+//__API__ `onBlockProcessed`
+
+//
 NodeManager.prototype.onBlockProcessed = function(block, cb) {
-	//console.log(block.height);
-	//console.log("onBlockProcessed - "+ block.height);
+
+
 	if(block.broadcast){
 		library.bus.message('broadcastBlock', block);
 	}
 	cb && cb(null, block);
 }
 
+//
+//__API__ `onTransactionsReceived`
+
+//
 NodeManager.prototype.onTransactionsReceived = function(transactions, source, cb) {
 	library.managementSequence.add(function(mSequence){
 		if(!source || typeof source !== "string"){
@@ -407,7 +474,7 @@ NodeManager.prototype.onTransactionsReceived = function(transactions, source, cb
 				tx.broadcast = true;
 				tx.hop = 0;
 			});
-			//console.log(transactions);
+
 			library.bus.message("addTransactionsToPool", transactions, mSequence);
 		}
 

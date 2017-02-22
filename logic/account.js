@@ -355,6 +355,10 @@ function Account (scope, cb) {
 	return setImmediate(cb, null, this);
 }
 
+//
+//__API__ `createTables`
+
+//
 Account.prototype.createTables = function (cb) {
 	// var sql = new pgp.QueryFile(path.join('sql', 'memoryTables.sql'), {minify: true});
 	//
@@ -367,6 +371,10 @@ Account.prototype.createTables = function (cb) {
 	return cb();
 };
 
+//
+//__API__ `removeTables`
+
+//
 Account.prototype.removeTables = function (cb) {
 	var sqles = [], sql;
 
@@ -391,6 +399,10 @@ Account.prototype.removeTables = function (cb) {
 	});
 };
 
+//
+//__API__ `objectNormalize`
+
+//
 Account.prototype.objectNormalize = function (account) {
 	var report = this.scope.schema.validate(account, {
 		id: 'Account',
@@ -407,6 +419,10 @@ Account.prototype.objectNormalize = function (account) {
 	return account;
 };
 
+//
+//__API__ `verifyPublicKey`
+
+//
 Account.prototype.verifyPublicKey = function (publicKey) {
 	if (publicKey !== undefined) {
 		// Check type
@@ -426,6 +442,10 @@ Account.prototype.verifyPublicKey = function (publicKey) {
 	}
 };
 
+//
+//__API__ `toDB`
+
+//
 Account.prototype.toDB = function (raw) {
 	this.binary.forEach(function (field) {
 		if (raw[field]) {
@@ -436,6 +456,10 @@ Account.prototype.toDB = function (raw) {
 	return raw;
 };
 
+//
+//__API__ `get`
+
+//
 Account.prototype.get = function (filter, fields, cb) {
 	if (typeof(fields) === 'function') {
 		cb = fields;
@@ -449,6 +473,10 @@ Account.prototype.get = function (filter, fields, cb) {
 	});
 };
 
+//
+//__API__ `getAll`
+
+//
 Account.prototype.getAll = function (filter, fields, cb) {
 	if (typeof(fields) === 'function') {
 		cb = fields;
@@ -504,6 +532,10 @@ Account.prototype.getAll = function (filter, fields, cb) {
 	});
 };
 
+//
+//__API__ `set`
+
+//
 Account.prototype.set = function (address, fields, cb) {
 	// Verify public key
 	this.verifyPublicKey(fields.publicKey);
@@ -528,6 +560,10 @@ Account.prototype.set = function (address, fields, cb) {
 
 
 //TODO: to simplify with the new delegate listing algo
+//
+//__API__ `merge`
+
+//
 Account.prototype.merge = function (address, diff, cb) {
 	var update = {}, remove = {}, insert = {}, insert_object = {}, remove_object = {}, round = [];
 
@@ -706,6 +742,10 @@ Account.prototype.merge = function (address, diff, cb) {
 	});
 };
 
+//
+//__API__ `remove`
+
+//
 Account.prototype.remove = function (address, cb) {
 	var sql = jsonSql.build({
 		type: 'remove',

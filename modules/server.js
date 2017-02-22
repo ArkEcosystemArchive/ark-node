@@ -47,14 +47,26 @@ __private.attachApi = function () {
 // Public methods
 
 // Events
+//
+//__API__ `onBind`
+
+//
 Server.prototype.onBind = function (scope) {
 	modules = scope;
 };
 
+//
+//__API__ `onAttachPublicApi`
+
+//
 Server.prototype.onAttachPublicApi = function () {
  	__private.attachApi();
 };
 
+//
+//__API__ `cleanup`
+
+//
 Server.prototype.cleanup = function (cb) {
 	return setImmediate(cb);
 };

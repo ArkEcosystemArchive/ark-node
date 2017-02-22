@@ -32,6 +32,10 @@ function calc (height) {
 }
 
 // Public methods
+//
+//__API__ `create`
+
+//
 Transaction.prototype.create = function (data) {
 	if (!__private.types[data.type]) {
 		throw 'Unknown transaction type ' + data.type;
@@ -68,6 +72,10 @@ Transaction.prototype.create = function (data) {
 	return trs;
 };
 
+//
+//__API__ `attachAssetType`
+
+//
 Transaction.prototype.attachAssetType = function (typeId, instance) {
 	if (instance && typeof instance.create === 'function' && typeof instance.getBytes === 'function' &&
 		typeof instance.calculateFee === 'function' && typeof instance.verify === 'function' &&
@@ -83,11 +91,19 @@ Transaction.prototype.attachAssetType = function (typeId, instance) {
 	}
 };
 
+//
+//__API__ `sign`
+
+//
 Transaction.prototype.sign = function (keypair, trs) {
 	var sign = this.scope.ed.sign(this.getHash(trs), keypair).toString('hex');
 	return sign;
 };
 
+//
+//__API__ `multisign`
+
+//
 Transaction.prototype.multisign = function (keypair, trs) {
 	var bytes = this.getBytes(trs, true, true);
 	var hash = crypto.createHash('sha256').update(bytes).digest();
@@ -95,15 +111,27 @@ Transaction.prototype.multisign = function (keypair, trs) {
 	return sign;
 };
 
+//
+//__API__ `getId`
+
+//
 Transaction.prototype.getId = function (trs) {
 	return this.getHash(trs).toString('hex');
 };
 
+//
+//__API__ `getHash`
+
+//
 Transaction.prototype.getHash = function (trs) {
 	return crypto.createHash('sha256').update(this.getBytes(trs)).digest();
 };
 
 // TODO: unfinished
+//
+//__API__ `fromBytes`
+
+//
 Transaction.prototype.fromBytes = function(buffer){
 	var tx = {};
 	tx.type = buffer.readByte();
@@ -113,6 +141,10 @@ Transaction.prototype.fromBytes = function(buffer){
 
 
 
+//
+//__API__ `getBytes`
+
+//
 Transaction.prototype.getBytes = function (trs, skipSignature, skipSecondSignature) {
 	if (!__private.types[trs.type]) {
 		throw 'Unknown transaction type ' + trs.type;
@@ -199,6 +231,10 @@ Transaction.prototype.getBytes = function (trs, skipSignature, skipSecondSignatu
 	return bb.toBuffer();
 };
 
+//
+//__API__ `ready`
+
+//
 Transaction.prototype.ready = function (trs, sender) {
 	if (!__private.types[trs.type]) {
 		throw 'Unknown transaction type :' + trs.type;
@@ -212,6 +248,10 @@ Transaction.prototype.ready = function (trs, sender) {
 };
 
 
+//
+//__API__ `countById`
+
+//
 Transaction.prototype.countById = function (trs, cb) {
 	this.scope.db.one(sql.countById, { id: trs.id }).then(function (row) {
 		return setImmediate(cb, null, row.count);
@@ -221,6 +261,10 @@ Transaction.prototype.countById = function (trs, cb) {
 	});
 };
 
+//
+//__API__ `checkConfirmed`
+
+//
 Transaction.prototype.checkConfirmed = function (trs, cb) {
 	this.countById(trs, function (err, count) {
 		if (err) {
@@ -233,6 +277,10 @@ Transaction.prototype.checkConfirmed = function (trs, cb) {
 	});
 };
 
+//
+//__API__ `checkBalance`
+
+//
 Transaction.prototype.checkBalance = function (amount, balance, trs, sender) {
 	var exceededBalance = bignum(sender[balance].toString()).lessThan(amount);
 	var exceeded = (trs.blockId !== genesisblock.block.id && exceededBalance);
@@ -246,6 +294,10 @@ Transaction.prototype.checkBalance = function (amount, balance, trs, sender) {
 	};
 };
 
+//
+//__API__ `process`
+
+//
 Transaction.prototype.process = function (trs, sender, requester, cb) {
 	if (typeof requester === 'function') {
 		cb = requester;
@@ -317,6 +369,10 @@ Transaction.prototype.process = function (trs, sender, requester, cb) {
 	}.bind(this));
 };
 
+//
+//__API__ `verify`
+
+//
 Transaction.prototype.verify = function (trs, sender, requester, cb) {
 	var valid = false;
 	var err = null;
@@ -515,6 +571,10 @@ Transaction.prototype.verify = function (trs, sender, requester, cb) {
 };
 
 
+//
+//__API__ `verifyFee`
+
+//
 Transaction.prototype.verifyFee = function (trs) {
   // Calculate fee
 	if(!trs.fee || trs.fee < 1) {
@@ -532,6 +592,10 @@ Transaction.prototype.verifyFee = function (trs) {
 	}
 }
 
+//
+//__API__ `verifySignature`
+
+//
 Transaction.prototype.verifySignature = function (trs, publicKey, signature) {
 	if (!__private.types[trs.type]) {
 		throw 'Unknown transaction type ' + trs.type;
@@ -551,6 +615,10 @@ Transaction.prototype.verifySignature = function (trs, publicKey, signature) {
 	return res;
 };
 
+//
+//__API__ `verifySecondSignature`
+
+//
 Transaction.prototype.verifySecondSignature = function (trs, publicKey, signature) {
 	if (!__private.types[trs.type]) {
 		throw 'Unknown transaction type ' + trs.type;
@@ -570,6 +638,10 @@ Transaction.prototype.verifySecondSignature = function (trs, publicKey, signatur
 	return res;
 };
 
+//
+//__API__ `verifyBytes`
+
+//
 Transaction.prototype.verifyBytes = function (bytes, publicKey, signature) {
 	var res;
 
@@ -592,6 +664,10 @@ Transaction.prototype.verifyBytes = function (bytes, publicKey, signature) {
 	return res;
 };
 
+//
+//__API__ `apply`
+
+//
 Transaction.prototype.apply = function (trs, block, sender, cb) {
 	if (!this.ready(trs, sender)) {
 		return setImmediate(cb, 'Transaction is not ready');
@@ -632,6 +708,10 @@ Transaction.prototype.apply = function (trs, block, sender, cb) {
 	}.bind(this));
 };
 
+//
+//__API__ `undo`
+
+//
 Transaction.prototype.undo = function (trs, block, sender, cb) {
 	var amount = bignum(trs.amount.toString());
 	    amount = amount.plus(trs.fee.toString()).toNumber();
@@ -661,6 +741,10 @@ Transaction.prototype.undo = function (trs, block, sender, cb) {
 	}.bind(this));
 };
 
+//
+//__API__ `applyUnconfirmed`
+
+//
 Transaction.prototype.applyUnconfirmed = function (trs, sender, requester, cb) {
 	if (typeof requester === 'function') {
 		cb = requester;
@@ -693,6 +777,10 @@ Transaction.prototype.applyUnconfirmed = function (trs, sender, requester, cb) {
 	}.bind(this));
 };
 
+//
+//__API__ `undoUnconfirmed`
+
+//
 Transaction.prototype.undoUnconfirmed = function (trs, sender, cb) {
 	var amount = bignum(trs.amount.toString());
 	    amount = amount.plus(trs.fee.toString()).toNumber();
@@ -734,6 +822,10 @@ Transaction.prototype.dbFields = [
 	'rawasset'
 ];
 
+//
+//__API__ `dbSave`
+
+//
 Transaction.prototype.dbSave = function (trs) {
 	if (!__private.types[trs.type]) {
 		throw 'Unknown transaction type ' + trs.type;
@@ -784,6 +876,10 @@ Transaction.prototype.dbSave = function (trs) {
 	return promises;
 };
 
+//
+//__API__ `afterSave`
+
+//
 Transaction.prototype.afterSave = function (trs, cb) {
 	var tx_type = __private.types[trs.type];
 
@@ -860,6 +956,10 @@ Transaction.prototype.schema = {
 	required: ['type', 'timestamp', 'senderPublicKey', 'signature']
 };
 
+//
+//__API__ `objectNormalize`
+
+//
 Transaction.prototype.objectNormalize = function (trs) {
 	if (!__private.types[trs.type]) {
 		throw 'Unknown transaction type ' + trs.type;
@@ -890,6 +990,10 @@ Transaction.prototype.objectNormalize = function (trs) {
 	return trs;
 };
 
+//
+//__API__ `dbRead`
+
+//
 Transaction.prototype.dbRead = function (raw) {
 	var tx = raw;
 

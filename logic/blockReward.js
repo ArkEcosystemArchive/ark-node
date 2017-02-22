@@ -27,6 +27,10 @@ __private.parseHeight = function (height) {
 };
 
 // Public methods
+//
+//__API__ `calcMilestone`
+
+//
 BlockReward.prototype.calcMilestone = function (height) {
 	var location = Math.trunc((__private.parseHeight(height) - this.rewardOffset) / this.distance);
 	var lastMile = this.milestones[this.milestones.length - 1];
@@ -38,6 +42,10 @@ BlockReward.prototype.calcMilestone = function (height) {
 	}
 };
 
+//
+//__API__ `calcReward`
+
+//
 BlockReward.prototype.calcReward = function (height) {
 	height = __private.parseHeight(height);
 
@@ -48,6 +56,10 @@ BlockReward.prototype.calcReward = function (height) {
 	}
 };
 
+//
+//__API__ `calcSupply`
+
+//
 BlockReward.prototype.calcSupply = function (height) {
 	height        = __private.parseHeight(height);
 	var milestone = this.calcMilestone(height);

@@ -14,11 +14,19 @@ __private.unconfirmedSignatures = {};
 function Multisignature () {}
 
 // Public methods
+//
+//__API__ `bind`
+
+//
 Multisignature.prototype.bind = function (scope) {
 	modules = scope.modules;
 	library = scope.library;
 };
 
+//
+//__API__ `create`
+
+//
 Multisignature.prototype.create = function (data, trs) {
 	trs.recipientId = null;
 	trs.amount = 0;
@@ -31,10 +39,18 @@ Multisignature.prototype.create = function (data, trs) {
 	return trs;
 };
 
+//
+//__API__ `calculateFee`
+
+//
 Multisignature.prototype.calculateFee = function (trs) {
 	return (trs.asset.multisignature.keysgroup.length + 1) * constants.fees.multisignature;
 };
 
+//
+//__API__ `verify`
+
+//
 Multisignature.prototype.verify = function (trs, sender, cb) {
 	if (!trs.asset || !trs.asset.multisignature) {
 		return setImmediate(cb, 'Invalid transaction asset');
@@ -126,10 +142,18 @@ Multisignature.prototype.verify = function (trs, sender, cb) {
 	});
 };
 
+//
+//__API__ `process`
+
+//
 Multisignature.prototype.process = function (trs, sender, cb) {
 	return setImmediate(cb, null, trs);
 };
 
+//
+//__API__ `getBytes`
+
+//
 Multisignature.prototype.getBytes = function (trs, skip) {
 	var keysgroupBuffer = new Buffer(trs.asset.multisignature.keysgroup.join(''), 'utf8');
 
@@ -144,6 +168,10 @@ Multisignature.prototype.getBytes = function (trs, skip) {
 	return bb.toBuffer();
 };
 
+//
+//__API__ `apply`
+
+//
 Multisignature.prototype.apply = function (trs, block, sender, cb) {
 	__private.unconfirmedSignatures[sender.address] = false;
 
@@ -174,6 +202,10 @@ Multisignature.prototype.apply = function (trs, block, sender, cb) {
 	});
 };
 
+//
+//__API__ `undo`
+
+//
 Multisignature.prototype.undo = function (trs, block, sender, cb) {
 	var multiInvert = Diff.reverse(trs.asset.multisignature.keysgroup);
 
@@ -190,6 +222,10 @@ Multisignature.prototype.undo = function (trs, block, sender, cb) {
 	});
 };
 
+//
+//__API__ `applyUnconfirmed`
+
+//
 Multisignature.prototype.applyUnconfirmed = function (trs, sender, cb) {
 	if (__private.unconfirmedSignatures[sender.address]) {
 		return setImmediate(cb, 'Signature on this account is pending confirmation');
@@ -210,6 +246,10 @@ Multisignature.prototype.applyUnconfirmed = function (trs, sender, cb) {
 	});
 };
 
+//
+//__API__ `undoUnconfirmed`
+
+//
 Multisignature.prototype.undoUnconfirmed = function (trs, sender, cb) {
 	var multiInvert = Diff.reverse(trs.asset.multisignature.keysgroup);
 
@@ -247,6 +287,10 @@ Multisignature.prototype.schema = {
 	required: ['min', 'keysgroup', 'lifetime']
 };
 
+//
+//__API__ `objectNormalize`
+
+//
 Multisignature.prototype.objectNormalize = function (trs) {
 	var report = library.schema.validate(trs.asset.multisignature, Multisignature.prototype.schema);
 
@@ -259,6 +303,10 @@ Multisignature.prototype.objectNormalize = function (trs) {
 	return trs;
 };
 
+//
+//__API__ `dbRead`
+
+//
 Multisignature.prototype.dbRead = function (raw) {
 	if (!raw.m_keysgroup) {
 		return null;
@@ -287,6 +335,10 @@ Multisignature.prototype.dbFields = [
 	'transactionId'
 ];
 
+//
+//__API__ `dbSave`
+
+//
 Multisignature.prototype.dbSave = function (trs) {
 	return {
 		table: this.dbTable,
@@ -300,14 +352,22 @@ Multisignature.prototype.dbSave = function (trs) {
 	};
 };
 
+//
+//__API__ `afterSave`
+
+//
 Multisignature.prototype.afterSave = function (trs, cb) {
 	library.network.io.sockets.emit('multisignatures/change', {});
 	return setImmediate(cb);
 };
 
+//
+//__API__ `ready`
+
+//
 Multisignature.prototype.ready = function (trs, sender) {
-	//console.log(trs);
-	//console.log(sender);
+	
+	
 	if (!Array.isArray(trs.signatures)) {
 		return false;
 	}

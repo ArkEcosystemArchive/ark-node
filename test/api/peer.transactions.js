@@ -115,7 +115,7 @@ describe('POST /peer/transactions', function () {
 
 			node.onNewBlock(function (err) {
 				postTransaction(transaction, function (err, res) {
-					//console.log(res.body);
+					
 					node.expect(res.body).to.have.property('success').to.ok;
 					node.expect(res.body).to.have.property('transactionIds');
 					node.expect(res.body.transactionIds.length).to.equal(0);

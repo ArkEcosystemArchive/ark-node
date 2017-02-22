@@ -21,27 +21,51 @@ function System (cb, scope) {
 // Private methods
 
 // Public methods
+//
+//__API__ `getOS`
+
+//
 System.prototype.getOS = function () {
 	return __private.osName;
 };
 
+//
+//__API__ `getVersion`
+
+//
 System.prototype.getVersion = function () {
 	return __private.version;
 };
 
+//
+//__API__ `getPort`
+
+//
 System.prototype.getPort = function () {
 	return __private.port;
 };
 
+//
+//__API__ `getNethash`
+
+//
 System.prototype.getNethash = function () {
 	return __private.nethash;
 };
 
 // Events
+//
+//__API__ `onBind`
+
+//
 System.prototype.onBind = function (scope) {
 	modules = scope;
 };
 
+//
+//__API__ `isMyself`
+
+//
 System.prototype.isMyself = function (peer) {
 	var interfaces = os.networkInterfaces();
 	return Object.keys(interfaces).some(function(family){

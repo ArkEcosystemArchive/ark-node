@@ -337,12 +337,20 @@ function SanitizeReporter(validator) {
 	this.validator = validator;
 }
 
+//
+//__API__ `format`
+
+//
 SanitizeReporter.prototype.format = function (message, values) {
 	return String(message).replace(/\$\{([^}]+)}/g, function (match, id) {
 		return getByPath(values, id.split('.')) || '';
 	});
 };
 
+//
+//__API__ `convert`
+
+//
 SanitizeReporter.prototype.convert = function (issues) {
 	var self = this;
 

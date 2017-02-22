@@ -1,3 +1,27 @@
+// ### Database Structure
+// a table mem_delegates persisting __private.activedelegates with votes, produced and missed blocks total per round
+//
+// ### rounds.tick(block)
+// add block.fees to __private.collectedfees[round]
+// push block.generatorPublicKey to __private.forgers[round]
+// if end of round detected:
+// - distribute fees to __private.activedelegates[round]
+// - update stats for delegates that have missed block from __private.forgers[round]
+// - calculate __private.activedelegates[round+1] and save to database
+// - set __private.collectedfees[round+1] = 0
+// - round = __private.current++
+//
+// ### rounds.backwardTick(block):
+// if change to round - 1 detected:
+// - sanity check that __private.collectedfees[round] == 0
+// - delete __private.activedelegates[round]
+// - check we have __private.collectedfees[round-1] and __private.activedelegates[round-1], grab them from database if needed
+// - round = __private.current--
+// remove block.fees from __private.collectedfees[round]
+// pop block.generatorPublicKey from __private.forgers[round]
+
+//
+
 'use strict';
 
 var async = require('async');
@@ -6,53 +30,19 @@ var slots = require('../helpers/slots.js');
 var sql = require('../sql/rounds.js');
 var crypto = require('crypto');
 
-// Private fields
-var modules, library, self, __private = {}, shared = {};
+// managing globals
+var modules, library, self;
 
 
-//
-// __private.feesByRound = {};
-// __private.rewardsByRound = {};
-// __private.delegatesByRound = {};
-// __private.unFeesByRound = {};
-// __private.unRewardsByRound = {};
-// __private.unDelegatesByRound = {};
-
-/************************************************************************************
-Database Structure:
-- a table mem_delegates persisting __private.activedelegates with votes, produced and missed blocks total per round
-
-rounds.tick(block):
-- add block.fees to __private.collectedfees[round]
-- push block.generatorPublicKey to __private.forgers[round]
-- if end of round detected:
-  - distribute fees to __private.activedelegates[round]
-	- update stats for delegates that have missed block from __private.forgers[round]
-	- calculate __private.activedelegates[round+1] and save to database
-	- set __private.collectedfees[round+1] = 0
-	- round = __private.current++
-
-rounds.backwardTick(block):
-- if change to round - 1 detected:
-  - sanity check that __private.collectedfees[round] == 0
-	- delete __private.activedelegates[round]
-	- check we have __private.collectedfees[round-1] and __private.activedelegates[round-1]
-	  grab them from database if needed
-	- round = __private.current--
-- remove block.fees from __private.collectedfees[round]
-- pop block.generatorPublicKey from __private.forgers[round]
-
-**************************************************************************************/
-
-
-__private = {
+// holding the round state
+var __private = {
 
 	// for each round, it stores the active delegates of the round ordered by rank
-	// __private.activedelegates[round] = [delegaterank1, delegaterank2, ..., delegaterank51]
+	// `__private.activedelegates[round] = [delegaterank1, delegaterank2, ..., delegaterank51]`
 	activedelegates: {},
 
 	// for each round, store the forgers, so we can update stats about missing blocks
-	// __private.forgers[round] = [forger1, forger2, ..., forgerN]
+	// `__private.forgers[round] = [forger1, forger2, ..., forgerN]`
 	forgers: {},
 
 	// for each round, get the memorize the collected fees
@@ -72,6 +62,10 @@ function Rounds (cb, scope) {
 	return cb(null, self);
 }
 
+//
+//__API__ `tick`
+
+//
 Rounds.prototype.tick = function(block, cb){
 	var round = __private.current;
 
@@ -112,6 +106,11 @@ Rounds.prototype.tick = function(block, cb){
 	}
 }
 
+// *backward tick*
+//
+//__API__ `backwardTick`
+
+//
 Rounds.prototype.backwardTick = function(block, cb){
 	__private.checkAndChangeRoundBackward(block, function(err){
 		if(err){
@@ -144,10 +143,9 @@ Rounds.prototype.backwardTick = function(block, cb){
 			});
 		}
 	});
-
-
 };
 
+// Changing round on next block
 __private.changeRoundForward = function(block, cb){
 	var nextround = __private.current + 1;
 	__private.updateTotalVotesOnDatabase(function(err){
@@ -186,7 +184,7 @@ __private.changeRoundForward = function(block, cb){
 	});
 };
 
-
+// block belongs to the previous round? we prepare state of this previous round
 __private.checkAndChangeRoundBackward = function(block, cb){
 	var round = __private.current;
 	var blockround = self.getRoundFromHeight(block.height);
@@ -220,6 +218,7 @@ __private.checkAndChangeRoundBackward = function(block, cb){
 	}
 };
 
+// Calculate and update on database the forging stats for the round active delegates
 __private.updateActiveDelegatesStats = function(cb){
 	var round = __private.current;
 	var activedelegates = __private.activedelegates[round];
@@ -263,7 +262,8 @@ __private.updateActiveDelegatesStatsOnDatabase = function(forgerStats, round, cb
 	library.db.none(sql.updateActiveDelegatesStats(forgerStats), {round: round}).then(cb).catch(cb);
 };
 
-
+// generate the list of active delegates of the round
+// *WARNING*: To be used exclusively at the beginning of the new round
 __private.generateDelegateList = function (round, cb) {
 	__private.getKeysSortByVote(function (err, activedelegates) {
 		if (err) {
@@ -274,6 +274,8 @@ __private.generateDelegateList = function (round, cb) {
 	});
 };
 
+// the algorithm to randomize active delegate list after they are ordered by vote descending.
+// Return the new list in the order the delegates are allowed to forge in this round
 __private.randomizeDelegateList = function (activedelegates, round) {
 	// pseudorandom (?!) permutation algorithm.
 	// TODO: useless? to improve?
@@ -293,6 +295,8 @@ __private.randomizeDelegateList = function (activedelegates, round) {
 	return activedelegates;
 }
 
+// return the list of active delegates from database ranked by votes
+// *WARNING* to be used at the round change only
 __private.getKeysSortByVote = function (cb) {
 	modules.accounts.getAccounts({
 		isDelegate: 1,
@@ -302,10 +306,11 @@ __private.getKeysSortByVote = function (cb) {
 		if (err) {
 			return cb(err);
 		}
-		return setImmediate(cb, null, rows);
+		return cb(null, rows);
 	});
 };
 
+// Retrieve from the database the delegate that have forged blocks during the current round
 __private.getCurrentRoundForgers = function(cb) {
 	var round = __private.current;
 	var lastBlock = modules.blockchain.getLastBlock();
@@ -320,17 +325,27 @@ __private.getCurrentRoundForgers = function(cb) {
 
 }
 
-// height = 1                   ; round = 1
-// height = slots.delegates     ; round = 1
-// height = slots.delegates + 1 ; round = 2
+// ## API getRoundFromHeight
+// - `height = 1                   -> round = 1`
+// - `height = slots.delegates     -> round = 1`
+// - `height = slots.delegates + 1 -> round = 2`
+//
+//__API__ `getRoundFromHeight`
+
+//
 Rounds.prototype.getRoundFromHeight = function (height) {
 	return Math.floor((height-1) / slots.delegates) + 1;
 };
 
+
+// return the active delegates of the round.
+// *SAFE* to be be invoked whenever
+//
+//__API__ `getActiveDelegates`
+
+//
 Rounds.prototype.getActiveDelegates = function(cb) {
 	var round = __private.current;
-	// console.log(round);
-	// if(__private.activedelegates[round]) console.log(__private.activedelegates[round][0]);
 	if(__private.activedelegates[round]){
 		return cb(null, __private.activedelegates[round]);
 	}
@@ -364,10 +379,20 @@ Rounds.prototype.getActiveDelegates = function(cb) {
 
 
 // Events
+//
+//__API__ `onBind`
+
+//
 Rounds.prototype.onBind = function (scope) {
 	modules = scope;
 };
 
+// When database state is reflected into the code state
+// we prepare __private data
+//
+//__API__ `onDatabaseLoaded`
+
+//
 Rounds.prototype.onDatabaseLoaded = function (lastBlock) {
 
 	var round = self.getRoundFromHeight(lastBlock.height);
@@ -393,13 +418,13 @@ Rounds.prototype.onDatabaseLoaded = function (lastBlock) {
 
 };
 
+//
+//__API__ `cleanup`
 
+//
 Rounds.prototype.cleanup = function (cb) {
 	return cb();
 };
-
-
-// Shared
 
 // Export
 module.exports = Rounds;

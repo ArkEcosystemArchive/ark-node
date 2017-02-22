@@ -191,7 +191,7 @@ __private.loadBlockChain = function () {
 	}
 
 	library.db.query(sql.countBlocks).then(function(rows){
-		//console.log(rows);
+		
 		if(rows[0].count == 1){
 			load(rows[0].count);
 		}
@@ -331,7 +331,7 @@ __private.loadBlocksFromNetwork = function (cb) {
 		}
 	});
 
-	//console.log("loadBlocksFromNetwork");
+	
 
 	//TODO: tryCount is accounting for 2 use cases :
 	// - no more blocks downloaded
@@ -339,8 +339,8 @@ __private.loadBlocksFromNetwork = function (cb) {
 	// should be separated because the strategies are different.
 	async.whilst(
 		function () {
-			//console.log(loaded);
-			//console.log(tryCount);
+			
+			
 			//return !loaded && (tryCount < 5) && (peers.length > tryCount);
 			return modules.blockchain.isMissingNewBlock() && (tryCount < 3) && (peers.length > tryCount);
 		},
@@ -391,8 +391,8 @@ __private.loadBlocksFromNetwork = function (cb) {
 					}
 					library.logger.info("Processsed blocks to height " + lastBlock.height + " from " + peer.string);
 				}
-				//console.log(lastBlock.height);
-				//console.log("next");
+				
+				
 				next();
 			});
 		},
@@ -548,12 +548,20 @@ __private.findGoodPeers = function (heights) {
 
 // Public methods
 
+//
+//__API__ `triggerBlockRemoval`
+
+//
 Loader.prototype.triggerBlockRemoval = function(number){
 	__private.forceRemoveBlocks = number;
 };
 
 
 // get the smallest block id from network
+//
+//__API__ `getNetworkSmallestBlock`
+
+//
 Loader.prototype.getNetworkSmallestBlock = function(){
 	var bestBlock = null;
 	__private.network.peers.forEach(function(peer){
@@ -576,6 +584,10 @@ Loader.prototype.getNetworkSmallestBlock = function(){
 // - We pick 100 random peers from a random peer (could be unreachable).
 // - Then for each of them we grab the height of their blockchain.
 // - With this list we try to get a peer with sensibly good blockchain height (see __private.findGoodPeers for actual strategy).
+//
+//__API__ `getNetwork`
+
+//
 Loader.prototype.getNetwork = function (force, cb) {
 	// If __private.network.height is not so far (i.e. 1 round) from current node height, just return cached __private.network.
 	// If node is forging, do it more often (every block?)
@@ -625,7 +637,7 @@ Loader.prototype.getNetwork = function (force, cb) {
 						}
 
 						var verification = false;
-						//library.logger.debug("received block header", res.body.header);
+						
 						try {
 							// TODO: also check that the delegate was legit to forge the block ?
 							// likely too much work since in the end we use only a few peers of the list
@@ -634,7 +646,7 @@ Loader.prototype.getNetwork = function (force, cb) {
 						} catch (e) {
 							library.logger.error("error:", e);
 						}
-						//console.log(res.body);
+						
 
 						if(!verification.verified){
 							library.logger.warn('# Received invalid block header from peer. Can be a tentative to attack the network!');
@@ -661,7 +673,7 @@ Loader.prototype.getNetwork = function (force, cb) {
 				} else if (!__private.network.peers.length) {
 					return cb('Failed to find enough good peers to sync with');
 				} else {
-					//library.logger.debug('network', __private.network);
+					
 					return cb(null, __private.network);
 				}
 			});
@@ -669,6 +681,10 @@ Loader.prototype.getNetwork = function (force, cb) {
 	});
 };
 
+//
+//__API__ `syncing`
+
+//
 Loader.prototype.syncing = function () {
 	return !!__private.syncFromNetworkIntervalId;
 };
@@ -676,6 +692,10 @@ Loader.prototype.syncing = function () {
 // Events
 
 // The state of blockchain is unclear.
+//
+//__API__ `onPeersReady`
+
+//
 Loader.prototype.onPeersReady = function () {
 
 	// Main loop to observe network state (peers, height, forks etc...)
@@ -862,31 +882,55 @@ Loader.prototype.onPeersReady = function () {
 };
 
 // started up
+//
+//__API__ `onBind`
+
+//
 Loader.prototype.onBind = function (scope) {
 	modules = scope;
 };
 
+//
+//__API__ `onLoadDatabase`
+
+//
 Loader.prototype.onLoadDatabase = function(){
 	__private.loadBlockChain();
 };
 
+//
+//__API__ `onObserveNetwork`
+
+//
 Loader.prototype.onObserveNetwork = function(){
 	self.getNetwork(true, function(err, network){
 		library.bus.message("networkObserved", network);
 	});
 };
 
+//
+//__API__ `onAttachPublicApi`
+
+//
 Loader.prototype.onAttachPublicApi = function () {
  	__private.attachApi();
 };
 
 // Blockchain loaded from database and ready to accept blocks from network
+//
+//__API__ `onDownloadBlocks`
+
+//
 Loader.prototype.onDownloadBlocks = function (cb) {
-	//console.log("onDownloadBlocks");
+	
 	__private.loadBlocksFromNetwork(cb);
 };
 
 // Shutdown asked.
+//
+//__API__ `cleanup`
+
+//
 Loader.prototype.cleanup = function (cb) {
 	if (!__private.noShutdownRequired) {
 		return setImmediate(cb);

@@ -329,7 +329,7 @@ __private.getPreviousBlock = function(block, cb){
 		library.db.query(sql.getBlockById, {
 			id: block.previousBlock
 		}).then(function (rows) {
-			//console.log(rows);
+			
 			previousBlock = rows[0];
 
 			//TODO: get this right without this cleaning
@@ -497,6 +497,10 @@ __private.applyGenesisTransaction = function (block, transaction, sender, cb) {
 };
 
 // Public methods
+//
+//__API__ `lastReceipt`
+
+//
 Blocks.prototype.lastReceipt = function (lastReceipt) {
 	if(lastReceipt){
 		__private.lastReceipt = lastReceipt;
@@ -528,6 +532,10 @@ Blocks.prototype.lastReceipt = function (lastReceipt) {
 	return __private.lastReceipt;
 };
 
+//
+//__API__ `getTransactionsFromIds`
+
+//
 Blocks.prototype.getTransactionsFromIds = function(blockid, ids, cb){
 	__private.getById(blockid, function (err, block) {
 		if (!block || err) {
@@ -543,6 +551,10 @@ Blocks.prototype.getTransactionsFromIds = function(blockid, ids, cb){
 	});
 }
 
+//
+//__API__ `getCommonBlock`
+
+//
 Blocks.prototype.getCommonBlock = function (peer, height, cb) {
 	async.waterfall([
 		function (waterCb) {
@@ -567,7 +579,7 @@ Blocks.prototype.getCommonBlock = function (peer, height, cb) {
 			});
 		},
 		function (res, waterCb) {
-			//console.log(res);
+			
 			library.db.query(sql.getCommonBlock(res.body.common.previousBlock), {
 				id: res.body.common.id,
 				previousBlock: res.body.common.previousBlock,
@@ -588,6 +600,10 @@ Blocks.prototype.getCommonBlock = function (peer, height, cb) {
 	});
 };
 
+//
+//__API__ `count`
+
+//
 Blocks.prototype.count = function (cb) {
 	library.db.query(sql.countByRowId).then(function (rows) {
 		var res = rows.length ? rows[0].count : 0;
@@ -599,6 +615,10 @@ Blocks.prototype.count = function (cb) {
 	});
 };
 
+//
+//__API__ `loadBlocksData`
+
+//
 Blocks.prototype.loadBlocksData = function (filter, options, cb) {
 	if (arguments.length < 3) {
 		cb = options;
@@ -638,6 +658,10 @@ Blocks.prototype.loadBlocksData = function (filter, options, cb) {
 	}, cb);
 };
 
+//
+//__API__ `loadBlocksPart`
+
+//
 Blocks.prototype.loadBlocksPart = function (filter, cb) {
 	self.loadBlocksData(filter, function (err, rows) {
 		var blocks = [];
@@ -650,6 +674,10 @@ Blocks.prototype.loadBlocksPart = function (filter, cb) {
 	});
 };
 
+//
+//__API__ `loadBlocksOffset`
+
+//
 Blocks.prototype.loadBlocksOffset = function (limit, offset, verify, cb) {
 	var newLimit = limit + (offset || 0);
 	var params = { limit: newLimit, offset: offset || 0 };
@@ -710,6 +738,10 @@ Blocks.prototype.loadBlocksOffset = function (limit, offset, verify, cb) {
 	});
 };
 
+//
+//__API__ `removeSomeBlocks`
+
+//
 Blocks.prototype.removeSomeBlocks = function(numbers, cb){
 	if (modules.blockchain.getLastBlock().height === 1) {
 		return setImmediate(cb);
@@ -755,6 +787,10 @@ Blocks.prototype.removeSomeBlocks = function(numbers, cb){
 }
 
 
+//
+//__API__ `removeLastBlock`
+
+//
 Blocks.prototype.removeLastBlock = function(cb){
 	if (modules.blockchain.getLastBlock().height === 1) {
 		return cb();
@@ -787,6 +823,10 @@ Blocks.prototype.removeLastBlock = function(cb){
 	});
 }
 
+//
+//__API__ `loadLastBlock`
+
+//
 Blocks.prototype.loadLastBlock = function (cb) {
 	library.dbSequence.add(function (cb) {
 		library.db.query(sql.loadLastBlock).then(function (rows) {
@@ -806,6 +846,10 @@ Blocks.prototype.loadLastBlock = function (cb) {
 	}, cb);
 };
 
+//
+//__API__ `getLastBlock`
+
+//
 Blocks.prototype.getLastBlock = function () {
 	var lastBlock = modules.blockchain.getLastBlock();
 
@@ -821,9 +865,13 @@ Blocks.prototype.getLastBlock = function () {
 	return lastBlock;
 };
 
+//
+//__API__ `onVerifyBlock`
+
+//
 Blocks.prototype.onVerifyBlock = function (block, cb) {
 	var result = self.verifyBlock(block, true);
-	//console.log(result);
+	
 	if(result.verified){
 		return library.bus.message("blockVerified", block, cb);
 	}
@@ -832,6 +880,10 @@ Blocks.prototype.onVerifyBlock = function (block, cb) {
 	}
 }
 
+//
+//__API__ `verifyBlockHeader`
+
+//
 Blocks.prototype.verifyBlockHeader = function (block) {
 	var result = { verified: false, errors: [] };
 	if(!block.transactions){
@@ -898,6 +950,10 @@ Blocks.prototype.verifyBlockHeader = function (block) {
 // Will return all possible errors that are intrinsic to the block.
 // NO DATABASE access
 // checkPreviousBlock: includes check if we have the previous block of the internal chain
+//
+//__API__ `verifyBlock`
+
+//
 Blocks.prototype.verifyBlock = function (block, checkPreviousBlock) {
 	var result = { verified: false, errors: [] };
 
@@ -1176,6 +1232,10 @@ __private.applyGenesisBlock = function (block, cb) {
 // Main function to process a Verified Block.
 // * Verify the block is compatible with database state (DATABASE readonly)
 // * Apply the block to database if both verifications are ok
+//
+//__API__ `processBlock`
+
+//
 Blocks.prototype.processBlock = function (block, cb) {
 	if (__private.cleanup) {
 		return cb('Cleaning up');
@@ -1288,6 +1348,10 @@ Blocks.prototype.processBlock = function (block, cb) {
 		});
 };
 
+//
+//__API__ `processEmptyBlock`
+
+//
 Blocks.prototype.processEmptyBlock = function (block, cb) {
 	if (__private.cleanup) {
 		return cb('Cleaning up');
@@ -1296,11 +1360,11 @@ Blocks.prototype.processEmptyBlock = function (block, cb) {
 		return cb('Not an empty block', block);
 	}
 
-	//console.log("processEmptyBlock - "+ block.height);
+	
 	return async.applyEachSeries([
 		// function(block, applycb){
 		// 	library.db.query(sql.getBlockId, { id: block.id }).then(function (rows) {
-		// 		//console.log("getBlockId " + block.height);
+		// 		
 		// 		if (rows.length > 0) {
 		// 			return setImmediate(applycb,['Block', block.id, 'already exists'].join(' '));
 		// 		}
@@ -1308,15 +1372,15 @@ Blocks.prototype.processEmptyBlock = function (block, cb) {
 		// 	});
 		// },
 		function(block, applycb){
-			//console.log("validateBlockSlot " + block.height);
+			
 			modules.delegates.validateBlockSlot(block, applycb);
 		},
 		function(block, applycb){
-			//console.log("saveBlock " + block.height);
+			
 			return __private.saveBlock(block, applycb);
 		},
 		function(block, applycb){
-			//console.log("tick " + block.height);
+			
 			return modules.rounds.tick(block, applycb);
 		}
 	],
@@ -1362,6 +1426,10 @@ Blocks.prototype.processEmptyBlock = function (block, cb) {
 	// });
 };
 
+//
+//__API__ `simpleDeleteAfterBlock`
+
+//
 Blocks.prototype.simpleDeleteAfterBlock = function (blockId, cb) {
 	library.db.query(sql.simpleDeleteAfterBlock, {id: blockId}).then(function (res) {
 		return setImmediate(cb, null, res);
@@ -1371,6 +1439,10 @@ Blocks.prototype.simpleDeleteAfterBlock = function (blockId, cb) {
 	});
 };
 
+//
+//__API__ `loadBlocksFromPeer`
+
+//
 Blocks.prototype.loadBlocksFromPeer = function (peer, cb) {
 	var lastValidBlock = modules.blockchain.getLastBlock();
 
@@ -1392,7 +1464,7 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, cb) {
 			peer=res.peer;
 		}
 
-		//library.logger.debug('loaded blocks',blocks);
+		
 
 		var report = library.schema.validate(res.body.blocks, schema.loadBlocksFromPeer);
 
@@ -1404,6 +1476,10 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, cb) {
 };
 
 
+//
+//__API__ `deleteBlocksBefore`
+
+//
 Blocks.prototype.deleteBlocksBefore = function (block, cb) {
 	var blocks = [];
 
@@ -1431,6 +1507,10 @@ Blocks.prototype.deleteBlocksBefore = function (block, cb) {
 	);
 };
 
+//
+//__API__ `generateBlock`
+
+//
 Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 	//TODO: fireworks!
 	var lastBlock = modules.blockchain.getLastBlock();
@@ -1497,10 +1577,14 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 
 
 // Events
+//
+//__API__ `onProcessBlock`
+
+//
 Blocks.prototype.onProcessBlock = function (block, cb) {
 	library.blockSequence.add(function(seriesCb){
 		if(block.numberOfTransactions == 0){
-			//console.log("onProcessBlock - "+ block.height);
+			
 			return self.processEmptyBlock(block,seriesCb);
 		}
 		else{
@@ -1510,16 +1594,28 @@ Blocks.prototype.onProcessBlock = function (block, cb) {
 };
 
 
+//
+//__API__ `onBind`
+
+//
 Blocks.prototype.onBind = function (scope) {
 	modules = scope;
 };
 
 
+//
+//__API__ `onAttachPublicApi`
+
+//
 Blocks.prototype.onAttachPublicApi = function () {
  	__private.attachApi();
 };
 
 
+//
+//__API__ `cleanup`
+
+//
 Blocks.prototype.cleanup = function (cb) {
 	__private.cleanup = true;
 

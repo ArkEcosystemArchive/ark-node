@@ -9,11 +9,19 @@ var modules, library;
 // Constructor
 function Signature () {}
 
+//
+//__API__ `bind`
+
+//
 Signature.prototype.bind = function (scope) {
 	modules = scope.modules;
 	library = scope.library;
 };
 
+//
+//__API__ `create`
+
+//
 Signature.prototype.create = function (data, trs) {
 	trs.recipientId = null;
 	trs.amount = 0;
@@ -24,10 +32,18 @@ Signature.prototype.create = function (data, trs) {
 	return trs;
 };
 
+//
+//__API__ `calculateFee`
+
+//
 Signature.prototype.calculateFee = function (trs) {
 	return constants.fees.secondsignature;
 };
 
+//
+//__API__ `verify`
+
+//
 Signature.prototype.verify = function (trs, sender, cb) {
 	if (!trs.asset || !trs.asset.signature) {
 		return setImmediate(cb, 'Invalid transaction asset');
@@ -49,10 +65,18 @@ Signature.prototype.verify = function (trs, sender, cb) {
 	return setImmediate(cb, null, trs);
 };
 
+//
+//__API__ `process`
+
+//
 Signature.prototype.process = function (trs, sender, cb) {
 	return setImmediate(cb, null, trs);
 };
 
+//
+//__API__ `getBytes`
+
+//
 Signature.prototype.getBytes = function (trs) {
 	var bb;
 
@@ -71,6 +95,10 @@ Signature.prototype.getBytes = function (trs) {
 	return bb.toBuffer();
 };
 
+//
+//__API__ `apply`
+
+//
 Signature.prototype.apply = function (trs, block, sender, cb) {
 	modules.accounts.setAccountAndGet({
 		address: sender.address,
@@ -80,6 +108,10 @@ Signature.prototype.apply = function (trs, block, sender, cb) {
 	}, cb);
 };
 
+//
+//__API__ `undo`
+
+//
 Signature.prototype.undo = function (trs, block, sender, cb) {
 	modules.accounts.setAccountAndGet({
 		address: sender.address,
@@ -89,6 +121,10 @@ Signature.prototype.undo = function (trs, block, sender, cb) {
 	}, cb);
 };
 
+//
+//__API__ `applyUnconfirmed`
+
+//
 Signature.prototype.applyUnconfirmed = function (trs, sender, cb) {
 	if (sender.u_secondSignature || sender.secondSignature) {
 		return setImmediate(cb, 'Failed second signature: ' + trs.id);
@@ -97,6 +133,10 @@ Signature.prototype.applyUnconfirmed = function (trs, sender, cb) {
 	modules.accounts.setAccountAndGet({address: sender.address, u_secondSignature: 1}, cb);
 };
 
+//
+//__API__ `undoUnconfirmed`
+
+//
 Signature.prototype.undoUnconfirmed = function (trs, sender, cb) {
 	modules.accounts.setAccountAndGet({address: sender.address, u_secondSignature: 0}, cb);
 };
@@ -113,6 +153,10 @@ Signature.prototype.schema = {
 	required: ['publicKey']
 };
 
+//
+//__API__ `objectNormalize`
+
+//
 Signature.prototype.objectNormalize = function (trs) {
 	var report = library.schema.validate(trs.asset.signature, Signature.prototype.schema);
 
@@ -125,6 +169,10 @@ Signature.prototype.objectNormalize = function (trs) {
 	return trs;
 };
 
+//
+//__API__ `dbRead`
+
+//
 Signature.prototype.dbRead = function (raw) {
 	if (!raw.s_publicKey) {
 		return null;
@@ -145,6 +193,10 @@ Signature.prototype.dbFields = [
 	'publicKey'
 ];
 
+//
+//__API__ `dbSave`
+
+//
 Signature.prototype.dbSave = function (trs) {
 	var publicKey;
 
@@ -164,6 +216,10 @@ Signature.prototype.dbSave = function (trs) {
 	};
 };
 
+//
+//__API__ `ready`
+
+//
 Signature.prototype.ready = function (trs, sender) {
 	if (Array.isArray(sender.multisignatures) && sender.multisignatures.length) {
 		if (!Array.isArray(trs.signatures)) {

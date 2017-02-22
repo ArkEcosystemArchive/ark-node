@@ -62,6 +62,10 @@ __private.attachApi = function () {
 // Public methods
 
 // Events
+//
+//__API__ `onBind`
+
+//
 Multisignatures.prototype.onBind = function (scope) {
 	modules = scope;
 
@@ -72,6 +76,10 @@ Multisignatures.prototype.onBind = function (scope) {
 
 
 
+//
+//__API__ `onAttachPublicApi`
+
+//
 Multisignatures.prototype.onAttachPublicApi = function () {
  	__private.attachApi();
 };
@@ -334,6 +342,10 @@ shared.sign = function (req, cb) {
 	}, cb);
 };
 
+//
+//__API__ `processSignature`
+
+//
 Multisignatures.prototype.processSignature = function (tx, cb) {
 	var transaction = modules.transactionPool.getUnconfirmedTransaction(tx.transaction);
 

@@ -276,7 +276,7 @@ __private.forge = function (cb) {
 				if(!minimumNetworkReach){
 					minimumNetworkReach = 20;
 				}
-				//library.logger.debug("minimumNetworkReach",minimumNetworkReach);
+				
 				if (err) {
 					return setImmediate(cb, err);
 				}
@@ -497,11 +497,19 @@ __private.loadMyDelegates = function (cb) {
 
 
 // Public methods
+//
+//__API__ `isAForgingDelegatesPublicKey`
+
+//
 Delegates.prototype.isAForgingDelegatesPublicKey = function(publicKey) {
 	//don't leak privateKey out of the module!
 	return !!__private.keypairs[publicKey];
 }
 
+//
+//__API__ `generateDelegateList`
+
+//
 Delegates.prototype.generateDelegateList = function (height, cb) {
 	__private.getKeysSortByVote(function (err, truncDelegateList) {
 		if (err) {
@@ -525,6 +533,10 @@ Delegates.prototype.generateDelegateList = function (height, cb) {
 	});
 };
 
+//
+//__API__ `getDelegates`
+
+//
 Delegates.prototype.getDelegates = function (query, cb) {
 	if (!query) {
 		throw 'Missing query argument';
@@ -579,14 +591,26 @@ Delegates.prototype.getDelegates = function (query, cb) {
 	});
 };
 
+//
+//__API__ `checkConfirmedDelegates`
+
+//
 Delegates.prototype.checkConfirmedDelegates = function (publicKey, votes, cb) {
 	return __private.checkDelegates(publicKey, votes, 'confirmed', cb);
 };
 
+//
+//__API__ `checkUnconfirmedDelegates`
+
+//
 Delegates.prototype.checkUnconfirmedDelegates = function (publicKey, votes, cb) {
 	return __private.checkDelegates(publicKey, votes, 'unconfirmed', cb);
 };
 
+//
+//__API__ `validateBlockSlot`
+
+//
 Delegates.prototype.validateBlockSlot = function (block, cb) {
 	modules.rounds.getActiveDelegates(function (err, activeDelegates) {
 		if (err) {
@@ -608,6 +632,10 @@ Delegates.prototype.validateBlockSlot = function (block, cb) {
 };
 
 // Events
+//
+//__API__ `onBind`
+
+//
 Delegates.prototype.onBind = function (scope) {
 	modules = scope;
 
@@ -617,6 +645,10 @@ Delegates.prototype.onBind = function (scope) {
 };
 
 
+//
+//__API__ `onLoadDelegates`
+
+//
 Delegates.prototype.onLoadDelegates = function () {
 	__private.loadMyDelegates(function(err, keypairs){
 		if(err){
@@ -626,6 +658,10 @@ Delegates.prototype.onLoadDelegates = function () {
 	});
 };
 
+//
+//__API__ `onStartForging`
+
+//
 Delegates.prototype.onStartForging = function () {
 	__private.forging = true;
 	function forgeLoop(){
@@ -641,15 +677,27 @@ Delegates.prototype.onStartForging = function () {
 	forgeLoop();
 };
 
+//
+//__API__ `onStopForging`
+
+//
 Delegates.prototype.onStopForging = function () {
 	__private.forging = false;
 };
 
+//
+//__API__ `onAttachPublicApi`
+
+//
 Delegates.prototype.onAttachPublicApi = function () {
 	__private.attachApi();
 };
 
 
+//
+//__API__ `onBlockchainReady`
+
+//
 // Delegates.prototype.onBlockchainReady = function () {
 // 	__private.loaded = true;
 // 	__private.attachApi();
@@ -676,6 +724,10 @@ Delegates.prototype.onAttachPublicApi = function () {
 // 	});
 // };
 //
+//
+//__API__ `onBlockchainReady`
+
+//
 // Delegates.prototype.onBlockchainReady = function () {
 // 	__private.loaded = true;
 //
@@ -697,20 +749,36 @@ Delegates.prototype.onAttachPublicApi = function () {
 
 
 // To trigger a blockchain update from network
+//
+//__API__ `cleanup`
+
+//
 Delegates.prototype.cleanup = function (cb) {
 	return cb();
 };
 
 // Ready to forge when it is its slot
+//
+//__API__ `isForging`
+
+//
 Delegates.prototype.isForging = function(){
 	return __private.forging;
 }
 
 // Is node active at current height of internal blockchain
+//
+//__API__ `isActiveDelegate`
+
+//
 Delegates.prototype.isActiveDelegate = function(){
 	return __private.isActiveDelegate;
 }
 
+//
+//__API__ `updateActiveDelegate`
+
+//
 Delegates.prototype.updateActiveDelegate = function(activeDelegatesKeys){
 	var registeredDelegatesPublicKeys = Object.keys(__private.keypairs);
 	var isActive = false;
@@ -722,6 +790,10 @@ Delegates.prototype.updateActiveDelegate = function(activeDelegatesKeys){
 	__private.isActiveDelegate = isActive;
 }
 
+//
+//__API__ `enableForging`
+
+//
 Delegates.prototype.enableForging = function () {
 	if (!__private.forging) {
 		library.logger.debug('Enabling forging');
@@ -731,6 +803,10 @@ Delegates.prototype.enableForging = function () {
 	return __private.forging;
 };
 
+//
+//__API__ `disableForging`
+
+//
 Delegates.prototype.disableForging = function (reason) {
 	if (__private.forging) {
 		library.logger.debug('Disabling forging due to:', reason);
@@ -752,7 +828,7 @@ __private.toggleForgingOnReceipt = function () {
 	if (lastReceipt) {
 		var timeOut = Number(constants.forgingTimeOut);
 
-		//library.logger.debug('Last block received: ' + lastReceipt.secondsAgo + ' seconds ago');
+		
 
 		// if (lastReceipt.secondsAgo > timeOut) {
 		// 	return self.disableForging('timeout');

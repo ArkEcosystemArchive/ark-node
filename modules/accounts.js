@@ -102,10 +102,18 @@ __private.attachApi = function () {
 };
 
 // Public methods
+//
+//__API__ `generateAddressByPublicKey`
+
+//
 Accounts.prototype.generateAddressByPublicKey = function (publicKey) {
 	return arkjs.crypto.getAddress(publicKey);
 };
 
+//
+//__API__ `getAccount`
+
+//
 Accounts.prototype.getAccount = function (filter, fields, cb) {
 	if (filter.publicKey) {
 		filter.address = self.generateAddressByPublicKey(filter.publicKey);
@@ -115,10 +123,18 @@ Accounts.prototype.getAccount = function (filter, fields, cb) {
 	library.logic.account.get(filter, fields, cb);
 };
 
+//
+//__API__ `getAccounts`
+
+//
 Accounts.prototype.getAccounts = function (filter, fields, cb) {
 	library.logic.account.getAll(filter, fields, cb);
 };
 
+//
+//__API__ `setAccountAndGet`
+
+//
 Accounts.prototype.setAccountAndGet = function (data, cb) {
 	var address = data.address || null;
 
@@ -142,6 +158,10 @@ Accounts.prototype.setAccountAndGet = function (data, cb) {
 	});
 };
 
+//
+//__API__ `mergeAccountAndGet`
+
+//
 Accounts.prototype.mergeAccountAndGet = function (data, cb) {
 	var address = data.address || null;
 
@@ -161,6 +181,10 @@ Accounts.prototype.mergeAccountAndGet = function (data, cb) {
 };
 
 // Events
+//
+//__API__ `onBind`
+
+//
 Accounts.prototype.onBind = function (scope) {
 	modules = scope;
 
@@ -169,6 +193,10 @@ Accounts.prototype.onBind = function (scope) {
 	});
 };
 
+//
+//__API__ `onAttachPublicApi`
+
+//
 Accounts.prototype.onAttachPublicApi = function () {
  	__private.attachApi();
 };

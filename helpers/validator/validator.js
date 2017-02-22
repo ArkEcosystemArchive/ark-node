@@ -64,6 +64,10 @@ Validator.prototype.reporter = null;
  * @param {string} name
  * @returns {boolean}
  */
+//
+//__API__ `hasRule`
+
+//
 Validator.prototype.hasRule = function (name) {
 	return name in this.rules;
 };
@@ -73,6 +77,10 @@ Validator.prototype.hasRule = function (name) {
  * @param {string} name
  * @returns {*}
  */
+//
+//__API__ `getRule`
+
+//
 Validator.prototype.getRule = function (name) {
 	if (name in this.rules === false) {
 		throw new Error('Rule "' + name + '" is not defined');
@@ -86,6 +94,10 @@ Validator.prototype.getRule = function (name) {
  * @param {object} rules Set of rules
  * @param {function (err:Error,report:Array,output:*)=} callback Result callback
  */
+//
+//__API__ `validate`
+
+//
 Validator.prototype.validate = function (value, rules, callback) {
 	var self = this;
 
@@ -154,6 +166,10 @@ Validator.prototype.Field = Field;
  * @param {*=} thisArg This reference for Validation methods. Optional
  * @returns {Validator.Field}
  */
+//
+//__API__ `createField`
+
+//
 Validator.prototype.createField = function (path, value, rules, thisArg) {
 	return new this.Field(this, path, value, rules, thisArg);
 };
@@ -165,10 +181,30 @@ Validator.prototype.createField = function (path, value, rules, thisArg) {
 Validator.prototype.rules = {};
 
 // Internal event handlers
+//
+//__API__ `onInit`
+
+//
 Validator.prototype.onInit = function () {};
+//
+//__API__ `onError`
+
+//
 Validator.prototype.onError = function (field, err) {};
+//
+//__API__ `onValid`
+
+//
 Validator.prototype.onValid = function (field) {};
+//
+//__API__ `onInvalid`
+
+//
 Validator.prototype.onInvalid = function (field) {};
+//
+//__API__ `onEnd`
+
+//
 Validator.prototype.onEnd = function () {};
 
 // Constructor methods

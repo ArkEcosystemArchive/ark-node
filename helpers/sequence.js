@@ -22,6 +22,10 @@ function Sequence (config) {
 	});
 }
 
+//
+//__API__ `__tick`
+
+//
 Sequence.prototype.__tick = function (cb) {
 	var task = this.sequence.shift();
 	if (!task) {
@@ -39,6 +43,10 @@ Sequence.prototype.__tick = function (cb) {
 	task.worker.apply(task.worker, args);
 };
 
+//
+//__API__ `add`
+
+//
 Sequence.prototype.add = function (worker, args, done) {
 	if (!done && args && typeof(args) === 'function') {
 		done = args;
@@ -53,6 +61,10 @@ Sequence.prototype.add = function (worker, args, done) {
 	}
 };
 
+//
+//__API__ `count`
+
+//
 Sequence.prototype.count = function () {
 	return this.sequence.length;
 };

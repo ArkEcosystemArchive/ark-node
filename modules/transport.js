@@ -162,7 +162,7 @@ __private.attachApi = function () {
 				limit: limit
 			}).then(function (rows) {
 				res.status(200);
-				//library.logger.debug("data", rows);
+				
 				res.json({blocks: rows});
 			}).catch(function (err) {
 				library.logger.error("Error getting blocks from DB", err);
@@ -182,7 +182,7 @@ __private.attachApi = function () {
 				id: query.id
 			}).then(function (rows) {
 				res.status(200);
-				//library.logger.debug("data", rows);
+				
 				res.json(rows[0]);
 			}).catch(function (err) {
 				library.logger.error("Error getting block from DB", err);
@@ -377,6 +377,10 @@ __private.removePeer = function (options) {
 };
 
 // Public methods
+//
+//__API__ `broadcast`
+
+//
 Transport.prototype.broadcast = function (config, options, cb) {
 	library.logger.debug('Broadcast', ["API:", options.api, "METHOD:", options.method, "DATA:", Object.keys(options.data).join(",")].join(" "));
 
@@ -419,6 +423,10 @@ Transport.prototype.broadcast = function (config, options, cb) {
 	});
 };
 
+//
+//__API__ `getFromRandomPeer`
+
+//
 Transport.prototype.getFromRandomPeer = function (config, options, cb) {
 	if (typeof options === 'function') {
 		cb = options;
@@ -447,6 +455,10 @@ Transport.prototype.getFromRandomPeer = function (config, options, cb) {
 	});
 };
 
+//
+//__API__ `getFromPeer`
+
+//
 Transport.prototype.getFromPeer = function (peer, options, cb) {
 	var url;
 
@@ -482,7 +494,7 @@ Transport.prototype.getFromPeer = function (peer, options, cb) {
 	.then(function (res) {
 		if (res.status !== 200) {
 			// Remove peer
-			//console.log(res);
+			
 			__private.removePeer({peer: peer, code: 'ERESPONSE ' + res.status, req: req});
 
 			return cb(['Received bad response code', res.status, req.method, req.url].join(' '));
@@ -531,6 +543,10 @@ Transport.prototype.getFromPeer = function (peer, options, cb) {
 };
 
 // Events
+//
+//__API__ `onBind`
+
+//
 Transport.prototype.onBind = function (scope) {
 	modules = scope;
 
@@ -542,16 +558,28 @@ Transport.prototype.onBind = function (scope) {
 	};
 };
 
+//
+//__API__ `onBlockchainReady`
+
+//
 Transport.prototype.onBlockchainReady = function () {
 
 };
 
+//
+//__API__ `onAttachNetworkApi`
+
+//
 Transport.prototype.onAttachNetworkApi = function () {
 	__private.attachApi();
 	library.bus.message("NetworkApiAttached");
 };
 
 
+//
+//__API__ `onSignature`
+
+//
 // Transport.prototype.onSignature = function (signature, broadcast) {
 // 	if (broadcast) {
 // 		//no emergency for tx propagation
@@ -561,6 +589,10 @@ Transport.prototype.onAttachNetworkApi = function () {
 // 	}
 // };
 
+//
+//__API__ `onBroadcastTransaction`
+
+//
 Transport.prototype.onBroadcastTransaction = function (transaction) {
 	// clone as we don't want to send all object
 	transaction=JSON.parse(JSON.stringify(transaction));
@@ -572,6 +604,10 @@ Transport.prototype.onBroadcastTransaction = function (transaction) {
 	__private.broadcastTransactions.push(transaction);
 };
 
+//
+//__API__ `onBroadcastBlock`
+
+//
 Transport.prototype.onBroadcastBlock = function (block) {
 	// we want to propagate as fast as possible only the headers unless the node generated it.
 	// var bloomfilter;
@@ -607,13 +643,17 @@ Transport.prototype.onBroadcastBlock = function (block) {
 	}
 	if(block.numberOfTransactions>0){//i send only ids, because nodes likely have already transactions in mempool.
 		blockheaders.transactionIds=block.transactions.map(function(t){return t.id});
-		//console.log(block.transactions.map(function(t){return t.id}));
+		
 	}
 
 	self.broadcast({all: block.forged, limit: limitbroadcast}, {api: '/blocks', data: {block: blockheaders}, method: 'POST'});
 };
 
 
+//
+//__API__ `cleanup`
+
+//
 Transport.prototype.cleanup = function (cb) {
 	return setImmediate(cb);
 };

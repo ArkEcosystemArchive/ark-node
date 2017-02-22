@@ -15,11 +15,19 @@ function Vote () {
 
 
 // Public methods
+//
+//__API__ `bind`
+
+//
 Vote.prototype.bind = function (scope) {
 	modules = scope.modules;
 	library = scope.library;
 };
 
+//
+//__API__ `create`
+
+//
 Vote.prototype.create = function (data, trs) {
 	trs.recipientId = data.sender.address;
 	trs.asset.votes = data.votes;
@@ -27,10 +35,18 @@ Vote.prototype.create = function (data, trs) {
 	return trs;
 };
 
+//
+//__API__ `calculateFee`
+
+//
 Vote.prototype.calculateFee = function (trs) {
 	return constants.fees.vote;
 };
 
+//
+//__API__ `verify`
+
+//
 Vote.prototype.verify = function (trs, sender, cb) {
 	if (trs.recipientId !== trs.senderId) {
 		return setImmediate(cb, 'Invalid recipient');
@@ -62,10 +78,18 @@ Vote.prototype.verify = function (trs, sender, cb) {
 	});
 };
 
+//
+//__API__ `process`
+
+//
 Vote.prototype.process = function (trs, sender, cb) {
 	return setImmediate(cb, null, trs);
 };
 
+//
+//__API__ `getBytes`
+
+//
 Vote.prototype.getBytes = function (trs) {
 	var buf;
 
@@ -79,6 +103,10 @@ Vote.prototype.getBytes = function (trs) {
 };
 
 
+//
+//__API__ `checkConfirmedDelegates`
+
+//
 Vote.prototype.checkConfirmedDelegates = function (trs, cb) {
 	modules.delegates.checkConfirmedDelegates(trs.senderPublicKey, trs.asset.votes, function (err) {
 		if (err && exceptions.votes.indexOf(trs.id) > -1) {
@@ -92,6 +120,10 @@ Vote.prototype.checkConfirmedDelegates = function (trs, cb) {
 };
 
 
+//
+//__API__ `checkUnconfirmedDelegates`
+
+//
 Vote.prototype.checkUnconfirmedDelegates = function (trs, cb) {
 	modules.delegates.checkUnconfirmedDelegates(trs.senderPublicKey, trs.asset.votes, function (err) {
 		if (err && exceptions.votes.indexOf(trs.id) > -1) {
@@ -104,6 +136,10 @@ Vote.prototype.checkUnconfirmedDelegates = function (trs, cb) {
 	});
 };
 
+//
+//__API__ `apply`
+
+//
 Vote.prototype.apply = function (trs, block, sender, cb) {
 	var parent = this;
 
@@ -124,6 +160,10 @@ Vote.prototype.apply = function (trs, block, sender, cb) {
 };
 
 
+//
+//__API__ `undo`
+
+//
 Vote.prototype.undo = function (trs, block, sender, cb) {
 	if (trs.asset.votes === null) { return setImmediate(cb); }
 
@@ -138,6 +178,10 @@ Vote.prototype.undo = function (trs, block, sender, cb) {
 	});
 };
 
+//
+//__API__ `applyUnconfirmed`
+
+//
 Vote.prototype.applyUnconfirmed = function (trs, sender, cb) {
 	var parent = this;
 
@@ -155,6 +199,10 @@ Vote.prototype.applyUnconfirmed = function (trs, sender, cb) {
 	], cb);
 };
 
+//
+//__API__ `undoUnconfirmed`
+
+//
 Vote.prototype.undoUnconfirmed = function (trs, sender, cb) {
 	if (trs.asset.votes === null) { return setImmediate(cb); }
 
@@ -179,6 +227,10 @@ Vote.prototype.schema = {
 	required: ['votes']
 };
 
+//
+//__API__ `objectNormalize`
+
+//
 Vote.prototype.objectNormalize = function (trs) {
 	var report = library.schema.validate(trs.asset, Vote.prototype.schema);
 
@@ -191,6 +243,10 @@ Vote.prototype.objectNormalize = function (trs) {
 	return trs;
 };
 
+//
+//__API__ `dbRead`
+
+//
 Vote.prototype.dbRead = function (raw) {
 	// console.log(raw.v_votes);
 
@@ -210,6 +266,10 @@ Vote.prototype.dbFields = [
 	'transactionId'
 ];
 
+//
+//__API__ `dbSave`
+
+//
 Vote.prototype.dbSave = function (trs) {
 	return {
 		table: this.dbTable,
@@ -221,6 +281,10 @@ Vote.prototype.dbSave = function (trs) {
 	};
 };
 
+//
+//__API__ `ready`
+
+//
 Vote.prototype.ready = function (trs, sender) {
 	if (Array.isArray(sender.multisignatures) && sender.multisignatures.length) {
 		if (!Array.isArray(trs.signatures)) {

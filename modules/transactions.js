@@ -142,7 +142,7 @@ __private.list = function (filter, cb) {
 			sortMethod: orderBy.sortMethod
 		}), params).then(function (rows) {
 			var transactions = [];
-			//console.log(rows);
+			
 			for (var i = 0; i < rows.length; i++) {
 				transactions.push(library.logic.transaction.dbRead(rows[i]));
 			}
@@ -207,6 +207,10 @@ __private.getVotesById = function (transaction, cb) {
 
 // Public methods
 
+//
+//__API__ `apply`
+
+//
 Transactions.prototype.apply = function (transaction, block, cb) {
 	library.transactionSequence.add(function (cb){
 		library.logger.debug('Applying confirmed transaction', transaction.id);
@@ -219,6 +223,10 @@ Transactions.prototype.apply = function (transaction, block, cb) {
 	}, cb);
 };
 
+//
+//__API__ `undo`
+
+//
 Transactions.prototype.undo = function (transaction, block, cb) {
 	library.transactionSequence.add(function (cb){
 		library.logger.debug('Undoing confirmed transaction', transaction.id);
@@ -231,6 +239,10 @@ Transactions.prototype.undo = function (transaction, block, cb) {
 	}, cb);
 };
 
+//
+//__API__ `applyUnconfirmed`
+
+//
 Transactions.prototype.applyUnconfirmed = function (transaction, cb) {
 	modules.accounts.setAccountAndGet({publicKey: transaction.senderPublicKey}, function (err, sender) {
 		if (!sender && transaction.blockId !== genesisblock.block.id) {
@@ -258,6 +270,10 @@ Transactions.prototype.applyUnconfirmed = function (transaction, cb) {
 	});
 };
 
+//
+//__API__ `undoUnconfirmed`
+
+//
 Transactions.prototype.undoUnconfirmed = function (transaction, cb) {
 	library.transactionSequence.add(function (cb){
 		library.logger.debug('Undoing unconfirmed transaction', transaction.id);
@@ -271,6 +287,10 @@ Transactions.prototype.undoUnconfirmed = function (transaction, cb) {
 };
 
 // Events
+//
+//__API__ `onBind`
+
+//
 Transactions.prototype.onBind = function (scope) {
 	modules = scope;
 
@@ -280,10 +300,18 @@ Transactions.prototype.onBind = function (scope) {
 };
 
 
+//
+//__API__ `onAttachPublicApi`
+
+//
 Transactions.prototype.onAttachPublicApi = function () {
  	__private.attachApi();
 };
 
+//
+//__API__ `onPeersReady`
+
+//
 Transactions.prototype.onPeersReady = function () {
 };
 
@@ -450,7 +478,7 @@ shared.addTransactions = function (req, cb) {
 
 								transaction.id=library.logic.transaction.getId(transaction);
 
-								//library.logger.log('trs ', transaction);
+								
 
 							} catch (e) {
 								return setImmediate(cb, e.toString());

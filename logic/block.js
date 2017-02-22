@@ -28,6 +28,10 @@ __private.getAddressByPublicKey = function (publicKey) {
 };
 
 // Public methods
+//
+//__API__ `create`
+
+//
 Block.prototype.create = function (data) {
 
 	var transactions = data.transactions.sort(function compare(a, b) {
@@ -85,12 +89,20 @@ Block.prototype.create = function (data) {
 	return block;
 };
 
+//
+//__API__ `sign`
+
+//
 Block.prototype.sign = function (block, keypair) {
 	var hash = this.getHash(block);
 
 	return this.scope.ed.sign(hash, keypair).toString('hex');
 };
 
+//
+//__API__ `getBytes`
+
+//
 Block.prototype.getBytes = function (block, includeSignature) {
 	if(includeSignature == undefined){
 		includeSignature = block.blockSignature != undefined;
@@ -154,6 +166,10 @@ Block.prototype.getBytes = function (block, includeSignature) {
 	return b;
 };
 
+//
+//__API__ `verifySignature`
+
+//
 Block.prototype.verifySignature = function (block) {
 	var res;
 
@@ -162,7 +178,7 @@ Block.prototype.verifySignature = function (block) {
 		var hash = crypto.createHash('sha256').update(data).digest();
 		var blockSignatureBuffer = new Buffer(block.blockSignature, 'hex');
 		var generatorPublicKeyBuffer = new Buffer(block.generatorPublicKey, 'hex');
-		//console.log(hash.toString("hex"));
+		
 		res = this.scope.ed.verify(hash, blockSignatureBuffer || ' ', generatorPublicKeyBuffer || ' ');
 	} catch (e) {
 		throw e;
@@ -190,6 +206,10 @@ Block.prototype.dbFields = [
 	'rawtxs'
 ];
 
+//
+//__API__ `dbSave`
+
+//
 Block.prototype.dbSave = function (block) {
 	var payloadHash, generatorPublicKey, blockSignature, rawtxs;
 
@@ -282,6 +302,10 @@ Block.prototype.schema = {
 	required: ['blockSignature', 'generatorPublicKey', 'numberOfTransactions', 'payloadHash', 'payloadLength', 'timestamp', 'totalAmount', 'totalFee', 'reward', 'transactions', 'version']
 };
 
+//
+//__API__ `objectNormalize`
+
+//
 Block.prototype.objectNormalize = function (block) {
 	var i;
 
@@ -313,6 +337,10 @@ Block.prototype.objectNormalize = function (block) {
 	return block;
 };
 
+//
+//__API__ `getId`
+
+//
 Block.prototype.getId = function (block) {
 	var hash = crypto.createHash('sha256').update(this.getBytes(block)).digest();
 	var temp = new Buffer(8);
@@ -324,14 +352,26 @@ Block.prototype.getId = function (block) {
 	return id;
 };
 
+//
+//__API__ `getHash`
+
+//
 Block.prototype.getHash = function (block) {
 	return crypto.createHash('sha256').update(this.getBytes(block)).digest();
 };
 
+//
+//__API__ `calculateFee`
+
+//
 Block.prototype.calculateFee = function (block) {
 	return constants.fees.send;
 };
 
+//
+//__API__ `dbRead`
+
+//
 Block.prototype.dbRead = function (raw) {
 	if (!raw.b_id) {
 		return null;

@@ -9,11 +9,19 @@ var modules, library;
 function Delegate () {}
 
 // Public methods
+//
+//__API__ `bind`
+
+//
 Delegate.prototype.bind = function (scope) {
 	modules = scope.modules;
 	library = scope.library;
 };
 
+//
+//__API__ `create`
+
+//
 Delegate.prototype.create = function (data, trs) {
 	trs.recipientId = null;
 	trs.amount = 0;
@@ -29,10 +37,18 @@ Delegate.prototype.create = function (data, trs) {
 	return trs;
 };
 
+//
+//__API__ `calculateFee`
+
+//
 Delegate.prototype.calculateFee = function (trs) {
 	return constants.fees.delegate;
 };
 
+//
+//__API__ `verify`
+
+//
 Delegate.prototype.verify = function (trs, sender, cb) {
 	if (trs.recipientId) {
 		return setImmediate(cb, 'Invalid recipient');
@@ -95,10 +111,18 @@ Delegate.prototype.verify = function (trs, sender, cb) {
 	});
 };
 
+//
+//__API__ `process`
+
+//
 Delegate.prototype.process = function (trs, sender, cb) {
 	return setImmediate(cb, null, trs);
 };
 
+//
+//__API__ `getBytes`
+
+//
 Delegate.prototype.getBytes = function (trs) {
 	if (!trs.asset.delegate.username) {
 		return null;
@@ -115,6 +139,10 @@ Delegate.prototype.getBytes = function (trs) {
 	return buf;
 };
 
+//
+//__API__ `apply`
+
+//
 Delegate.prototype.apply = function (trs, block, sender, cb) {
 	var data = {
 		address: sender.address,
@@ -131,6 +159,10 @@ Delegate.prototype.apply = function (trs, block, sender, cb) {
 	modules.accounts.setAccountAndGet(data, cb);
 };
 
+//
+//__API__ `undo`
+
+//
 Delegate.prototype.undo = function (trs, block, sender, cb) {
 	var data = {
 		address: sender.address,
@@ -147,6 +179,10 @@ Delegate.prototype.undo = function (trs, block, sender, cb) {
 	modules.accounts.setAccountAndGet(data, cb);
 };
 
+//
+//__API__ `applyUnconfirmed`
+
+//
 Delegate.prototype.applyUnconfirmed = function (trs, sender, cb) {
 	if (sender.u_isDelegate) {
 		return setImmediate(cb, 'Account is already a delegate');
@@ -182,6 +218,10 @@ Delegate.prototype.applyUnconfirmed = function (trs, sender, cb) {
 	});
 };
 
+//
+//__API__ `undoUnconfirmed`
+
+//
 Delegate.prototype.undoUnconfirmed = function (trs, sender, cb) {
 	var data = {
 		address: sender.address,
@@ -209,6 +249,10 @@ Delegate.prototype.schema = {
 	required: ['publicKey']
 };
 
+//
+//__API__ `objectNormalize`
+
+//
 Delegate.prototype.objectNormalize = function (trs) {
 	var report = library.schema.validate(trs.asset.delegate, Delegate.prototype.schema);
 
@@ -221,6 +265,10 @@ Delegate.prototype.objectNormalize = function (trs) {
 	return trs;
 };
 
+//
+//__API__ `dbRead`
+
+//
 Delegate.prototype.dbRead = function (raw) {
 	if (!raw.d_username) {
 		return null;
@@ -242,6 +290,10 @@ Delegate.prototype.dbFields = [
 	'transactionId'
 ];
 
+//
+//__API__ `dbSave`
+
+//
 Delegate.prototype.dbSave = function (trs) {
 	return {
 		table: this.dbTable,
@@ -253,6 +305,10 @@ Delegate.prototype.dbSave = function (trs) {
 	};
 };
 
+//
+//__API__ `ready`
+
+//
 Delegate.prototype.ready = function (trs, sender) {
 	if (Array.isArray(sender.multisignatures) && sender.multisignatures.length) {
 		if (!Array.isArray(trs.signatures)) {
