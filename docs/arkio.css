@@ -161,6 +161,7 @@ div.fullblock {
     margin-bottom: 15px;
     box-shadow: rgba(0, 0, 0, 0.33) 0px 0px 15px;
     border-radius: 2px;
+    white-space: normal;
 }
 
 /*---------------------- Jump Page -----------------------------*/
