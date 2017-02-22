@@ -1,0 +1,1752 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>transactionPool.js</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="arkio.css" />
+</head>
+<body>
+  
+    <div id="title">
+         <h1>transactionPool.js</h1>
+         <img src="https://ark.io/wp-content/uploads/2016/10/ark-normal.png">
+        <hr>
+    </div>
+  
+  <div id="container">
+    <div id="background"></div>
+    
+      <ul id="jump_to">
+        <li>
+          <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
+          <a class="small" href="javascript:void(0);">+</a>
+          <div id="jump_wrapper">
+          <div id="jump_page_wrapper">
+            <div id="jump_page">
+              
+                
+                <a class="source" href="app.html">
+                  app.js
+                </a>
+              
+                
+                <a class="source" href="accounts.html">
+                  accounts.js
+                </a>
+              
+                
+                <a class="source" href="blockchain.html">
+                  blockchain.js
+                </a>
+              
+                
+                <a class="source" href="blocks.html">
+                  blocks.js
+                </a>
+              
+                
+                <a class="source" href="delegates.html">
+                  delegates.js
+                </a>
+              
+                
+                <a class="source" href="loader.html">
+                  loader.js
+                </a>
+              
+                
+                <a class="source" href="multisignatures.html">
+                  multisignatures.js
+                </a>
+              
+                
+                <a class="source" href="nodeManager.html">
+                  nodeManager.js
+                </a>
+              
+                
+                <a class="source" href="peers.html">
+                  peers.js
+                </a>
+              
+                
+                <a class="source" href="rounds.html">
+                  rounds.js
+                </a>
+              
+                
+                <a class="source" href="server.html">
+                  server.js
+                </a>
+              
+                
+                <a class="source" href="signatures.html">
+                  signatures.js
+                </a>
+              
+                
+                <a class="source" href="system.html">
+                  system.js
+                </a>
+              
+                
+                <a class="source" href="transactionPool.html">
+                  transactionPool.js
+                </a>
+              
+                
+                <a class="source" href="transactions.html">
+                  transactions.js
+                </a>
+              
+                
+                <a class="source" href="transport.html">
+                  transport.js
+                </a>
+              
+            </div>
+          </div>
+        </li>
+      </ul>
+    
+    <ul class="sections">
+        
+        
+        <li id="section-1">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-meta">'use strict'</span>;
+
+<span class="hljs-keyword">var</span> <span class="hljs-keyword">async</span> = <span class="hljs-built_in">require</span>(<span class="hljs-string">'async'</span>);
+<span class="hljs-keyword">var</span> constants = <span class="hljs-built_in">require</span>(<span class="hljs-string">'../helpers/constants.js'</span>);
+<span class="hljs-keyword">var</span> transactionTypes = <span class="hljs-built_in">require</span>(<span class="hljs-string">'../helpers/transactionTypes.js'</span>);
+<span class="hljs-keyword">var</span> slots = <span class="hljs-built_in">require</span>(<span class="hljs-string">'../helpers/slots.js'</span>);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p>Private fields</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> modules, library, self, __private = {};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <p>Constructor</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">TransactionPool</span> (<span class="hljs-params">cb, scope</span>) </span>{
+	library = scope;
+	self = <span class="hljs-keyword">this</span>;
+
+	__private.active=<span class="hljs-literal">false</span>;
+
+	self.unconfirmed = { };
+	self.queued = { };
+	self.multisignature = { };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <p>TODO: to remove</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	self.expiryInterval = <span class="hljs-number">30000</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              <p>mem pool for efficiency keeping tx for 72 hours</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	__private.mempool = <span class="hljs-literal">null</span>;
+
+	__private.mempoolConfig = library.config.mempool;
+	<span class="hljs-keyword">if</span>(!__private.mempoolConfig){
+		__private.mempoolConfig = {
+			<span class="hljs-attr">intervalInSeconds</span>: <span class="hljs-number">3600</span>*<span class="hljs-number">1000</span>, <span class="hljs-comment">// every hours</span>
+			maximumAgeInMinutes: <span class="hljs-number">72</span>*<span class="hljs-number">3600</span>  <span class="hljs-comment">// 72 hours</span>
+		}
+	}
+	<span class="hljs-keyword">else</span>{
+		<span class="hljs-keyword">if</span>(!__private.mempoolConfig.intervalInSeconds){
+			__private.mempoolConfig.intervalInSeconds=intervalInSeconds=<span class="hljs-number">3600</span>*<span class="hljs-number">1000</span>;
+		}
+		<span class="hljs-keyword">if</span>(!__private.mempoolConfig.maximumAgeInMinutes){
+			__private.mempoolConfig.maximumAgeInMinutes=<span class="hljs-number">72</span>*<span class="hljs-number">3600</span>;
+		}
+	}
+
+	setImmediate(cb, <span class="hljs-literal">null</span>, self);
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-6">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-6">&#182;</a>
+              </div>
+              <p>Public methods</p>
+<p><strong>API</strong> <code>onBind</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-7">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-7">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>TransactionPool.prototype.onBind = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">scope</span>) </span>{
+	modules = scope;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-8">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-8">&#182;</a>
+              </div>
+              <p><strong>API</strong> <code>onStartTransactionPool</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-9">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-9">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>TransactionPool.prototype.onStartTransactionPool = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+	<span class="hljs-keyword">if</span>(__private.active){
+		<span class="hljs-keyword">return</span>;
+	}
+	__private.mempool = {};
+	__private.active = <span class="hljs-literal">true</span>;
+
+	setImmediate(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">fillPool</span> (<span class="hljs-params"></span>) </span>{
+		<span class="hljs-keyword">async</span>.series([
+			self.fillPool
+		], <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
+			<span class="hljs-keyword">if</span> (err) {
+				library.logger.log(<span class="hljs-string">'fillPool transaction timer'</span>, err);
+			}
+			<span class="hljs-keyword">if</span>(__private.active){
+				<span class="hljs-keyword">return</span> setTimeout(fillPool, <span class="hljs-number">1000</span>);
+			}
+		});
+	});</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-10">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-10">&#182;</a>
+              </div>
+              <p>Transaction expiry timer
+TODO: to remove</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	setImmediate(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">nextExpiry</span> (<span class="hljs-params"></span>) </span>{
+		<span class="hljs-keyword">async</span>.series([
+			self.expireTransactions
+		], <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
+			<span class="hljs-keyword">if</span> (err) {
+				library.logger.log(<span class="hljs-string">'Transaction expiry timer'</span>, err);
+			}
+
+			<span class="hljs-keyword">if</span>(__private.active){
+				<span class="hljs-keyword">return</span> setTimeout(nextExpiry, self.expiryInterval);
+			}
+		});
+	});</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-11">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-11">&#182;</a>
+              </div>
+              <p>Mempool management to remove tx older than <strong>private.mempoolConfig.maximumAgeInMinutes
+launched every </strong>private.mempoolConfig.intervalInSeconds</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	setImmediate(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">cleanMempool</span>(<span class="hljs-params"></span>) </span>{
+		<span class="hljs-keyword">var</span> expirationdate=slots.getTime()-__private.mempoolConfig.maximumAgeInMinutes*<span class="hljs-number">60</span>;
+		<span class="hljs-keyword">var</span> removed = <span class="hljs-number">0</span>;
+		<span class="hljs-keyword">var</span> kept = <span class="hljs-number">0</span>;
+		<span class="hljs-keyword">for</span>(<span class="hljs-keyword">var</span> txid <span class="hljs-keyword">in</span> __private.mempool){
+			<span class="hljs-keyword">if</span>(__private.mempool[txid].timestamp &lt; expirationdate){
+				removed++;
+				<span class="hljs-keyword">delete</span> __private.mempool[txid];
+				self.removeUnconfirmedTransaction(txid);
+			}
+			<span class="hljs-keyword">else</span> {
+				kept++;
+			}
+		}
+		library.logger.info(<span class="hljs-string">"Mempool cleaned: "</span>+removed+<span class="hljs-string">" transaction(s) removed, "</span>+kept+<span class="hljs-string">" transaction(s) kept"</span>);
+
+		<span class="hljs-keyword">if</span>(__private.active){
+			<span class="hljs-keyword">return</span> setTimeout(cleanMempool, __private.mempoolConfig.intervalInSeconds);
+		}
+	});
+
+	library.logger.info(<span class="hljs-string">'Transaction pool started'</span>);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-12">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-12">&#182;</a>
+              </div>
+              <p><strong>API</strong> <code>onStopTransactionPool</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-13">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-13">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>TransactionPool.prototype.onStopTransactionPool = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+	__private.active = <span class="hljs-literal">false</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-14">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-14">&#182;</a>
+              </div>
+              <p>flush mempool</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	__private.mempool = <span class="hljs-literal">null</span>;
+	library.logger.info(<span class="hljs-string">'# Transaction pool stopped'</span>);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-15">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-15">&#182;</a>
+              </div>
+              <p><strong>API</strong> <code>onAddTransactionsToPool</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-16">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-16">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>TransactionPool.prototype.onAddTransactionsToPool = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">transactions, cb</span>) </span>{
+	self.receiveTransactions(transactions, cb);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-17">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-17">&#182;</a>
+              </div>
+              <p><strong>API</strong> <code>transactionInPool</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-18">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-18">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>TransactionPool.prototype.transactionInPool = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">id</span>) </span>{
+	<span class="hljs-keyword">return</span> [
+		self.unconfirmed[id],
+		self.queued[id],
+		self.multisignature[id]
+	].filter(<span class="hljs-built_in">Boolean</span>).length &gt; <span class="hljs-number">0</span>;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-19">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-19">&#182;</a>
+              </div>
+              <p><strong>API</strong> <code>getTransactionFromMempool</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-20">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-20">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>TransactionPool.prototype.getTransactionFromMempool = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">id</span>) </span>{
+	<span class="hljs-keyword">return</span> __private.mempool[id];
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-21">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-21">&#182;</a>
+              </div>
+              <p><strong>API</strong> <code>getUnconfirmedTransaction</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-22">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-22">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>TransactionPool.prototype.getUnconfirmedTransaction = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">id</span>) </span>{
+	<span class="hljs-keyword">return</span> self.unconfirmed[id];
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-23">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-23">&#182;</a>
+              </div>
+              <p><strong>API</strong> <code>getQueuedTransaction</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-24">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-24">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>TransactionPool.prototype.getQueuedTransaction = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">id</span>) </span>{
+	<span class="hljs-keyword">return</span> self.queued[id];
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-25">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-25">&#182;</a>
+              </div>
+              <p><strong>API</strong> <code>getMultisignatureTransaction</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-26">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-26">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>TransactionPool.prototype.getMultisignatureTransaction = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">id</span>) </span>{
+	<span class="hljs-keyword">return</span> self.multisignature[id];
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-27">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-27">&#182;</a>
+              </div>
+              <p><strong>API</strong> <code>getMissingTransactions</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-28">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-28">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>TransactionPool.prototype.getMissingTransactions = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">ids, cb</span>) </span>{
+	<span class="hljs-keyword">return</span> __private.getMissingTransactions(ids, cb);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-29">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-29">&#182;</a>
+              </div>
+              <p><strong>API</strong> <code>getUnconfirmedTransactionList</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-30">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-30">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>TransactionPool.prototype.getUnconfirmedTransactionList = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">reverse, limit</span>) </span>{
+	<span class="hljs-keyword">return</span> __private.getTransactionList(self.unconfirmed, reverse, limit);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-31">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-31">&#182;</a>
+              </div>
+              <p><strong>API</strong> <code>getQueuedTransactionList</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-32">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-32">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>TransactionPool.prototype.getQueuedTransactionList  = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">reverse, limit</span>) </span>{
+	<span class="hljs-keyword">return</span> __private.getTransactionList(self.queued, reverse, limit);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-33">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-33">&#182;</a>
+              </div>
+              <p><strong>API</strong> <code>getMultisignatureTransactionList</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-34">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-34">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>TransactionPool.prototype.getMultisignatureTransactionList = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">reverse, ready, limit</span>) </span>{
+	<span class="hljs-keyword">if</span> (ready) {
+		<span class="hljs-keyword">return</span> __private.getTransactionList(self.multisignature, reverse).filter(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">transaction</span>) </span>{
+			<span class="hljs-keyword">return</span> transaction.ready;
+		});
+	} <span class="hljs-keyword">else</span> {
+		<span class="hljs-keyword">return</span> __private.getTransactionList(self.multisignature, reverse, limit);
+	}
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-35">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-35">&#182;</a>
+              </div>
+              <p><strong>API</strong> <code>getMergedTransactionList</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-36">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-36">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>TransactionPool.prototype.getMergedTransactionList = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">reverse, limit</span>) </span>{
+	<span class="hljs-keyword">var</span> minLimit = (constants.maxTxsPerBlock + <span class="hljs-number">2</span>);
+
+	<span class="hljs-keyword">if</span> (limit &lt;= minLimit || limit &gt; constants.maxSharedTxs) {
+		limit = minLimit;
+	}
+
+	<span class="hljs-keyword">var</span> unconfirmed = modules.transactionPool.getUnconfirmedTransactionList(<span class="hljs-literal">false</span>, constants.maxTxsPerBlock);
+	limit -= unconfirmed.length;
+
+	<span class="hljs-keyword">var</span> multisignatures = modules.transactionPool.getMultisignatureTransactionList(<span class="hljs-literal">false</span>, <span class="hljs-literal">false</span>, constants.maxTxsPerBlock);
+	limit -= multisignatures.length;
+
+	<span class="hljs-keyword">var</span> queued = modules.transactionPool.getQueuedTransactionList(<span class="hljs-literal">false</span>, limit);
+	limit -= queued.length;
+
+	<span class="hljs-keyword">return</span> unconfirmed.concat(multisignatures).concat(queued);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-37">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-37">&#182;</a>
+              </div>
+              <p><strong>API</strong> <code>addUnconfirmedTransaction</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-38">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-38">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>TransactionPool.prototype.addUnconfirmedTransaction = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">transaction</span>) </span>{
+	<span class="hljs-keyword">if</span> (transaction.type === transactionTypes.MULTI || <span class="hljs-built_in">Array</span>.isArray(transaction.signatures)) {
+		self.removeMultisignatureTransaction(transaction.id);
+	} <span class="hljs-keyword">else</span> {
+		self.removeQueuedTransaction(transaction.id);
+	}
+	<span class="hljs-keyword">if</span> (!self.unconfirmed[transaction.id]) {
+		<span class="hljs-keyword">if</span> (!transaction.receivedAt) {
+			transaction.receivedAt = <span class="hljs-keyword">new</span> <span class="hljs-built_in">Date</span>();
+		}
+		self.unconfirmed[transaction.id] = transaction;
+	}
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-39">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-39">&#182;</a>
+              </div>
+              <p><strong>API</strong> <code>removeUnconfirmedTransaction</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-40">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-40">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>TransactionPool.prototype.removeUnconfirmedTransaction = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">id</span>) </span>{
+	<span class="hljs-keyword">delete</span> self.unconfirmed[id];
+
+	self.removeQueuedTransaction(id);
+	self.removeMultisignatureTransaction(id);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-41">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-41">&#182;</a>
+              </div>
+              <p><strong>API</strong> <code>countUnconfirmed</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-42">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-42">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>TransactionPool.prototype.countUnconfirmed = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+	<span class="hljs-keyword">return</span> <span class="hljs-built_in">Object</span>.keys(self.unconfirmed).length;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-43">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-43">&#182;</a>
+              </div>
+              <p><strong>API</strong> <code>removeQueuedTransaction</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-44">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-44">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>TransactionPool.prototype.removeQueuedTransaction = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">id</span>) </span>{
+	<span class="hljs-keyword">delete</span> self.queued[id];
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-45">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-45">&#182;</a>
+              </div>
+              <p><strong>API</strong> <code>countQueued</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-46">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-46">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>TransactionPool.prototype.countQueued = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+	<span class="hljs-keyword">return</span> <span class="hljs-built_in">Object</span>.keys(self.queued).length;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-47">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-47">&#182;</a>
+              </div>
+              <p><strong>API</strong> <code>removeMultisignatureTransaction</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-48">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-48">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>TransactionPool.prototype.removeMultisignatureTransaction = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">id</span>) </span>{
+	<span class="hljs-keyword">delete</span> self.multisignature[id];
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-49">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-49">&#182;</a>
+              </div>
+              <p><strong>API</strong> <code>countMultisignature</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-50">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-50">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>TransactionPool.prototype.countMultisignature = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+	<span class="hljs-keyword">return</span> <span class="hljs-built_in">Object</span>.keys(self.multisignature).length;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-51">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-51">&#182;</a>
+              </div>
+              <p><strong>API</strong> <code>addToMempool</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-52">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-52">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>TransactionPool.prototype.addToMempool = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">transaction</span>)</span>{
+	__private.mempool[transaction.id]=transaction;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-53">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-53">&#182;</a>
+              </div>
+              <p><strong>API</strong> <code>receiveTransactions</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-54">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-54">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>TransactionPool.prototype.receiveTransactions = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">transactions, cb</span>) </span>{
+	
+	<span class="hljs-keyword">var</span> expirationdate=slots.getTime()-__private.mempoolConfig.maximumAgeInMinutes*<span class="hljs-number">60</span>;
+	<span class="hljs-keyword">async</span>.eachSeries(transactions, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">transaction, cb</span>) </span>{
+		<span class="hljs-keyword">var</span> memtx=__private.mempool[transaction.id];
+		<span class="hljs-keyword">if</span>(memtx){
+			<span class="hljs-keyword">if</span>(memtx.error){ <span class="hljs-comment">// sounds like already rejected.</span>
+				setImmediate(cb, memtx.error);
+			}
+			<span class="hljs-keyword">else</span>{ <span class="hljs-comment">// already verified</span>
+				setImmediate(cb);
+			}
+		}
+		<span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span>(transaction.timestamp &lt; expirationdate){ <span class="hljs-comment">// too old, ignore</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-55">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-55">&#182;</a>
+              </div>
+              <p>ignore</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>			setImmediate(cb);
+		}
+		<span class="hljs-keyword">else</span> {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-56">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-56">&#182;</a>
+              </div>
+              <p>we add transaction in mempool but still can be a spam.
+be sure to remove if there is an error in processing</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>			__private.mempool[transaction.id]=transaction;
+			__private.processVerifyTransaction(transaction, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
+				<span class="hljs-keyword">if</span> (!err) {
+					<span class="hljs-keyword">return</span> self.queueTransaction(transaction, cb);
+				} <span class="hljs-keyword">else</span> {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-57">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-57">&#182;</a>
+              </div>
+              <p>TODO: do we want to remove from mempool if somebody is spamming?
+we delete the tx in 1 min, so max 1 verification per spammy tx
+we keep the error in memory.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>					transaction.error=err;
+					setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
+						<span class="hljs-keyword">delete</span> __private.mempool[transaction.id];
+					}, <span class="hljs-number">60000</span>);
+					<span class="hljs-keyword">return</span> setImmediate(cb, err, transaction);
+				}
+			});
+		}
+
+	}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
+		<span class="hljs-keyword">return</span> setImmediate(cb, err, transactions);
+	});
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-58">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-58">&#182;</a>
+              </div>
+              <p><strong>API</strong> <code>queueTransaction</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-59">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-59">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>TransactionPool.prototype.queueTransaction = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">transaction, cb</span>) </span>{
+	<span class="hljs-keyword">delete</span> transaction.receivedAt;
+
+	
+
+  <span class="hljs-keyword">if</span> (transaction.type === transactionTypes.MULTI || <span class="hljs-built_in">Array</span>.isArray(transaction.signatures)) {
+		<span class="hljs-keyword">if</span> (self.countMultisignature() &gt;= constants.maxTxsPerQueue) {
+			<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Multisignature Ttansaction pool is full'</span>);
+		} <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (!self.multisignature[transaction.id]) {
+			self.multisignature[transaction.id] = transaction;
+		}
+	} <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (!self.queued[transaction.id]){
+		<span class="hljs-keyword">if</span> (self.countQueued() &gt;= constants.maxTxsPerQueue) {
+			<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Transaction pool is full'</span>);
+		} <span class="hljs-keyword">else</span> {
+			self.queued[transaction.id] = transaction;
+		}
+	}
+
+	<span class="hljs-keyword">return</span> setImmediate(cb);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-60">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-60">&#182;</a>
+              </div>
+              <p><strong>API</strong> <code>applyUnconfirmedList</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-61">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-61">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>TransactionPool.prototype.applyUnconfirmedList = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">cb</span>) </span>{
+	<span class="hljs-keyword">return</span> __private.applyUnconfirmedList(self.getUnconfirmedTransactionList(<span class="hljs-literal">true</span>), cb);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-62">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-62">&#182;</a>
+              </div>
+              <p><strong>API</strong> <code>applyUnconfirmedIds</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-63">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-63">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>TransactionPool.prototype.applyUnconfirmedIds = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">ids, cb</span>) </span>{
+	<span class="hljs-keyword">return</span> __private.applyUnconfirmedList(ids, cb);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-64">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-64">&#182;</a>
+              </div>
+              <p><strong>API</strong> <code>undoUnconfirmedList</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-65">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-65">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>TransactionPool.prototype.undoUnconfirmedList = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">keepUnconfirmedTransactions, cb</span>) </span>{
+	<span class="hljs-keyword">var</span> removedIds = [], keptIds = [];
+	<span class="hljs-keyword">var</span> keepIds = keepUnconfirmedTransactions.map(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">tx</span>)</span>{<span class="hljs-keyword">return</span> tx.id});
+
+	<span class="hljs-keyword">async</span>.eachSeries(self.getUnconfirmedTransactionList(<span class="hljs-literal">false</span>), <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">transaction, eachSeriesCb</span>) </span>{
+
+		<span class="hljs-keyword">if</span> (transaction &amp;&amp; (keepIds.indexOf(transaction.id) == <span class="hljs-number">-1</span>)) {
+			removedIds.push(transaction.id);
+			modules.transactions.undoUnconfirmed(transaction, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
+				<span class="hljs-keyword">if</span> (err) {
+					library.logger.error(<span class="hljs-string">'Failed to undo unconfirmed transaction: '</span> + transaction.id, err);
+					self.removeUnconfirmedTransaction(transaction.id);
+				}
+				<span class="hljs-keyword">return</span> setImmediate(eachSeriesCb);
+			});
+		} <span class="hljs-keyword">else</span> {
+			keptIds.push(transaction.id);
+			<span class="hljs-keyword">return</span> setImmediate(eachSeriesCb);
+		}
+	}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
+		<span class="hljs-keyword">return</span> setImmediate(cb, err, removedIds, keptIds);
+	});
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-66">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-66">&#182;</a>
+              </div>
+              <p>TODO: to remove</p>
+<p><strong>API</strong> <code>expireTransactions</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-67">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-67">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>TransactionPool.prototype.expireTransactions = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">cb</span>) </span>{
+	<span class="hljs-keyword">var</span> ids = [];
+
+	<span class="hljs-keyword">async</span>.waterfall([
+		<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">seriesCb</span>) </span>{
+			__private.expireTransactions(self.getUnconfirmedTransactionList(<span class="hljs-literal">true</span>), ids, seriesCb);
+		},
+		<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">res, seriesCb</span>) </span>{
+			__private.expireTransactions(self.getQueuedTransactionList(<span class="hljs-literal">true</span>), ids, seriesCb);
+		},
+		<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">res, seriesCb</span>) </span>{
+			__private.expireTransactions(self.getMultisignatureTransactionList(<span class="hljs-literal">true</span>, <span class="hljs-literal">false</span>), ids, seriesCb);
+		}
+	], <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, ids</span>) </span>{
+		<span class="hljs-keyword">return</span> setImmediate(cb, err, ids);
+	});
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-68">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-68">&#182;</a>
+              </div>
+              <p><strong>API</strong> <code>fillPool</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-69">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-69">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>TransactionPool.prototype.fillPool = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">cb</span>) </span>{
+
+	<span class="hljs-keyword">var</span> unconfirmedCount = self.countUnconfirmed();
+
+	<span class="hljs-keyword">if</span> (unconfirmedCount &gt;= constants.maxTxsPerBlock) {
+		<span class="hljs-keyword">return</span> setImmediate(cb);
+	} <span class="hljs-keyword">else</span> {
+		<span class="hljs-keyword">var</span> spare = <span class="hljs-number">0</span>, spareMulti;
+		<span class="hljs-keyword">var</span> multisignatures;
+		<span class="hljs-keyword">var</span> multisignaturesLimit = <span class="hljs-number">5</span>;
+		<span class="hljs-keyword">var</span> transactions;
+
+		
+
+		spare = (constants.maxTxsPerBlock - unconfirmedCount);
+		spareMulti = (spare &gt;= multisignaturesLimit) ? multisignaturesLimit : <span class="hljs-number">0</span>;
+		multisignatures = self.getMultisignatureTransactionList(<span class="hljs-literal">true</span>, <span class="hljs-literal">true</span>, multisignaturesLimit).slice(<span class="hljs-number">0</span>, spareMulti);
+		spare = <span class="hljs-built_in">Math</span>.abs(spare - multisignatures.length);
+		transactions = self.getQueuedTransactionList(<span class="hljs-literal">true</span>, constants.maxTxsPerBlock).slice(<span class="hljs-number">0</span>, spare);
+		transactions = multisignatures.concat(transactions);
+
+		transactions.forEach(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">transaction</span>)  </span>{
+			self.addUnconfirmedTransaction(transaction);
+		});
+
+		<span class="hljs-keyword">if</span>(transactions.length&gt;<span class="hljs-number">0</span>){
+			library.logger.debug(<span class="hljs-string">'Transaction pool size: '</span> + self.countUnconfirmed());
+		}
+
+		<span class="hljs-keyword">return</span> __private.applyUnconfirmedList(transactions, cb);
+	}
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-70">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-70">&#182;</a>
+              </div>
+              <p>Private</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>__private.getTransactionList = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">transactions, reverse, limit</span>) </span>{
+	<span class="hljs-keyword">var</span> a = [];
+
+	<span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> i <span class="hljs-keyword">in</span> transactions) {
+		<span class="hljs-keyword">var</span> transaction = transactions[i];
+
+		<span class="hljs-keyword">if</span> (transaction)	{
+			a.push(transaction);
+		}
+	}
+
+	a = reverse ? a.reverse() : a;
+
+	<span class="hljs-keyword">if</span> (limit) {
+		a.splice(limit);
+	}
+
+	<span class="hljs-keyword">return</span> a;
+};
+
+__private.getMissingTransactions = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">ids, cb</span>)</span>{
+	<span class="hljs-keyword">var</span> missingtransactionsids=[];</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-71">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-71">&#182;</a>
+              </div>
+              <p>copy of ids</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-keyword">var</span> transactions = <span class="hljs-built_in">JSON</span>.parse(<span class="hljs-built_in">JSON</span>.stringify(ids));
+	<span class="hljs-keyword">for</span>(<span class="hljs-keyword">var</span> i <span class="hljs-keyword">in</span> ids){
+		<span class="hljs-keyword">var</span> tx=__private.mempool[ids[i]];
+		<span class="hljs-keyword">if</span>(tx){
+			<span class="hljs-keyword">if</span>(tx.type == <span class="hljs-number">4</span> || tx.signatures){ <span class="hljs-comment">// dirty dirty, but multi is broken: we need to fetch fresh version of tx from remote.</span>
+				transactions[i]={<span class="hljs-attr">id</span>:ids[i]};
+				missingtransactionsids.push(ids[i]);
+			}
+			<span class="hljs-keyword">else</span>{
+				transactions[i]=tx;
+			}
+		}
+		<span class="hljs-keyword">else</span>{</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-72">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-72">&#182;</a>
+              </div>
+              <p>beware we send an incomplete transaction, to be taken care of</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>			transactions[i] = {
+				<span class="hljs-attr">id</span>:ids[i],
+				<span class="hljs-attr">incomplete</span>:<span class="hljs-literal">true</span>
+			};
+			missingtransactionsids.push(ids[i]);
+		}
+	}
+	setImmediate(cb, <span class="hljs-literal">null</span>, missingtransactionsids, transactions);
+}
+
+__private.processVerifyTransaction = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">transaction, cb</span>) </span>{
+	<span class="hljs-keyword">async</span>.waterfall([
+		<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">setAccountAndGet</span> (<span class="hljs-params">waterCb</span>) </span>{
+			modules.accounts.setAccountAndGet({<span class="hljs-attr">publicKey</span>: transaction.senderPublicKey}, waterCb);
+		},
+		<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">verifyTransaction</span> (<span class="hljs-params">sender, waterCb</span>) </span>{
+			library.logic.transaction.verify(transaction, sender, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
+				<span class="hljs-keyword">if</span> (err) {
+					<span class="hljs-keyword">return</span> setImmediate(waterCb, err);
+				} <span class="hljs-keyword">else</span> {
+					<span class="hljs-keyword">return</span> setImmediate(waterCb, <span class="hljs-literal">null</span>, sender);
+				}
+			});
+		},
+		<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">getRequester</span> (<span class="hljs-params">sender, waterCb</span>) </span>{
+			<span class="hljs-keyword">var</span> multisignatures = <span class="hljs-built_in">Array</span>.isArray(sender.multisignatures) &amp;&amp; sender.multisignatures.length;
+
+			<span class="hljs-keyword">if</span> (multisignatures) {
+				transaction.signatures = transaction.signatures || [];
+			}
+
+			<span class="hljs-keyword">if</span> (sender &amp;&amp; transaction.requesterPublicKey &amp;&amp; multisignatures) {
+				modules.accounts.getAccount({<span class="hljs-attr">publicKey</span>: transaction.requesterPublicKey}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, requester</span>) </span>{
+					<span class="hljs-keyword">if</span> (!requester) {
+						<span class="hljs-keyword">return</span> setImmediate(waterCb, <span class="hljs-string">'Requester not found'</span>);
+					} <span class="hljs-keyword">else</span> {
+						<span class="hljs-keyword">return</span> setImmediate(waterCb, <span class="hljs-literal">null</span>, sender, requester);
+					}
+				});
+			} <span class="hljs-keyword">else</span> {
+				<span class="hljs-keyword">return</span> setImmediate(waterCb, <span class="hljs-literal">null</span>, sender, <span class="hljs-literal">null</span>);
+			}
+		},
+		<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">processTransaction</span> (<span class="hljs-params">sender, requester, waterCb</span>) </span>{
+			library.logic.transaction.process(transaction, sender, requester, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
+				<span class="hljs-keyword">if</span> (err) {
+					<span class="hljs-keyword">return</span> setImmediate(waterCb, err);
+				} <span class="hljs-keyword">else</span> {
+					<span class="hljs-keyword">return</span> setImmediate(waterCb, <span class="hljs-literal">null</span>, sender);
+				}
+			});
+		}
+	], <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, sender</span>) </span>{
+		<span class="hljs-keyword">if</span> (!err &amp;&amp; transaction.broadcast) {
+			transaction.broadcast = <span class="hljs-literal">false</span>;
+			library.bus.message(<span class="hljs-string">'broadcastTransaction'</span>, transaction);
+		}
+
+		<span class="hljs-keyword">return</span> setImmediate(cb, err, sender);
+	});
+};
+
+__private.applyUnconfirmedList = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">transactions, cb</span>) </span>{
+	<span class="hljs-keyword">async</span>.eachSeries(transactions, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">transaction, eachSeriesCb</span>) </span>{
+		<span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> transaction === <span class="hljs-string">'string'</span>) {
+			transaction = self.getUnconfirmedTransaction(transaction);
+		}
+		<span class="hljs-keyword">if</span> (!transaction) {
+			<span class="hljs-keyword">return</span> setImmediate(eachSeriesCb);
+		}
+		
+		__private.processVerifyTransaction(transaction, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, sender</span>) </span>{
+			<span class="hljs-keyword">if</span> (err) {
+				library.logger.error(<span class="hljs-string">'Failed to process / verify unconfirmed transaction: '</span> + transaction.id, err);
+				self.removeUnconfirmedTransaction(transaction.id);
+				<span class="hljs-keyword">return</span> setImmediate(eachSeriesCb);
+			}
+			modules.transactions.applyUnconfirmed(transaction, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
+				<span class="hljs-keyword">if</span> (err) {
+					library.logger.error(<span class="hljs-string">'Failed to apply unconfirmed transaction: '</span> + transaction.id, err);
+					self.removeUnconfirmedTransaction(transaction.id);
+				}
+				<span class="hljs-keyword">return</span> setImmediate(eachSeriesCb);
+			});
+		});
+	}, cb);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-73">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-73">&#182;</a>
+              </div>
+              <p>TODO: to remove</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>__private.transactionTimeOut = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">transaction</span>) </span>{
+	<span class="hljs-keyword">if</span> (transaction.type === transactionTypes.MULTI) {
+		<span class="hljs-keyword">return</span> (transaction.asset.multisignature.lifetime * <span class="hljs-number">3600</span>);
+	} <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (<span class="hljs-built_in">Array</span>.isArray(transaction.signatures)) {
+		<span class="hljs-keyword">return</span> (constants.unconfirmedTransactionTimeOut * <span class="hljs-number">8</span>);
+	} <span class="hljs-keyword">else</span> {
+		<span class="hljs-keyword">return</span> (constants.unconfirmedTransactionTimeOut);
+	}
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-74">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-74">&#182;</a>
+              </div>
+              <p>TODO: to remove</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>__private.expireTransactions = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">transactions, parentIds, cb</span>) </span>{
+	<span class="hljs-keyword">var</span> ids = [];
+
+	<span class="hljs-keyword">async</span>.eachSeries(transactions, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">transaction, eachSeriesCb</span>) </span>{
+		<span class="hljs-keyword">if</span> (!transaction) {
+			<span class="hljs-keyword">return</span> setImmediate(eachSeriesCb);
+		}
+
+		<span class="hljs-keyword">var</span> timeNow = <span class="hljs-keyword">new</span> <span class="hljs-built_in">Date</span>();
+		<span class="hljs-keyword">var</span> timeOut = __private.transactionTimeOut(transaction);
+		<span class="hljs-keyword">var</span> seconds = <span class="hljs-built_in">Math</span>.floor((timeNow.getTime() - <span class="hljs-keyword">new</span> <span class="hljs-built_in">Date</span>(transaction.receivedAt).getTime()) / <span class="hljs-number">1000</span>);
+
+		<span class="hljs-keyword">if</span> (seconds &gt; timeOut) {
+			ids.push(transaction.id);
+			self.removeUnconfirmedTransaction(transaction.id);
+			library.logger.info(<span class="hljs-string">'Expired transaction: '</span> + transaction.id + <span class="hljs-string">' received at: '</span> + transaction.receivedAt.toUTCString());
+			<span class="hljs-keyword">return</span> setImmediate(eachSeriesCb);
+		} <span class="hljs-keyword">else</span> {
+			<span class="hljs-keyword">return</span> setImmediate(eachSeriesCb);
+		}
+	}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
+		<span class="hljs-keyword">return</span> setImmediate(cb, err, ids.concat(parentIds));
+	});
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-75">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-75">&#182;</a>
+              </div>
+              <p>Export</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-built_in">module</span>.exports = TransactionPool;</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>

@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>rounds.js</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="arkio.css" />
+</head>
+<body>
+  
+    <div id="title">
+         <h1>rounds.js</h1>
+         <img src="https://ark.io/wp-content/uploads/2016/10/ark-normal.png">
+        <hr>
+    </div>
+  
+  <div id="container">
+    <div id="background"></div>
+    
+      <ul id="jump_to">
+        <li>
+          <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
+          <a class="small" href="javascript:void(0);">+</a>
+          <div id="jump_wrapper">
+          <div id="jump_page_wrapper">
+            <div id="jump_page">
+              
+                
+                <a class="source" href="app.html">
+                  app.js
+                </a>
+              
+                
+                <a class="source" href="accounts.html">
+                  accounts.js
+                </a>
+              
+                
+                <a class="source" href="blockchain.html">
+                  blockchain.js
+                </a>
+              
+                
+                <a class="source" href="blocks.html">
+                  blocks.js
+                </a>
+              
+                
+                <a class="source" href="delegates.html">
+                  delegates.js
+                </a>
+              
+                
+                <a class="source" href="loader.html">
+                  loader.js
+                </a>
+              
+                
+                <a class="source" href="multisignatures.html">
+                  multisignatures.js
+                </a>
+              
+                
+                <a class="source" href="nodeManager.html">
+                  nodeManager.js
+                </a>
+              
+                
+                <a class="source" href="peers.html">
+                  peers.js
+                </a>
+              
+                
+                <a class="source" href="rounds.html">
+                  rounds.js
+                </a>
+              
+                
+                <a class="source" href="server.html">
+                  server.js
+                </a>
+              
+                
+                <a class="source" href="signatures.html">
+                  signatures.js
+                </a>
+              
+                
+                <a class="source" href="system.html">
+                  system.js
+                </a>
+              
+                
+                <a class="source" href="transactionPool.html">
+                  transactionPool.js
+                </a>
+              
+                
+                <a class="source" href="transactions.html">
+                  transactions.js
+                </a>
+              
+                
+                <a class="source" href="transport.html">
+                  transport.js
+                </a>
+              
+            </div>
+          </div>
+        </li>
+      </ul>
+    
+    <ul class="sections">
+        
+        
+        <li id="section-1">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              <h3 id="database-structure">Database Structure</h3>
+<p>a table mem_delegates persisting __private.activedelegates with votes, produced and missed blocks total per round</p>
+<h3 id="rounds-tick-block-">rounds.tick(block)</h3>
+<p>add block.fees to <strong>private.collectedfees[round]
+push block.generatorPublicKey to </strong>private.forgers[round]
+if end of round detected:</p>
+<ul>
+<li>distribute fees to __private.activedelegates[round]</li>
+<li>update stats for delegates that have missed block from __private.forgers[round]</li>
+<li>calculate __private.activedelegates[round+1] and save to database</li>
+<li>set __private.collectedfees[round+1] = 0</li>
+<li>round = __private.current++</li>
+</ul>
+<h3 id="rounds-backwardtick-block-">rounds.backwardTick(block):</h3>
+<p>if change to round - 1 detected:</p>
+<ul>
+<li>sanity check that __private.collectedfees[round] == 0</li>
+<li>delete __private.activedelegates[round]</li>
+<li>check we have <strong>private.collectedfees[round-1] and </strong>private.activedelegates[round-1], grab them from database if needed</li>
+<li>round = <strong>private.current–
+remove block.fees from </strong>private.collectedfees[round]
+pop block.generatorPublicKey from __private.forgers[round]</li>
+</ul>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-meta">
+'use strict'</span>;
+
+<span class="hljs-keyword">var</span> <span class="hljs-keyword">async</span> = <span class="hljs-built_in">require</span>(<span class="hljs-string">'async'</span>);
+<span class="hljs-keyword">var</span> constants = <span class="hljs-built_in">require</span>(<span class="hljs-string">'../helpers/constants.js'</span>);
+<span class="hljs-keyword">var</span> slots = <span class="hljs-built_in">require</span>(<span class="hljs-string">'../helpers/slots.js'</span>);
+<span class="hljs-keyword">var</span> sql = <span class="hljs-built_in">require</span>(<span class="hljs-string">'../sql/rounds.js'</span>);
+<span class="hljs-keyword">var</span> crypto = <span class="hljs-built_in">require</span>(<span class="hljs-string">'crypto'</span>);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <p>managing globals</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> modules, library, self;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <p>holding the round state</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> __private = {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              <p>for each round, it stores the active delegates of the round ordered by rank
+<code>__private.activedelegates[round] = [delegaterank1, delegaterank2, ..., delegaterank51]</code></p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	activedelegates: {},</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-6">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-6">&#182;</a>
+              </div>
+              <p>for each round, store the forgers, so we can update stats about missing blocks
+<code>__private.forgers[round] = [forger1, forger2, ..., forgerN]</code></p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	forgers: {},</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-7">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-7">&#182;</a>
+              </div>
+              <p>for each round, get the memorize the collected fees</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	collectedfees: {},</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-8">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-8">&#182;</a>
+              </div>
+              <p>current round</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	current: <span class="hljs-number">1</span>
+
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-9">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-9">&#182;</a>
+              </div>
+              <p>Constructor</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">Rounds</span> (<span class="hljs-params">cb, scope</span>) </span>{
+	library = scope;
+	self = <span class="hljs-keyword">this</span>;
+
+	<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, self);
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-10">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-10">&#182;</a>
+              </div>
+              <p><strong>API</strong> <code>tick</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-11">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-11">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Rounds.prototype.tick = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">block, cb</span>)</span>{
+	<span class="hljs-keyword">var</span> round = __private.current;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-12">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-12">&#182;</a>
+              </div>
+              <p>if genesis block, nothing to do about the forger
+but make sure votes are updated properly to start the round</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-keyword">if</span>(block.height == <span class="hljs-number">1</span>){
+		__private.updateTotalVotesOnDatabase(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">err</span>)</span>{
+			cb(err, block);
+		});
+	}
+
+	<span class="hljs-keyword">else</span>{</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-13">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-13">&#182;</a>
+              </div>
+              <p>give block rewards + fees to the block forger</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>		modules.accounts.mergeAccountAndGet({
+			<span class="hljs-attr">publicKey</span>: block.generatorPublicKey,
+			<span class="hljs-attr">balance</span>: block.reward + block.totalFee,
+			<span class="hljs-attr">u_balance</span>: block.reward + block.totalFee,
+			<span class="hljs-attr">producedblocks</span>: <span class="hljs-number">1</span>,
+			<span class="hljs-attr">blockId</span>: block.id,
+			<span class="hljs-attr">round</span>: round
+		}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
+			<span class="hljs-keyword">if</span>(err){
+				<span class="hljs-keyword">return</span> cb(err, block);
+			}
+			<span class="hljs-keyword">else</span> {
+				__private.collectedfees[round] += block.totalFee;
+				__private.forgers[round].push(block.generatorPublicKey);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-14">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-14">&#182;</a>
+              </div>
+              <p>last block of the round? we prepare next round</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>				<span class="hljs-keyword">if</span>(self.getRoundFromHeight(block.height+<span class="hljs-number">1</span>) == round + <span class="hljs-number">1</span>){
+					<span class="hljs-keyword">return</span> __private.changeRoundForward(block, cb);
+				}
+				<span class="hljs-keyword">else</span> {
+					<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, block);
+				}
+			}
+		});
+	}
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-15">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-15">&#182;</a>
+              </div>
+              <p><em>backward tick</em></p>
+<p><strong>API</strong> <code>backwardTick</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-16">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-16">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Rounds.prototype.backwardTick = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">block, cb</span>)</span>{
+	__private.checkAndChangeRoundBackward(block, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">err</span>)</span>{
+		<span class="hljs-keyword">if</span>(err){
+			<span class="hljs-keyword">return</span> cb(err, block);
+		}
+		<span class="hljs-keyword">else</span>{
+			<span class="hljs-keyword">var</span> round = __private.current;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-17">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-17">&#182;</a>
+              </div>
+              <p>remove block rewards + fees from the block forger</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>			modules.accounts.mergeAccountAndGet({
+				<span class="hljs-attr">publicKey</span>: block.generatorPublicKey,
+				<span class="hljs-attr">balance</span>: -(block.reward + block.totalFee),
+				<span class="hljs-attr">u_balance</span>: -(block.reward + block.totalFee),
+				<span class="hljs-attr">producedblocks</span>: <span class="hljs-number">-1</span>,
+				<span class="hljs-attr">blockId</span>: block.id,
+				<span class="hljs-attr">round</span>: round
+			}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
+				<span class="hljs-keyword">if</span>(err){
+					<span class="hljs-keyword">return</span> cb(err, block);
+				}
+				<span class="hljs-keyword">else</span> {
+					__private.collectedfees[round] -= block.totalFee;
+					<span class="hljs-keyword">var</span> generator = __private.forgers[round].pop();
+					<span class="hljs-keyword">if</span>(generator != block.generatorPublicKey){
+						<span class="hljs-keyword">return</span> cb(<span class="hljs-string">"Expecting to remove forger "</span>+block.generatorPublicKey+<span class="hljs-string">" but removed "</span>+generator, block)
+					}
+					<span class="hljs-keyword">else</span> {
+						<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, block);
+					}
+				}
+			});
+		}
+	});
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-18">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-18">&#182;</a>
+              </div>
+              <p>Changing round on next block</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>__private.changeRoundForward = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">block, cb</span>)</span>{
+	<span class="hljs-keyword">var</span> nextround = __private.current + <span class="hljs-number">1</span>;
+	__private.updateTotalVotesOnDatabase(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">err</span>)</span>{
+		<span class="hljs-keyword">if</span>(err){
+			<span class="hljs-keyword">return</span> cb(err, block);
+		}
+		<span class="hljs-keyword">else</span> {
+			__private.generateDelegateList(nextround, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">err, fullactivedelegates</span>)</span>{
+				<span class="hljs-keyword">if</span>(err){
+					<span class="hljs-keyword">return</span> cb(err, block);
+				}
+				<span class="hljs-keyword">else</span> {
+					__private.collectedfees[nextround] = <span class="hljs-number">0</span>;
+					__private.forgers[nextround] = [];
+					__private.activedelegates[nextround] = fullactivedelegates.map(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">ad</span>)</span>{<span class="hljs-keyword">return</span> ad.publicKey});
+					__private.updateActiveDelegatesStats(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">err</span>)</span>{
+						<span class="hljs-keyword">if</span>(err){
+							<span class="hljs-keyword">return</span> cb(err, block);
+						}
+						<span class="hljs-keyword">else</span>{
+							__private.saveActiveDelegatesOnDatabase(fullactivedelegates, nextround, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">err</span>)</span>{
+								<span class="hljs-keyword">if</span>(err){
+									<span class="hljs-keyword">return</span> cb(err, block);
+								}
+								<span class="hljs-keyword">else</span>{</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-19">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-19">&#182;</a>
+              </div>
+              <p>we are good to go, let’s move to the new round</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>									__private.current = nextround;
+									<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, block);
+								}
+							});
+						}
+					});
+				}
+			});
+		}
+	});
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-20">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-20">&#182;</a>
+              </div>
+              <p>block belongs to the previous round? we prepare state of this previous round</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>__private.checkAndChangeRoundBackward = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">block, cb</span>)</span>{
+	<span class="hljs-keyword">var</span> round = __private.current;
+	<span class="hljs-keyword">var</span> blockround = self.getRoundFromHeight(block.height);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-21">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-21">&#182;</a>
+              </div>
+              <p>no round change, do nothing</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-keyword">if</span>(round == blockround){
+		<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, block);
+	}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-22">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-22">&#182;</a>
+              </div>
+              <p>round change prepare the previous round data</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-keyword">else</span> {
+		library.logger.info(<span class="hljs-string">"Detected backward round change, preparing data for round"</span>, blockround);
+		<span class="hljs-keyword">delete</span> __private.activedelegates[round];
+		<span class="hljs-keyword">delete</span> __private.forgers[round];
+		__private.current = blockround;
+
+		<span class="hljs-keyword">return</span> <span class="hljs-keyword">async</span>.series([
+			<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">seriesCb</span>) </span>{
+				self.getActiveDelegates(seriesCb);
+			},
+			<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">seriesCb</span>) </span>{
+				__private.getCurrentRoundForgers(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">err, forgers</span>)</span>{
+					__private.forgers[blockround]=forgers.map(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">forger</span>)</span>{
+						<span class="hljs-keyword">return</span> forger.publicKey;
+					});
+					<span class="hljs-keyword">return</span> seriesCb(err, block);
+				});
+			}
+		], <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">err</span>)</span>{
+			<span class="hljs-keyword">return</span> cb(err, block);
+		});
+	}
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-23">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-23">&#182;</a>
+              </div>
+              <p>Calculate and update on database the forging stats for the round active delegates</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>__private.updateActiveDelegatesStats = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">cb</span>)</span>{
+	<span class="hljs-keyword">var</span> round = __private.current;
+	<span class="hljs-keyword">var</span> activedelegates = __private.activedelegates[round];
+	<span class="hljs-keyword">var</span> forgers = __private.forgers[round];
+	<span class="hljs-keyword">var</span> forgerStats = {};
+
+	<span class="hljs-keyword">for</span>(<span class="hljs-keyword">var</span> i <span class="hljs-keyword">in</span> forgers){
+		<span class="hljs-keyword">if</span>(forgerStats[forgers[i]]){
+			forgerStats[forgers[i]].producedblocks++;
+		}
+		<span class="hljs-keyword">else</span>{
+			forgerStats[forgers[i]] = {
+				<span class="hljs-attr">producedblocks</span>:<span class="hljs-number">1</span>,
+				<span class="hljs-attr">missedblocks</span>:<span class="hljs-number">0</span>
+			};
+		}
+	}
+
+	<span class="hljs-keyword">for</span>(<span class="hljs-keyword">var</span> j <span class="hljs-keyword">in</span> activedelegates){
+		<span class="hljs-keyword">if</span>(!forgerStats[activedelegates[j]]){
+			forgerStats[activedelegates[j]] = {
+				<span class="hljs-attr">producedblocks</span>:<span class="hljs-number">0</span>,
+				<span class="hljs-attr">missedblocks</span>:<span class="hljs-number">1</span>
+			};
+		}
+	}
+
+	<span class="hljs-keyword">return</span> __private.updateActiveDelegatesStatsOnDatabase(forgerStats, round, cb);
+
+};
+
+__private.saveActiveDelegatesOnDatabase = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">fullactivedelegates, round, cb</span>)</span>{
+	library.db.none(sql.saveActiveDelegates(fullactivedelegates), {<span class="hljs-attr">round</span>: round}).then(cb).catch(cb);
+};
+
+__private.updateTotalVotesOnDatabase = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">cb</span>)</span>{
+	library.db.none(sql.updateTotalVotes).then(cb).catch(cb);
+};
+
+__private.updateActiveDelegatesStatsOnDatabase = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">forgerStats, round, cb</span>)</span>{
+	library.db.none(sql.updateActiveDelegatesStats(forgerStats), {<span class="hljs-attr">round</span>: round}).then(cb).catch(cb);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-24">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-24">&#182;</a>
+              </div>
+              <p>generate the list of active delegates of the round
+<em>WARNING</em>: To be used exclusively at the beginning of the new round</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>__private.generateDelegateList = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">round, cb</span>) </span>{
+	__private.getKeysSortByVote(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, activedelegates</span>) </span>{
+		<span class="hljs-keyword">if</span> (err) {
+			<span class="hljs-keyword">return</span> cb(err);
+		}
+
+		<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, __private.randomizeDelegateList(activedelegates, round));
+	});
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-25">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-25">&#182;</a>
+              </div>
+              <p>the algorithm to randomize active delegate list after they are ordered by vote descending.
+Return the new list in the order the delegates are allowed to forge in this round</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>__private.randomizeDelegateList = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">activedelegates, round</span>) </span>{</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-26">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-26">&#182;</a>
+              </div>
+              <p>pseudorandom (?!) permutation algorithm.
+TODO: useless? to improve?</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-keyword">var</span> seedSource = round.toString();
+	<span class="hljs-keyword">var</span> currentSeed = crypto.createHash(<span class="hljs-string">'sha256'</span>).update(seedSource, <span class="hljs-string">'utf8'</span>).digest();
+
+	<span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> i = <span class="hljs-number">0</span>, delCount = activedelegates.length; i &lt; delCount; i++) {
+		<span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> x = <span class="hljs-number">0</span>; x &lt; <span class="hljs-number">4</span> &amp;&amp; i &lt; delCount; i++, x++) {
+			<span class="hljs-keyword">var</span> newIndex = currentSeed[x] % delCount;
+			<span class="hljs-keyword">var</span> b = activedelegates[newIndex];
+			activedelegates[newIndex] = activedelegates[i];
+			activedelegates[i] = b;
+		}
+		currentSeed = crypto.createHash(<span class="hljs-string">'sha256'</span>).update(currentSeed).digest();
+	}
+
+	<span class="hljs-keyword">return</span> activedelegates;
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-27">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-27">&#182;</a>
+              </div>
+              <p>return the list of active delegates from database ranked by votes
+<em>WARNING</em> to be used at the round change only</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>__private.getKeysSortByVote = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">cb</span>) </span>{
+	modules.accounts.getAccounts({
+		<span class="hljs-attr">isDelegate</span>: <span class="hljs-number">1</span>,
+		<span class="hljs-attr">sort</span>: {<span class="hljs-string">'vote'</span>: <span class="hljs-number">-1</span>, <span class="hljs-string">'publicKey'</span>: <span class="hljs-number">1</span>},
+		<span class="hljs-attr">limit</span>: slots.delegates
+	}, [<span class="hljs-string">'publicKey'</span>, <span class="hljs-string">'vote'</span>], <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, rows</span>) </span>{
+		<span class="hljs-keyword">if</span> (err) {
+			<span class="hljs-keyword">return</span> cb(err);
+		}
+		<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, rows);
+	});
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-28">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-28">&#182;</a>
+              </div>
+              <p>Retrieve from the database the delegate that have forged blocks during the current round</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>__private.getCurrentRoundForgers = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">cb</span>) </span>{
+	<span class="hljs-keyword">var</span> round = __private.current;
+	<span class="hljs-keyword">var</span> lastBlock = modules.blockchain.getLastBlock();</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-29">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-29">&#182;</a>
+              </div>
+              <p>well exactly the last height of previous round,
+but using ‘&gt;’ in sql query will actually select the first block of the current round</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-keyword">var</span> firstHeightOfround = (round<span class="hljs-number">-1</span>) * slots.delegates;
+
+	library.db.query(sql.getRoundForgers, {<span class="hljs-attr">minheight</span>: firstHeightOfround, <span class="hljs-attr">maxheight</span>: lastBlock.height}).then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">rows</span>)</span>{
+		<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, rows);
+	}).catch(cb);
+
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-30">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-30">&#182;</a>
+              </div>
+              <h2 id="api-getroundfromheight">API getRoundFromHeight</h2>
+<ul>
+<li><code>height = 1                   -&gt; round = 1</code></li>
+<li><code>height = slots.delegates     -&gt; round = 1</code></li>
+<li><code>height = slots.delegates + 1 -&gt; round = 2</code></li>
+</ul>
+<p><strong>API</strong> <code>getRoundFromHeight</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-31">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-31">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Rounds.prototype.getRoundFromHeight = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">height</span>) </span>{
+	<span class="hljs-keyword">return</span> <span class="hljs-built_in">Math</span>.floor((height<span class="hljs-number">-1</span>) / slots.delegates) + <span class="hljs-number">1</span>;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-32">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-32">&#182;</a>
+              </div>
+              <p>return the active delegates of the round.
+<em>SAFE</em> to be be invoked whenever</p>
+<p><strong>API</strong> <code>getActiveDelegates</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-33">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-33">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Rounds.prototype.getActiveDelegates = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">cb</span>) </span>{
+	<span class="hljs-keyword">var</span> round = __private.current;
+	<span class="hljs-keyword">if</span>(__private.activedelegates[round]){
+		<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, __private.activedelegates[round]);
+	}
+	<span class="hljs-keyword">else</span> {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-34">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-34">&#182;</a>
+              </div>
+              <p>let’s get active delegates from database if any</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>		library.db.query(sql.getActiveDelegates, {<span class="hljs-attr">round</span>: round}).then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">rows</span>)</span>{
+			<span class="hljs-keyword">if</span>(rows.length == constants.activeDelegates){
+				rows=__private.randomizeDelegateList(rows, round);
+				__private.activedelegates[round]=rows.map(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">row</span>)</span>{<span class="hljs-keyword">return</span> row.publicKey;});
+				<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, __private.activedelegates[round]);
+			}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-35">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-35">&#182;</a>
+              </div>
+              <p>ok maybe we just started node from scratch, so need to generate it.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>			<span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span>(modules.blockchain.getLastBlock().height == <span class="hljs-number">1</span> &amp;&amp; round == <span class="hljs-number">1</span>) {
+				__private.generateDelegateList(round, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">err, activedelegates</span>)</span>{
+					<span class="hljs-keyword">if</span>(err){
+						<span class="hljs-keyword">return</span> cb(err);
+					}
+					__private.activedelegates[round] = activedelegates.map(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">ad</span>)</span>{<span class="hljs-keyword">return</span> ad.publicKey;});
+					__private.saveActiveDelegatesOnDatabase(activedelegates, round, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{});
+					<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, __private.activedelegates[round]);
+				});
+			}
+			<span class="hljs-keyword">else</span> {
+				<span class="hljs-keyword">return</span> cb(<span class="hljs-string">"Can't build active delegates list. Please report. Rebuild form scratch is necessary."</span>);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-36">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-36">&#182;</a>
+              </div>
+              <p>TODO: add here a sql query to drop all mem_ tables</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>				process.exit(<span class="hljs-number">0</span>);
+			}
+		});
+	}
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-37">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-37">&#182;</a>
+              </div>
+              <p>Events</p>
+<p><strong>API</strong> <code>onBind</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-38">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-38">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Rounds.prototype.onBind = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">scope</span>) </span>{
+	modules = scope;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-39">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-39">&#182;</a>
+              </div>
+              <p>When database state is reflected into the code state
+we prepare __private data</p>
+<p><strong>API</strong> <code>onDatabaseLoaded</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-40">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-40">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Rounds.prototype.onDatabaseLoaded = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">lastBlock</span>) </span>{
+
+	<span class="hljs-keyword">var</span> round = self.getRoundFromHeight(lastBlock.height);
+
+	__private.current = round;
+
+	self.getActiveDelegates(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">err, delegates</span>)</span>{
+		<span class="hljs-keyword">if</span>(self.getRoundFromHeight(lastBlock.height+<span class="hljs-number">1</span>) == round+<span class="hljs-number">1</span>){
+			__private.changeRoundForward(lastBlock, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">err, block</span>)</span>{
+				library.logger.info(<span class="hljs-string">"End of round detected, next round prepared"</span>);
+			});
+		}
+		library.logger.info(<span class="hljs-string">"loaded "</span>+delegates.length+<span class="hljs-string">" active delegates of round "</span>+round);
+	});
+
+	__private.getCurrentRoundForgers(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">err, forgers</span>)</span>{
+		__private.forgers[round]=forgers.map(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">forger</span>)</span>{
+			<span class="hljs-keyword">return</span> forger.publicKey;
+		});
+		library.logger.info(<span class="hljs-string">"loaded "</span>+__private.forgers[round].length+<span class="hljs-string">" forgers of round "</span>+round);
+	});
+
+
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-41">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-41">&#182;</a>
+              </div>
+              <p><strong>API</strong> <code>cleanup</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-42">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-42">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Rounds.prototype.cleanup = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">cb</span>) </span>{
+	<span class="hljs-keyword">return</span> cb();
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-43">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-43">&#182;</a>
+              </div>
+              <p>Export</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-built_in">module</span>.exports = Rounds;</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>
