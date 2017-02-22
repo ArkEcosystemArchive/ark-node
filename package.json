@@ -5,6 +5,7 @@
   "scripts": {
     "start": "node app.js",
     "start:testnet": "node app.js --genesis genesisBlock.testnet.json --config config.testnet.json",
+    "start:devnet": "node app.js --genesis genesisBlock.devnet.json --config config.devnet.json",
     "start:test": "node app.js --genesis test/genesisBlock.json --config test/config.json",
     "start:newtest": "node app.js --genesis tasks/genesisBlock.json --config tasks/config.json",
     "snapshot": "node app.js --genesis genesisBlock.testnet.json --config config.testnet.json -s 2295",
