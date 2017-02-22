@@ -925,8 +925,6 @@ Blocks.prototype.verifyBlock = function (block, checkPreviousBlock) {
 		}
 	}
 
-
-
 	var expectedReward = __private.blockReward.calcReward(block.height);
 
 	if (block.height !== 1 && expectedReward !== block.reward) {

@@ -436,13 +436,14 @@ Transport.prototype.getFromRandomPeer = function (config, options, cb) {
 	async.retry(20, function (cb) {
 		modules.peers.list(config, function (err, peers) {
 			if (!err && peers.length) {
+
 				return self.getFromPeer(peers[0], options, cb);
 			} else {
-				return setImmediate(cb, err || 'No reachable peers in db');
+				return cb(err || 'No reachable peers in db');
 			}
 		});
 	}, function (err, results) {
-		return setImmediate(cb, err, results);
+		return cb(err, results);
 	});
 };
 
@@ -484,7 +485,7 @@ Transport.prototype.getFromPeer = function (peer, options, cb) {
 			//console.log(res);
 			__private.removePeer({peer: peer, code: 'ERESPONSE ' + res.status, req: req});
 
-			return setImmediate(cb, ['Received bad response code', res.status, req.method, req.url].join(' '));
+			return cb(['Received bad response code', res.status, req.method, req.url].join(' '));
 		} else {
 			var headers      = res.headers;
 			    headers.ip   = peer.ip;
@@ -495,14 +496,14 @@ Transport.prototype.getFromPeer = function (peer, options, cb) {
 				// Remove peer
 				__private.removePeer({peer: peer, code: 'EHEADERS', req: req});
 
-				return setImmediate(cb, ['Invalid response headers', JSON.stringify(headers), req.method, req.url].join(' '));
+				return cb(['Invalid response headers', JSON.stringify(headers), req.method, req.url].join(' '));
 			}
 
 			if (headers.nethash !== library.config.nethash) {
 				// Remove peer
 				__private.removePeer({peer: peer, code: 'ENETHASH', req: req});
 
-				return setImmediate(cb, ['Peer is not on the same network', headers.nethash, req.method, req.url].join(' '));
+				return cb(['Peer is not on the same network', headers.nethash, req.method, req.url].join(' '));
 			}
 
 			// update the saved list of peers
@@ -515,7 +516,7 @@ Transport.prototype.getFromPeer = function (peer, options, cb) {
 			});
 
 
-			return setImmediate(cb, null, {body: res.body, peer: peer});
+			return cb(null, {body: res.body, peer: peer});
 		}
 	})
 	.catch(function (err) {
@@ -525,7 +526,7 @@ Transport.prototype.getFromPeer = function (peer, options, cb) {
 			}
 		}
 
-		return setImmediate(cb, [err.code, 'Request failed', req.method, req.url].join(' '));
+		return cb([err.code, 'Request failed', req.method, req.url].join(' '));
 	});
 };
 

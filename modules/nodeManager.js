@@ -7,7 +7,13 @@ var os = require('os');
 
 var self, library, modules;
 
-var __private = {};
+var __private = {
+	// flag if the node is in sync with network
+	blockchainReady: false,
+
+	// delegates keypairs
+	keypairs: {}
+};
 
 // Constructor
 function NodeManager (cb, scope) {
@@ -34,7 +40,6 @@ NodeManager.prototype.startApp = function(){
 }
 
 NodeManager.prototype.onDatabaseLoaded = function(lastBlock) {
-  library.bus.message('loadDelegates');
 	library.bus.message('startTransactionPool');
 	library.bus.message('startBlockchain');
 
@@ -48,13 +53,21 @@ NodeManager.prototype.onDatabaseLoaded = function(lastBlock) {
 		library.logger.info("Mounting Public API");
 		library.bus.message('attachPublicApi');
 	}
+
+	library.logger.info("# Started as a relay node");
+	library.bus.message('loadDelegates');
 };
 
+NodeManager.prototype.onBlockchainReady = function() {
+	library.bus.message('loadDelegates');
+}
+
 NodeManager.prototype.onDelegatesLoaded = function(keypairs) {
-  var numberOfDelegates=Object.keys(keypairs).length;
+  var numberOfDelegates = Object.keys(keypairs).length;
+	var loadedPairs = Object.keys(__private.keypairs).length;
 
 	// If there are some delegates configured, start forging, else just relay tx and blocks
-  if(numberOfDelegates>0){
+  if(numberOfDelegates > 0 && loadedPairs == 0){
 		var arch = os.arch()
 		if(arch == "x64" || arch == "x86"){
 			__private.keypairs=keypairs;
@@ -63,12 +76,11 @@ NodeManager.prototype.onDelegatesLoaded = function(keypairs) {
 		}
 		else {
 			library.logger.info("Your architecture '"+ arch + "' is not supported for forging");
-			library.logger.info("# Started as a relay node");
 		}
 
   }
   else{
-    library.logger.info("# Started as a relay node");
+    library.logger.info("No delegates found in config file");
   }
 
 };
@@ -90,10 +102,14 @@ NodeManager.prototype.onNetworkObserved = function(network){
 }
 
 NodeManager.prototype.onBlocksReceived = function(blocks, peer, cb) {
+	// we had to pull several blocks from network? means we are not in sync anymore
+	if(blocks.length > 0){
+		__private.blockchainReady = false;
+	}
+
 	library.managementSequence.add(function (mSequence) {
 
 		var currentBlock;
-
 		async.eachSeries(blocks, function (block, eachSeriesCb) {
 			block.reward = parseInt(block.reward);
 			block.totalAmount = parseInt(block.totalAmount);
@@ -312,6 +328,14 @@ NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 			}
 		}
 		else {
+			// First time receiving a block form network? Means we are in sync with network
+			if(!__private.blockchainReady){
+				__private.blockchainReady=true;
+				// using a setImmediate because we don't want to pollute managementSequence thread
+				setImmediate(function(){
+					library.bus.message("blockchainReady");
+				});
+			}
 			library.logger.info("New block received", {id: block.id, height:block.height, transactions: block.numberOfTransactions, peer:peer.string});
 			block.verified = false;
 			block.processed = false;

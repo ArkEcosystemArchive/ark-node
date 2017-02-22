@@ -458,23 +458,28 @@ __private.checkDelegates = function (publicKey, votes, state, cb) {
 };
 
 __private.loadMyDelegates = function (cb) {
-	var secrets = null;
+	var secrets = [];
 	if (library.config.forging.secret) {
 		secrets = Array.isArray(library.config.forging.secret) ? library.config.forging.secret : [library.config.forging.secret];
 	}
 
-	async.eachSeries(secrets, function (secret, cb) {
+	async.eachSeries(secrets, function (secret, seriesCb) {
 		var keypair = library.ed.makeKeypair(secret);
+
+		// already loaded? Do nothing
+		if(__private.keypairs[keypair.publicKey.toString('hex')]){
+			return seriesCb();
+		}
 
 		modules.accounts.getAccount({
 			publicKey: new Buffer(keypair.publicKey, "hex")
 		}, function (err, account) {
 			if (err) {
-				return setImmediate(cb, err);
+				return seriesCb(err);
 			}
 
 			if (!account) {
-				return setImmediate(cb, 'Account ' + keypair.publicKey.toString('hex') + ' not found');
+				return seriesCb('Account ' + keypair.publicKey.toString('hex') + ' not found');
 			}
 
 			if (account.isDelegate) {
@@ -483,10 +488,10 @@ __private.loadMyDelegates = function (cb) {
 			} else {
 				library.logger.warn('Delegate with this public key not found: ' + keypair.publicKey.toString('hex'));
 			}
-			return setImmediate(cb);
+			return seriesCb();
 		});
 	}, function(err){
-		return setImmediate(cb, err, __private.keypairs);
+		return cb(err, __private.keypairs);
 	});
 };
 
@@ -615,6 +620,7 @@ Delegates.prototype.onBind = function (scope) {
 Delegates.prototype.onLoadDelegates = function () {
 	__private.loadMyDelegates(function(err, keypairs){
 		if(err){
+			library.logger.error(err);
 		}
 		library.bus.message('delegatesLoaded', keypairs);
 	});

@@ -582,7 +582,7 @@ Loader.prototype.getNetwork = function (force, cb) {
 	var distance = modules.delegates.isActiveDelegate() ? 2 : 51;
 
 	if (!force && __private.network.height > 0 && Math.abs(__private.network.height - modules.blocks.getLastBlock().height) < distance) {
-		return setImmediate(cb, null, __private.network);
+		return cb(null, __private.network);
 	}
 
 	// Fetch a list of 100 random peers
@@ -593,7 +593,7 @@ Loader.prototype.getNetwork = function (force, cb) {
 	 }, function (err, res) {
 		if (err) {
 			library.logger.info('Failed to connect properly with network', err);
-			return setImmediate(cb, err);
+			return cb(err);
 		}
 
 
@@ -601,7 +601,7 @@ Loader.prototype.getNetwork = function (force, cb) {
 
 		library.schema.validate({peers:peers}, schema.getNetwork.peers, function (err) {
 			if (err) {
-				return setImmediate(cb, err);
+				return cb(err);
 			}
 
 			peers = __private.shuffle(peers);
@@ -621,7 +621,7 @@ Loader.prototype.getNetwork = function (force, cb) {
 						if (err) {
 							library.logger.error("error:",err);
 							library.logger.warn('Failed to get height from peer', peer.string);
-							return setImmediate(cb);
+							return cb();
 						}
 
 						var verification = false;
@@ -642,27 +642,27 @@ Loader.prototype.getNetwork = function (force, cb) {
 							library.logger.warn("errors", verification);
 							modules.peers.remove(peer.ip, peer.port);
 
-							return setImmediate(cb);
+							return cb();
 						}
 						else{
 							library.logger.debug(['Received height:', res.body.header.height, ', block_id: ', res.body.header.id,'from peer'].join(' '), peer.string);
-							return setImmediate(cb, null, {peer: peer, height: res.body.header.height, header:res.body.header});
+							return cb(null, {peer: peer, height: res.body.header.height, header:res.body.header});
 						}
 					});
 				} else {
 					library.logger.warn('Failed to validate peer', peer);
-					return setImmediate(cb);
+					return cb();
 				}
 			}, function (err, heights) {
 				__private.network = __private.findGoodPeers(heights);
 
 				if (err) {
-					return setImmediate(cb, err);
+					return cb(err);
 				} else if (!__private.network.peers.length) {
-					return setImmediate(cb, 'Failed to find enough good peers to sync with');
+					return cb('Failed to find enough good peers to sync with');
 				} else {
 					//library.logger.debug('network', __private.network);
-					return setImmediate(cb, null, __private.network);
+					return cb(null, __private.network);
 				}
 			});
 		});
