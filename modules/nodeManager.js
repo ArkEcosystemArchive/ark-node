@@ -59,6 +59,7 @@ NodeManager.prototype.onDatabaseLoaded = function(lastBlock) {
 };
 
 NodeManager.prototype.onBlockchainReady = function() {
+	library.logger.info("Blockchain in sync. Loading delegates");
 	library.bus.message('loadDelegates');
 }
 
@@ -80,7 +81,12 @@ NodeManager.prototype.onDelegatesLoaded = function(keypairs) {
 
   }
   else{
-    library.logger.info("No delegates found in config file");
+    if(loadedPairs > 0){
+			library.logger.info("No new delegates found in config file");
+		}
+		else if(numberOfDelegates == 0){
+			library.logger.info("No delegates found in config file");
+		}
   }
 
 };
