@@ -154,14 +154,16 @@ ul.sections > li > div {
 
 div.fullblock {
   background-color: #f3e1e1;
-    width: 90%;
-    margin-right: 5%;
-    padding: 15px 30px 0px 100px!important;
-    margin-left: 5%;
-    margin-bottom: 15px;
-    box-shadow: rgba(0, 0, 0, 0.33) 0px 0px 15px;
-    border-radius: 2px;
+  width: 90%;
+  margin-right: 5%;
+  padding: 15px 30px 0px 100px!important;
+  margin-left: 5%;
+  margin-bottom: 15px;
+  box-shadow: rgba(0, 0, 0, 0.33) 0px 0px 15px;
+  border-radius: 2px;
+  white-space: normal;
 }
+
 
 /*---------------------- Jump Page -----------------------------*/
 #jump_to, #jump_page {

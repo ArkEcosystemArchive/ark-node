@@ -1,10 +1,10 @@
 {
   "name": "ark-node",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "start": "node app.js",
-    "doc": "docco -t docs/template/arkio.jst -c docs/template/arkio.css modules/* app.js",
+    "doc": "docco -t docs/template/arkio.jst -c docs/template/arkio.css modules/* app.js README.md",
     "start:testnet": "node app.js --genesis genesisBlock.testnet.json --config config.testnet.json",
     "start:devnet": "node app.js --genesis genesisBlock.devnet.json --config config.devnet.json",
     "start:test": "node app.js --genesis test/genesisBlock.json --config test/config.json",
