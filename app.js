@@ -15,6 +15,7 @@ var Sequence = require('./helpers/sequence.js');
 var util = require('util');
 var z_schema = require('./helpers/z_schema.js');
 var colors = require('colors');
+var vorpal = require('vorpal')();
 
 process.stdin.resume();
 
@@ -34,7 +35,7 @@ program
 	.option('-a, --address <ip>', 'listening host name or ip')
 	.option('-x, --peers [peers...]', 'peers list')
 	.option('-l, --log <level>', 'log level')
-	.option('-s, --snapshot <round>', 'verify snapshot')
+	.option('-i, --interactive', 'launch cli')
 	.parse(process.argv);
 
 if (program.config) {
@@ -71,10 +72,8 @@ if (program.log) {
 	appConfig.consoleLogLevel = program.log;
 }
 
-if (program.snapshot) {
-	appConfig.loading.snapshot = Math.abs(
-		Math.floor(program.snapshot)
-	);
+if (program.interactive) {
+	appConfig.consoleLogLevel = "none";
 }
 
 var config = {
@@ -343,6 +342,10 @@ d.run(function () {
 				}
 			});
 
+			if(program.interactive){
+				startInteractiveMode(scope);
+			}
+
 		}],
 
 		ed: function (cb) {
@@ -489,3 +492,90 @@ process.on('uncaughtException', function (err) {
 	logger.fatal('System error', { message: err.message, stack: err.stack });
 	process.emit('cleanup');
 });
+
+function startInteractiveMode(scope){
+	vorpal
+	  .command('rebuild', 'Rebuild node from scratch')
+	  .action(function(args, callback) {
+	    this.log('Not Implemented');
+	    callback();
+	  });
+
+	vorpal
+	  .command('status', 'Send status of the node')
+	  .action(function(args, callback) {
+			var self = this;
+			scope.modules.loader.getNetwork(true, function(err, network){
+				var lastBlock = scope.modules.blockchain.getLastBlock();
+				self.log("Network Height:", network.height);
+				self.log("Node Height:", lastBlock.height, network.height>lastBlock.height?"(rebuilding)":"(in sync)");
+			});
+			self.log("Forging:", scope.modules.delegates.isForging());
+			self.log("Active Delegate:", scope.modules.delegates.isActiveDelegate());
+			scope.modules.peers.list(null, function(err, peers){
+				self.log("Connected Peers:", peers.length);
+			});
+			self.log("Mempool size:", scope.modules.transactionPool.getMempoolSize());
+	    callback();
+	  });
+
+	vorpal
+	  .command('update node', 'force update from network')
+	  .action(function(args, callback) {
+			var self = this;
+	    scope.bus.message("updatePeers");
+	    callback();
+	  });
+
+	vorpal
+	  .command('sql <query>', 'query database')
+	  .action(function(args, callback) {
+			var self = this;
+	    scope.db.query(args.query).then(function(rows){
+				self.log(rows.map(function(row){return JSON.stringify(row)}).join("\n"));
+				callback();
+			}).catch(function(error){
+				self.log(error);
+				callback();
+			});
+
+	  });
+
+	vorpal
+	  .command('create account', 'generate a new random account')
+	  .action(function(args, callback) {
+			var self = this;
+	    var passphrase = require("bip39").generateMnemonic();
+			self.log("Seed (private):",passphrase);
+			self.log("WIF (private):",require("arkjs").crypto.getKeys(passphrase).toWIF());
+			self.log("Address (public):",require("arkjs").crypto.getAddress(require("arkjs").crypto.getKeys(passphrase).publicKey));
+			callback();
+	  });
+	var account=null;
+	vorpal
+	  .mode('account <address>')
+	  .delimiter('account>')
+	  .init(function(args, callback){
+	    var self=this;
+			scope.db.query("select * from mem_accounts where address ='"+args.address+"'").then(function(rows){
+				account=rows[0];
+				self.log('Managing account '+args.address+'. Commands: '+Object.keys(account).join(", ")+'. To exit, type `exit`.');
+				callback();
+			}).catch(function(error){
+				account=null;
+				callback();
+			});
+	    callback();
+	  })
+	  .action(function(command, callback) {
+	    var self = this;
+	    this.log(account[command]);
+			callback();
+	  });
+
+	vorpal.history('ark-node');
+	
+	vorpal
+	  .delimiter('ark-node>')
+	  .show();
+}
