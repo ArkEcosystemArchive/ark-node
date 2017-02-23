@@ -182,7 +182,7 @@ Accounts.prototype.mergeAccountAndGet = function (data, cb) {
 
 // Events
 //
-//__API__ `onBind`
+//__EVENT__ `onBind`
 
 //
 Accounts.prototype.onBind = function (scope) {
@@ -194,7 +194,7 @@ Accounts.prototype.onBind = function (scope) {
 };
 
 //
-//__API__ `onAttachPublicApi`
+//__EVENT__ `onAttachPublicApi`
 
 //
 Accounts.prototype.onAttachPublicApi = function () {

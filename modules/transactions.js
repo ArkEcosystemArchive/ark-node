@@ -288,7 +288,7 @@ Transactions.prototype.undoUnconfirmed = function (transaction, cb) {
 
 // Events
 //
-//__API__ `onBind`
+//__EVENT__ `onBind`
 
 //
 Transactions.prototype.onBind = function (scope) {
@@ -301,7 +301,7 @@ Transactions.prototype.onBind = function (scope) {
 
 
 //
-//__API__ `onAttachPublicApi`
+//__EVENT__ `onAttachPublicApi`
 
 //
 Transactions.prototype.onAttachPublicApi = function () {
@@ -309,7 +309,7 @@ Transactions.prototype.onAttachPublicApi = function () {
 };
 
 //
-//__API__ `onPeersReady`
+//__EVENT__ `onPeersReady`
 
 //
 Transactions.prototype.onPeersReady = function () {

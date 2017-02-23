@@ -35,7 +35,7 @@ function Blockchain (cb, scope) {
 }
 
 //
-//__API__ `onBind`
+//__EVENT__ `onBind`
 
 //
 Blockchain.prototype.onBind = function (scope) {
@@ -43,7 +43,7 @@ Blockchain.prototype.onBind = function (scope) {
 };
 
 //
-//__API__ `onStartBlockchain`
+//__EVENT__ `onStartBlockchain`
 
 //
 Blockchain.prototype.onStartBlockchain = function(){
@@ -306,7 +306,7 @@ Blockchain.prototype.getLastIncludedBlock = function(){
 };
 
 //
-//__API__ `onDatabaseLoaded`
+//__EVENT__ `onDatabaseLoaded`
 
 //
 Blockchain.prototype.onDatabaseLoaded = function(lastBlock) {
@@ -318,7 +318,7 @@ Blockchain.prototype.onDatabaseLoaded = function(lastBlock) {
 };
 
 //
-//__API__ `onBlockRemoved`
+//__EVENT__ `onBlockRemoved`
 
 //
 Blockchain.prototype.onBlockRemoved = function(block) {
@@ -326,7 +326,7 @@ Blockchain.prototype.onBlockRemoved = function(block) {
 }
 
 //
-//__API__ `onBlockReceived`
+//__EVENT__ `onBlockReceived`
 
 //
 Blockchain.prototype.onBlockReceived = function(block, peer) {
@@ -362,7 +362,7 @@ Blockchain.prototype.onBlockReceived = function(block, peer) {
 };
 
 //
-//__API__ `onBlockForged`
+//__EVENT__ `onBlockForged`
 
 //
 Blockchain.prototype.onBlockForged = function(block) {
@@ -398,7 +398,7 @@ Blockchain.prototype.onBlockForged = function(block) {
 }
 
 //
-//__API__ `onBlockVerified`
+//__EVENT__ `onBlockVerified`
 
 //
 Blockchain.prototype.onBlockVerified = function(block, cb) {
@@ -412,7 +412,7 @@ Blockchain.prototype.onBlockVerified = function(block, cb) {
 }
 
 //
-//__API__ `onBlockProcessed`
+//__EVENT__ `onBlockProcessed`
 
 //
 Blockchain.prototype.onBlockProcessed = function(block, cb) {
@@ -434,7 +434,7 @@ Blockchain.prototype.onBlockProcessed = function(block, cb) {
 }
 
 //
-//__API__ `onFork`
+//__EVENT__ `onFork`
 
 //
 Blockchain.prototype.onFork = function (block, cause) {

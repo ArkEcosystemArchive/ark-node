@@ -57,7 +57,7 @@ __private.attachApi = function () {
 
 // Events
 //
-//__API__ `onBind`
+//__EVENT__ `onBind`
 
 //
 Signatures.prototype.onBind = function (scope) {
@@ -70,7 +70,7 @@ Signatures.prototype.onBind = function (scope) {
 
 
 //
-//__API__ `onAttachPublicApi`
+//__EVENT__ `onAttachPublicApi`
 
 //
 Signatures.prototype.onAttachPublicApi = function () {

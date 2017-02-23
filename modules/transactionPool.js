@@ -46,7 +46,7 @@ function TransactionPool (cb, scope) {
 
 // Public methods
 //
-//__API__ `onBind`
+//__EVENT__ `onBind`
 
 //
 TransactionPool.prototype.onBind = function (scope) {
@@ -54,7 +54,7 @@ TransactionPool.prototype.onBind = function (scope) {
 };
 
 //
-//__API__ `onStartTransactionPool`
+//__EVENT__ `onStartTransactionPool`
 
 //
 TransactionPool.prototype.onStartTransactionPool = function () {
@@ -120,7 +120,7 @@ TransactionPool.prototype.onStartTransactionPool = function () {
 };
 
 //
-//__API__ `onStopTransactionPool`
+//__EVENT__ `onStopTransactionPool`
 
 //
 TransactionPool.prototype.onStopTransactionPool = function () {
@@ -131,7 +131,7 @@ TransactionPool.prototype.onStopTransactionPool = function () {
 };
 
 //
-//__API__ `onAddTransactionsToPool`
+//__EVENT__ `onAddTransactionsToPool`
 
 //
 TransactionPool.prototype.onAddTransactionsToPool = function (transactions, cb) {
@@ -324,12 +324,21 @@ TransactionPool.prototype.addToMempool = function(transaction){
 	__private.mempool[transaction.id]=transaction;
 };
 
+
+//
+//__API__ `getMempoolSize`
+
+//
+TransactionPool.prototype.getMempoolSize = function(){
+	return Object.keys(__private.mempool).length;
+};
+
 //
 //__API__ `receiveTransactions`
 
 //
 TransactionPool.prototype.receiveTransactions = function (transactions, cb) {
-	
+
 	var expirationdate=slots.getTime()-__private.mempoolConfig.maximumAgeInMinutes*60;
 	async.eachSeries(transactions, function (transaction, cb) {
 		var memtx=__private.mempool[transaction.id];
@@ -379,7 +388,7 @@ TransactionPool.prototype.receiveTransactions = function (transactions, cb) {
 TransactionPool.prototype.queueTransaction = function (transaction, cb) {
 	delete transaction.receivedAt;
 
-	
+
 
   if (transaction.type === transactionTypes.MULTI || Array.isArray(transaction.signatures)) {
 		if (self.countMultisignature() >= constants.maxTxsPerQueue) {
@@ -481,7 +490,7 @@ TransactionPool.prototype.fillPool = function (cb) {
 		var multisignaturesLimit = 5;
 		var transactions;
 
-		
+
 
 		spare = (constants.maxTxsPerBlock - unconfirmedCount);
 		spareMulti = (spare >= multisignaturesLimit) ? multisignaturesLimit : 0;
@@ -610,7 +619,7 @@ __private.applyUnconfirmedList = function (transactions, cb) {
 		if (!transaction) {
 			return setImmediate(eachSeriesCb);
 		}
-		
+
 		__private.processVerifyTransaction(transaction, function (err, sender) {
 			if (err) {
 				library.logger.error('Failed to process / verify unconfirmed transaction: ' + transaction.id, err);

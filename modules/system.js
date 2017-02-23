@@ -55,7 +55,7 @@ System.prototype.getNethash = function () {
 
 // Events
 //
-//__API__ `onBind`
+//__EVENT__ `onBind`
 
 //
 System.prototype.onBind = function (scope) {

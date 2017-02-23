@@ -693,7 +693,7 @@ Loader.prototype.syncing = function () {
 
 // The state of blockchain is unclear.
 //
-//__API__ `onPeersReady`
+//__EVENT__ `onPeersReady`
 
 //
 Loader.prototype.onPeersReady = function () {
@@ -883,7 +883,7 @@ Loader.prototype.onPeersReady = function () {
 
 // started up
 //
-//__API__ `onBind`
+//__EVENT__ `onBind`
 
 //
 Loader.prototype.onBind = function (scope) {
@@ -891,7 +891,7 @@ Loader.prototype.onBind = function (scope) {
 };
 
 //
-//__API__ `onLoadDatabase`
+//__EVENT__ `onLoadDatabase`
 
 //
 Loader.prototype.onLoadDatabase = function(){
@@ -899,7 +899,7 @@ Loader.prototype.onLoadDatabase = function(){
 };
 
 //
-//__API__ `onObserveNetwork`
+//__EVENT__ `onObserveNetwork`
 
 //
 Loader.prototype.onObserveNetwork = function(){
@@ -909,7 +909,7 @@ Loader.prototype.onObserveNetwork = function(){
 };
 
 //
-//__API__ `onAttachPublicApi`
+//__EVENT__ `onAttachPublicApi`
 
 //
 Loader.prototype.onAttachPublicApi = function () {
@@ -918,7 +918,7 @@ Loader.prototype.onAttachPublicApi = function () {
 
 // Blockchain loaded from database and ready to accept blocks from network
 //
-//__API__ `onDownloadBlocks`
+//__EVENT__ `onDownloadBlocks`
 
 //
 Loader.prototype.onDownloadBlocks = function (cb) {

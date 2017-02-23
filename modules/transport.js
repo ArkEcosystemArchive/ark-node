@@ -544,7 +544,7 @@ Transport.prototype.getFromPeer = function (peer, options, cb) {
 
 // Events
 //
-//__API__ `onBind`
+//__EVENT__ `onBind`
 
 //
 Transport.prototype.onBind = function (scope) {
@@ -559,7 +559,7 @@ Transport.prototype.onBind = function (scope) {
 };
 
 //
-//__API__ `onBlockchainReady`
+//__EVENT__ `onBlockchainReady`
 
 //
 Transport.prototype.onBlockchainReady = function () {
@@ -567,7 +567,7 @@ Transport.prototype.onBlockchainReady = function () {
 };
 
 //
-//__API__ `onAttachNetworkApi`
+//__EVENT__ `onAttachNetworkApi`
 
 //
 Transport.prototype.onAttachNetworkApi = function () {
@@ -577,7 +577,7 @@ Transport.prototype.onAttachNetworkApi = function () {
 
 
 //
-//__API__ `onSignature`
+//__EVENT__ `onSignature`
 
 //
 // Transport.prototype.onSignature = function (signature, broadcast) {
@@ -590,7 +590,7 @@ Transport.prototype.onAttachNetworkApi = function () {
 // };
 
 //
-//__API__ `onBroadcastTransaction`
+//__EVENT__ `onBroadcastTransaction`
 
 //
 Transport.prototype.onBroadcastTransaction = function (transaction) {
@@ -605,7 +605,7 @@ Transport.prototype.onBroadcastTransaction = function (transaction) {
 };
 
 //
-//__API__ `onBroadcastBlock`
+//__EVENT__ `onBroadcastBlock`
 
 //
 Transport.prototype.onBroadcastBlock = function (block) {

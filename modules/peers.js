@@ -451,7 +451,7 @@ Peers.prototype.getFreshPeer = function(peer) {
 
 // Events
 //
-//__API__ `onBind`
+//__EVENT__ `onBind`
 
 //
 Peers.prototype.onBind = function (scope) {
@@ -464,7 +464,7 @@ Peers.prototype.onBind = function (scope) {
 
 
 //
-//__API__ `onAttachPublicApi`
+//__EVENT__ `onAttachPublicApi`
 
 //
 Peers.prototype.onAttachPublicApi = function () {
@@ -472,7 +472,7 @@ Peers.prototype.onAttachPublicApi = function () {
 };
 
 //
-//__API__ `onUpdatePeers`
+//__EVENT__ `onUpdatePeers`
 
 //
 Peers.prototype.onUpdatePeers = function () {
@@ -494,7 +494,7 @@ Peers.prototype.onUpdatePeers = function () {
 };
 
 //
-//__API__ `onPeersReady`
+//__EVENT__ `onPeersReady`
 
 //
 Peers.prototype.onPeersReady = function () {

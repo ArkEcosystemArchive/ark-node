@@ -633,7 +633,7 @@ Delegates.prototype.validateBlockSlot = function (block, cb) {
 
 // Events
 //
-//__API__ `onBind`
+//__EVENT__ `onBind`
 
 //
 Delegates.prototype.onBind = function (scope) {
@@ -646,7 +646,7 @@ Delegates.prototype.onBind = function (scope) {
 
 
 //
-//__API__ `onLoadDelegates`
+//__EVENT__ `onLoadDelegates`
 
 //
 Delegates.prototype.onLoadDelegates = function () {
@@ -659,7 +659,7 @@ Delegates.prototype.onLoadDelegates = function () {
 };
 
 //
-//__API__ `onStartForging`
+//__EVENT__ `onStartForging`
 
 //
 Delegates.prototype.onStartForging = function () {
@@ -678,7 +678,7 @@ Delegates.prototype.onStartForging = function () {
 };
 
 //
-//__API__ `onStopForging`
+//__EVENT__ `onStopForging`
 
 //
 Delegates.prototype.onStopForging = function () {
@@ -686,7 +686,7 @@ Delegates.prototype.onStopForging = function () {
 };
 
 //
-//__API__ `onAttachPublicApi`
+//__EVENT__ `onAttachPublicApi`
 
 //
 Delegates.prototype.onAttachPublicApi = function () {
@@ -695,7 +695,7 @@ Delegates.prototype.onAttachPublicApi = function () {
 
 
 //
-//__API__ `onBlockchainReady`
+//__EVENT__ `onBlockchainReady`
 
 //
 // Delegates.prototype.onBlockchainReady = function () {
@@ -725,7 +725,7 @@ Delegates.prototype.onAttachPublicApi = function () {
 // };
 //
 //
-//__API__ `onBlockchainReady`
+//__EVENT__ `onBlockchainReady`
 
 //
 // Delegates.prototype.onBlockchainReady = function () {

@@ -32,7 +32,7 @@ function NodeManager (cb, scope) {
 
 
 //
-//__API__ `onBind`
+//__EVENT__ `onBind`
 
 //
 NodeManager.prototype.onBind = function (scope) {
@@ -51,7 +51,7 @@ NodeManager.prototype.startApp = function(){
 }
 
 //
-//__API__ `onDatabaseLoaded`
+//__EVENT__ `onDatabaseLoaded`
 
 //
 NodeManager.prototype.onDatabaseLoaded = function(lastBlock) {
@@ -74,7 +74,7 @@ NodeManager.prototype.onDatabaseLoaded = function(lastBlock) {
 };
 
 //
-//__API__ `onBlockchainReady`
+//__EVENT__ `onBlockchainReady`
 
 //
 NodeManager.prototype.onBlockchainReady = function() {
@@ -83,7 +83,7 @@ NodeManager.prototype.onBlockchainReady = function() {
 }
 
 //
-//__API__ `onDelegatesLoaded`
+//__EVENT__ `onDelegatesLoaded`
 
 //
 NodeManager.prototype.onDelegatesLoaded = function(keypairs) {
@@ -115,7 +115,7 @@ NodeManager.prototype.onDelegatesLoaded = function(keypairs) {
 };
 
 //
-//__API__ `onNetworkApiAttached`
+//__EVENT__ `onNetworkApiAttached`
 
 //
 NodeManager.prototype.onNetworkApiAttached = function(){
@@ -123,7 +123,7 @@ NodeManager.prototype.onNetworkApiAttached = function(){
 }
 
 //
-//__API__ `onPeersUpdated`
+//__EVENT__ `onPeersUpdated`
 
 //
 NodeManager.prototype.onPeersUpdated = function() {
@@ -131,7 +131,7 @@ NodeManager.prototype.onPeersUpdated = function() {
 };
 
 //
-//__API__ `onNetworkObserved`
+//__EVENT__ `onNetworkObserved`
 
 //
 NodeManager.prototype.onNetworkObserved = function(network){
@@ -143,7 +143,7 @@ NodeManager.prototype.onNetworkObserved = function(network){
 }
 
 //
-//__API__ `onBlocksReceived`
+//__EVENT__ `onBlocksReceived`
 
 //
 NodeManager.prototype.onBlocksReceived = function(blocks, peer, cb) {
@@ -199,7 +199,7 @@ NodeManager.prototype.onBlocksReceived = function(blocks, peer, cb) {
 }
 
 //
-//__API__ `onRebuildBlockchain`
+//__EVENT__ `onRebuildBlockchain`
 
 //
 NodeManager.prototype.onRebuildBlockchain = function(blocksToRemove, state, cb) {
@@ -353,7 +353,7 @@ NodeManager.prototype.swapLastBlockWith = function(block, peer, cb){
 };
 
 //
-//__API__ `onBlockReceived`
+//__EVENT__ `onBlockReceived`
 
 //
 NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
@@ -417,7 +417,7 @@ NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 };
 
 //
-//__API__ `onBlockForged`
+//__EVENT__ `onBlockForged`
 
 //
 NodeManager.prototype.onBlockForged = function(block, cb) {
@@ -437,7 +437,7 @@ NodeManager.prototype.onBlockForged = function(block, cb) {
 }
 
 //
-//__API__ `onBlockVerified`
+//__EVENT__ `onBlockVerified`
 
 //
 NodeManager.prototype.onBlockVerified = function(block, cb) {
@@ -446,7 +446,7 @@ NodeManager.prototype.onBlockVerified = function(block, cb) {
 }
 
 //
-//__API__ `onBlockProcessed`
+//__EVENT__ `onBlockProcessed`
 
 //
 NodeManager.prototype.onBlockProcessed = function(block, cb) {
@@ -459,7 +459,7 @@ NodeManager.prototype.onBlockProcessed = function(block, cb) {
 }
 
 //
-//__API__ `onTransactionsReceived`
+//__EVENT__ `onTransactionsReceived`
 
 //
 NodeManager.prototype.onTransactionsReceived = function(transactions, source, cb) {

@@ -83,6 +83,8 @@ Rounds.prototype.tick = function(block, cb){
 			publicKey: block.generatorPublicKey,
 			balance: block.reward + block.totalFee,
 			u_balance: block.reward + block.totalFee,
+			fees: block.totalFee,
+			rewards: block.reward,
 			producedblocks: 1,
 			blockId: block.id,
 			round: round
@@ -123,6 +125,8 @@ Rounds.prototype.backwardTick = function(block, cb){
 				publicKey: block.generatorPublicKey,
 				balance: -(block.reward + block.totalFee),
 				u_balance: -(block.reward + block.totalFee),
+				fees: -block.totalFee,
+				rewards: -block.reward,
 				producedblocks: -1,
 				blockId: block.id,
 				round: round
@@ -380,7 +384,7 @@ Rounds.prototype.getActiveDelegates = function(cb) {
 
 // Events
 //
-//__API__ `onBind`
+//__EVENT__ `onBind`
 
 //
 Rounds.prototype.onBind = function (scope) {
@@ -390,7 +394,7 @@ Rounds.prototype.onBind = function (scope) {
 // When database state is reflected into the code state
 // we prepare __private data
 //
-//__API__ `onDatabaseLoaded`
+//__EVENT__ `onDatabaseLoaded`
 
 //
 Rounds.prototype.onDatabaseLoaded = function (lastBlock) {
