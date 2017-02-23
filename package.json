@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node app.js",
     "doc": "docco -t docs/template/arkio.jst -c docs/template/arkio.css modules/* app.js README.md",
-    "start:testnet": "node app.js --genesis genesisBlock.testnet.json --config config.testnet.json",
+    "start:testnet": "node app.js --genesis genesisBlock.testnet.json --config config.testnet.json -i",
     "start:devnet": "node app.js --genesis genesisBlock.devnet.json --config config.devnet.json",
     "start:test": "node app.js --genesis test/genesisBlock.json --config test/config.json",
     "start:newtest": "node app.js --genesis tasks/genesisBlock.json --config tasks/config.json",
@@ -47,6 +47,7 @@
     "valid-url": "=1.0.9",
     "validator": "=5.7.0",
     "validator.js": "=2.0.3",
+    "vorpal": "^1.11.4",
     "z-schema": "=3.18.0"
   },
   "devDependencies": {
