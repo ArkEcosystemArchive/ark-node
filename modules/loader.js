@@ -191,7 +191,7 @@ __private.loadBlockChain = function () {
 	}
 
 	library.db.query(sql.countBlocks).then(function(rows){
-		
+
 		if(rows[0].count == 1){
 			load(rows[0].count);
 		}
@@ -331,7 +331,7 @@ __private.loadBlocksFromNetwork = function (cb) {
 		}
 	});
 
-	
+
 
 	//TODO: tryCount is accounting for 2 use cases :
 	// - no more blocks downloaded
@@ -339,8 +339,8 @@ __private.loadBlocksFromNetwork = function (cb) {
 	// should be separated because the strategies are different.
 	async.whilst(
 		function () {
-			
-			
+
+
 			//return !loaded && (tryCount < 5) && (peers.length > tryCount);
 			return modules.blockchain.isMissingNewBlock() && (tryCount < 3) && (peers.length > tryCount);
 		},
@@ -391,8 +391,8 @@ __private.loadBlocksFromNetwork = function (cb) {
 					}
 					library.logger.info("Processsed blocks to height " + lastBlock.height + " from " + peer.string);
 				}
-				
-				
+
+
 				next();
 			});
 		},
@@ -557,7 +557,7 @@ Loader.prototype.triggerBlockRemoval = function(number){
 };
 
 
-// get the smallest block id from network
+// get the smallest block timestamp at the higjest height from network
 //
 //__API__ `getNetworkSmallestBlock`
 
@@ -572,7 +572,7 @@ Loader.prototype.getNetworkSmallestBlock = function(){
 			if(peer.blockheader.height>bestBlock.height){
 				bestBlock=peer.blockheader;
 			}
-			else if(peer.blockheader.height == bestBlock.height && peer.blockheader.id < bestBlock.id){
+			else if(peer.blockheader.height == bestBlock.height && peer.blockheader.timestamp < bestBlock.timestamp){
 				bestBlock=peer.blockheader;
 			}
 		}
@@ -637,7 +637,7 @@ Loader.prototype.getNetwork = function (force, cb) {
 						}
 
 						var verification = false;
-						
+
 						try {
 							// TODO: also check that the delegate was legit to forge the block ?
 							// likely too much work since in the end we use only a few peers of the list
@@ -646,7 +646,7 @@ Loader.prototype.getNetwork = function (force, cb) {
 						} catch (e) {
 							library.logger.error("error:", e);
 						}
-						
+
 
 						if(!verification.verified){
 							library.logger.warn('# Received invalid block header from peer. Can be a tentative to attack the network!');
@@ -673,7 +673,7 @@ Loader.prototype.getNetwork = function (force, cb) {
 				} else if (!__private.network.peers.length) {
 					return cb('Failed to find enough good peers to sync with');
 				} else {
-					
+
 					return cb(null, __private.network);
 				}
 			});
@@ -922,7 +922,7 @@ Loader.prototype.onAttachPublicApi = function () {
 
 //
 Loader.prototype.onDownloadBlocks = function (cb) {
-	
+
 	__private.loadBlocksFromNetwork(cb);
 };
 

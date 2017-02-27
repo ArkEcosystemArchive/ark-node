@@ -222,13 +222,13 @@ NodeManager.prototype.onRebuildBlockchain = function(blocksToRemove, state, cb) 
 					library.logger.info("Rebuilding from network");
 					return modules.blocks.removeSomeBlocks(blocksToRemove, mSequence);
 				}
-				else if(bestBlock && bestBlock.height == lastBlock.height && bestBlock.id < lastBlock.id){
-					library.logger.info("Observed network is on same height, but found a smaller block id", {network: {id: bestBlock.id, height:bestBlock.height}, node:{id: lastBlock.id, height:lastBlock.height}});
+				else if(bestBlock && bestBlock.height == lastBlock.height && bestBlock.timestamp < lastBlock.timestamp){
+					library.logger.info("Observed network is on same height, but found a block with smaller timestamp", {network: {id: bestBlock.id, height:bestBlock.height}, node:{id: lastBlock.id, height:lastBlock.height}});
 					library.logger.info("Rebuilding from network");
 					return modules.blocks.removeSomeBlocks(blocksToRemove, mSequence);
 				}
 				else{
-					library.logger.info("Observed network is on same height, and same smallest block id", {network: network.height, node:lastBlock.height});
+					library.logger.info("Observed network is on same height, and same block timestamp", {network: network.height, node:lastBlock.height});
 					return mSequence && mSequence();
 				}
 			}
