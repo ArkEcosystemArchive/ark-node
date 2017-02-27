@@ -508,7 +508,8 @@ function startInteractiveMode(scope){
 			scope.modules.loader.getNetwork(true, function(err, network){
 				var lastBlock = scope.modules.blockchain.getLastBlock();
 				self.log("Network Height:", network.height);
-				self.log("Node Height:", lastBlock.height, network.height>lastBlock.height?"(rebuilding)":"(in sync)");
+				self.log("Node Height:", lastBlock.height, network.height>lastBlock.height?colors.red("(not sync)"):colors.green("(in sync)"));
+				callback();
 			});
 			self.log("Forging:", scope.modules.delegates.isForging());
 			self.log("Active Delegate:", scope.modules.delegates.isActiveDelegate());
@@ -516,7 +517,7 @@ function startInteractiveMode(scope){
 				self.log("Connected Peers:", peers.length);
 			});
 			self.log("Mempool size:", scope.modules.transactionPool.getMempoolSize());
-	    callback();
+
 	  });
 
 	vorpal
@@ -546,14 +547,14 @@ function startInteractiveMode(scope){
 	  .action(function(args, callback) {
 			var self = this;
 	    var passphrase = require("bip39").generateMnemonic();
-			self.log("Seed (private):",passphrase);
-			self.log("WIF (private):",require("arkjs").crypto.getKeys(passphrase).toWIF());
-			self.log("Address (public):",require("arkjs").crypto.getAddress(require("arkjs").crypto.getKeys(passphrase).publicKey));
+			self.log("Seed    - private:",passphrase);
+			self.log("WIF     - private:",require("arkjs").crypto.getKeys(passphrase).toWIF());
+			self.log("Address - public :",require("arkjs").crypto.getAddress(require("arkjs").crypto.getKeys(passphrase).publicKey));
 			callback();
 	  });
 	var account=null;
 	vorpal
-	  .mode('account <address>')
+	  .mode('account <address>', 'get info of account (balance, vote, username, publicKey etc...)')
 	  .delimiter('account>')
 	  .init(function(args, callback){
 	    var self=this;
@@ -562,19 +563,56 @@ function startInteractiveMode(scope){
 				self.log('Managing account '+args.address+'. Commands: '+Object.keys(account).join(", ")+'. To exit, type `exit`.');
 				callback();
 			}).catch(function(error){
-				account=null;
+				account={};
+				self.log('Account not found '+args.address+'. To exit, type `exit`.');
 				callback();
 			});
-	    callback();
 	  })
 	  .action(function(command, callback) {
 	    var self = this;
 	    this.log(account[command]);
 			callback();
 	  });
+	vorpal
+	  .command('spv <address>', 'Perform Simple Payment Verification against the blockchain')
+	  .action(function(args, callback) {
+			scope.db.query("select * from mem_accounts where address ='"+args.address+"'").then(function(rows){
+				var publicKey=rows[0].publicKey.toString("hex");
+				var receivedSQL='select sum(amount) as received from transactions where "recipientId" = \''+args.address+'\';'
+				var spentSQL='select sum(amount+fee) as spent from transactions where "senderPublicKey" = \'\\x'+publicKey+'\';'
+				var rewardsSQL='select sum(reward+"totalFee") as rewards from blocks where "generatorPublicKey" = \'\\x'+publicKey+'\';'
+				async.series({
+					received: function(cb){
+						scope.db.query(receivedSQL).then(function(rows){
+							cb(null, parseInt(rows[0].received));
+						});
+					},
+					spent: function(cb){
+						scope.db.query(spentSQL).then(function(rows){
+							cb(null, parseInt(rows[0].spent));
+						});
+					},
+					rewards: function(cb){
+						scope.db.query(rewardsSQL).then(function(rows){
+							cb(null, parseInt(rows[0].rewards));
+						});
+					}
+				}, function(err, result){
+					result.balance = result.received - result.spent + result.rewards;
+					self.log(JSON.stringify(result));
+				});
+				callback();
+			}).catch(function(error){
+				self.log('Account not found '+args.address);
+				callback();
+			});
+			var self = this;
+
+	  });
+
 
 	vorpal.history('ark-node');
-	
+
 	vorpal
 	  .delimiter('ark-node>')
 	  .show();
