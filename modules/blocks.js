@@ -1554,7 +1554,7 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 		// could have been calculated BEFORE the lastBlock received.
 		// imagine the disaster...
 		if(timestamp <= lastBlock.timestamp){
-			return cb("New block received while forging. Forging canceled")
+			return cb("New block received while forging. Forging canceled");
 		}
 
 		try {
@@ -1566,7 +1566,7 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 			});
 		} catch (e) {
 			library.logger.error("stack", e.stack);
-			return return cb(e);
+			return cb(e);
 		}
 
 		return cb(null, block);
