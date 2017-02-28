@@ -16,6 +16,7 @@ var util = require('util');
 var z_schema = require('./helpers/z_schema.js');
 var colors = require('colors');
 var vorpal = require('vorpal')();
+var spawn = require('child_process').spawn;
 
 process.stdin.resume();
 
@@ -519,6 +520,46 @@ function startInteractiveMode(scope){
 			self.log("Mempool size:", scope.modules.transactionPool.getMempoolSize());
 
 	  });
+
+	var tail;
+
+	vorpal
+	  .command('log start', 'strat output logs')
+	  .action(function(args, callback) {
+			var self=this;
+			if(tail){
+				self.log("Already listening to logs");
+				return callback();
+			}
+			tail = spawn('tail', ['-f', 'logs/ark.log']);
+			tail.stdout.on('data', function(data) {
+			  self.log(data.toString("UTF-8"));
+			});
+			callback();
+	  });
+
+	vorpal
+	  .command('log stop', 'stop output logs')
+	  .action(function(args, callback) {
+			var self=this;
+			if(tail){
+				tail.kill();
+				tail=null;
+			}
+			callback();
+	  });
+
+	vorpal
+	  .command('log grep <query>', 'grep logs with <query>')
+	  .action(function(args, callback) {
+			var self=this;
+			var grep = spawn('grep', ['-e', args.query, 'logs/ark.log']);
+			grep.stdout.on('data', function(data) {
+			  self.log(data.toString("UTF-8"));
+			});
+			callback();
+	  });
+
 
 	vorpal
 	  .command('update node', 'force update from network')
