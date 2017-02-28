@@ -16,5 +16,3 @@ config.main.json
 genesisBlock.main.json
 .vagrant
 private/
-docs/*.html
-docs/arkio.*

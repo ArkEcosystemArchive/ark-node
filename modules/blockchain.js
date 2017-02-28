@@ -129,10 +129,11 @@ Blockchain.prototype.upsertBlock = function(block, cb){
 //
 //__API__ `isOrphaned`
 
-//
+// Check if the block is orphaned, ie if the blockchain has already received another (different id) block at same height
+// It also check for double forgery (different id, same timestamp, same height and same generatorPublicKey)
 Blockchain.prototype.isOrphaned = function(block){
 	if(__private.blockchain[block.height] && __private.blockchain[block.height].id != block.id){
-		if(__private.blockchain[block.height] && __private.blockchain[block.height].generatorPublicKey == block.generatorPublicKey){
+		if(__private.blockchain[block.height] && __private.blockchain[block.height].generatorPublicKey == block.generatorPublicKey && __private.blockchain[block.height].timestamp == block.timestamp){
 			modules.accounts.getAccount({publicKey:block.generatorPublicKey}, function(err, delegate){
 				library.logger.warn("Double forgery", {id: block.id, generator:block.generatorPublicKey, username: delegate.username, height:block.height});
 			});
@@ -147,7 +148,7 @@ Blockchain.prototype.isOrphaned = function(block){
 //
 //__API__ `isForked`
 
-//
+// Get a block but can't find the previousBlock in the blockchain
 Blockchain.prototype.isForked = function(block){
 	var previousBlock = __private.blockchain[""+(block.height-1)];
 	return previousBlock && previousBlock.id != block.previousBlock;
@@ -156,7 +157,7 @@ Blockchain.prototype.isForked = function(block){
 //
 //__API__ `isPresent`
 
-//
+// Check if block is already in blockchain (ie same id) or already found as orphaned
 Blockchain.prototype.isPresent = function(block){
 
 	return (__private.blockchain[block.height] && __private.blockchain[block.height].id == block.id) || __private.orphanedBlocks[block.id];
@@ -165,7 +166,7 @@ Blockchain.prototype.isPresent = function(block){
 //
 //__API__ `isReady`
 
-//
+// Check if the blockchain is ready to receive the block (ie received the block at height - 1)
 Blockchain.prototype.isReady = function(block){
 	var ready = __private.lastBlock.height == block.height - 1;
 	if(ready){
@@ -180,7 +181,8 @@ Blockchain.prototype.isReady = function(block){
 //
 //__API__ `addBlock`
 
-//
+// Setter the block to the blockchain model, raise error if there is already another one at same height
+// Does not check if this is coherent with blockchain (ie previousBlock)
 Blockchain.prototype.addBlock = function(block, cb){
   var error = null;
   if(!__private.blockchain[block.height]){
@@ -199,7 +201,8 @@ Blockchain.prototype.addBlock = function(block, cb){
 //
 //__API__ `getPreviousBlock`
 
-//
+// get the previous block from the input block, as stored in memory.
+// if not found does not check for database, returns undefined.
 Blockchain.prototype.getPreviousBlock = function(block){
 	var previousBlock = __private.blockchain[""+(block.height - 1)];
 
@@ -214,7 +217,8 @@ Blockchain.prototype.getPreviousBlock = function(block){
 //
 //__API__ `removeBlock`
 
-//
+// remove block from blockchain in-memory model
+// raise error if not present, or trying to remove a different block at same height
 Blockchain.prototype.removeBlock = function(block, cb){
   var error = null;
   if(!__private.blockchain[block.height]){
@@ -236,17 +240,17 @@ Blockchain.prototype.removeBlock = function(block, cb){
 //
 //__API__ `getBlockAtHeight`
 
-//
+// Getter from in-memory model, can return undefined
 Blockchain.prototype.getBlockAtHeight = function(height){
   return __private.blockchain[height];
 };
 
-// return the last processed block on top of blockchain
-// fast
+
 //
 //__API__ `getLastBlock`
 
-//
+// return last block on top of the blockchain. Fast access
+// The block returned is the last one that has been completely processed
 Blockchain.prototype.getLastBlock = function(){
   return __private.lastBlock;
 };
@@ -256,7 +260,7 @@ Blockchain.prototype.getLastBlock = function(){
 //
 //__API__ `isMissingNewBlock`
 
-//
+// return true if there is no new block from lastBlock for over a blocktime
 Blockchain.prototype.isMissingNewBlock = function(){
 	if(!__private.lastBlock){
 		return true;
@@ -267,12 +271,12 @@ Blockchain.prototype.isMissingNewBlock = function(){
 
 };
 
-// expensive
 
 //
 //__API__ `getLastVerifiedBlock`
 
-//
+// return last verified block (it may still be rejected during the process)
+// expensive computation checking the whole in memory blockchain for the highest height and verified
 Blockchain.prototype.getLastVerifiedBlock = function(){
   var lastBlock=null;
   for(var height in __private.blockchain){
@@ -286,12 +290,13 @@ Blockchain.prototype.getLastVerifiedBlock = function(){
   return lastBlock;
 };
 
-// expensive
+
 
 //
 //__API__ `getLastIncludedBlock`
 
-//
+// expensive computation checking the whole in memory blockchain for the highest height
+// no check is done if it has been verified of processed
 Blockchain.prototype.getLastIncludedBlock = function(){
   var lastBlock=null;
   for(var height in __private.blockchain){
@@ -328,7 +333,8 @@ Blockchain.prototype.onBlockRemoved = function(block) {
 //
 //__EVENT__ `onBlockReceived`
 
-//
+// Check against in-memory blockchain if the block is ok to be included
+// If so, mark the block with block.ready=true
 Blockchain.prototype.onBlockReceived = function(block, peer) {
 	if(self.isPresent(block)){
 		library.logger.debug("Block already received", {id: block.id, height:block.height, peer:peer.string});
@@ -364,7 +370,8 @@ Blockchain.prototype.onBlockReceived = function(block, peer) {
 //
 //__EVENT__ `onBlockForged`
 
-//
+// Check if the forge block is coherent with current in-memory blockchain status
+// If so, marks block.ready = true and block.forged = true
 Blockchain.prototype.onBlockForged = function(block) {
 	if(self.isPresent(block)){
 		modules.accounts.getAccount({publicKey:block.generatorPublicKey}, function(err, delegate){
@@ -400,7 +407,7 @@ Blockchain.prototype.onBlockForged = function(block) {
 //
 //__EVENT__ `onBlockVerified`
 
-//
+// to update in-memory blockchain when block has been verified
 Blockchain.prototype.onBlockVerified = function(block, cb) {
 	var error = null;
 	if(!__private.blockchain[block.height]){
@@ -414,7 +421,8 @@ Blockchain.prototype.onBlockVerified = function(block, cb) {
 //
 //__EVENT__ `onBlockProcessed`
 
-//
+// to update in-memory blockchain when block has been processed
+// and update lastBlock accordingly
 Blockchain.prototype.onBlockProcessed = function(block, cb) {
 
 	var error = null;
@@ -424,7 +432,7 @@ Blockchain.prototype.onBlockProcessed = function(block, cb) {
 	else{
 		__private.blockchain[block.height].processed = true;
 		__private.timestampState(new Date());
-		if(__private.lastBlock.id == block.previousBlock){
+		if(__private.lastBlock && __private.lastBlock.id == block.previousBlock){
 			__private.lastBlock = block;
 		}
 		else{
@@ -436,7 +444,8 @@ Blockchain.prototype.onBlockProcessed = function(block, cb) {
 //
 //__EVENT__ `onFork`
 
-//
+// Log the event in logs
+// TODO: no particular action taken yet
 Blockchain.prototype.onFork = function (block, cause) {
 	library.logger.info('Fork', {
 		delegate: block.generatorPublicKey,
@@ -487,5 +496,6 @@ __private.timestampState = function (lastReceipt) {
 
 	return __private.lastReceipt;
 };
+
 
 module.exports = Blockchain;

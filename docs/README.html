@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>Ark</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="arkio.css" />
+</head>
+<body>
+  
+  <div id="container">
+    <div id="background"></div>
+    
+      <ul id="jump_to">
+        <li>
+          <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
+          <a class="small" href="javascript:void(0);">+</a>
+          <div id="jump_wrapper">
+          <div id="jump_page_wrapper">
+            <div id="jump_page">
+              
+                
+                <a class="source" href="README.html">
+                  README.md
+                </a>
+              
+                
+                <a class="source" href="app.html">
+                  app.js
+                </a>
+              
+                
+                <a class="source" href="accounts.html">
+                  accounts.js
+                </a>
+              
+                
+                <a class="source" href="blockchain.html">
+                  blockchain.js
+                </a>
+              
+                
+                <a class="source" href="blocks.html">
+                  blocks.js
+                </a>
+              
+                
+                <a class="source" href="delegates.html">
+                  delegates.js
+                </a>
+              
+                
+                <a class="source" href="loader.html">
+                  loader.js
+                </a>
+              
+                
+                <a class="source" href="multisignatures.html">
+                  multisignatures.js
+                </a>
+              
+                
+                <a class="source" href="nodeManager.html">
+                  nodeManager.js
+                </a>
+              
+                
+                <a class="source" href="peers.html">
+                  peers.js
+                </a>
+              
+                
+                <a class="source" href="rounds.html">
+                  rounds.js
+                </a>
+              
+                
+                <a class="source" href="server.html">
+                  server.js
+                </a>
+              
+                
+                <a class="source" href="signatures.html">
+                  signatures.js
+                </a>
+              
+                
+                <a class="source" href="system.html">
+                  system.js
+                </a>
+              
+                
+                <a class="source" href="transactionPool.html">
+                  transactionPool.js
+                </a>
+              
+                
+                <a class="source" href="transactions.html">
+                  transactions.js
+                </a>
+              
+                
+                <a class="source" href="transport.html">
+                  transport.js
+                </a>
+              
+            </div>
+          </div>
+        </li>
+      </ul>
+    
+    <ul class="sections">
+        
+        
+        <li id="section-1">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              <h1 id="ark">Ark</h1>
+<p>Ark is a next generation crypto-currency and decentralized application platform, written entirely in JavaScript. For more information please refer to our website: <a href="https://ark.io/">https://ark.io/</a>.</p>
+<p>The Token Exchange Campaign is up at <a href="https://tec.ark.io">https://tec.ark.io</a></p>
+<p>This version is still alpha, use at your own risks</p>
+<h2 id="install-upgrade-etc-">Install, Upgrade etc…</h2>
+<p>You need to provision a linux (ubuntu tested) server (digital ocean, vultur or other).</p>
+<p>Then use the excellent ark-commander script</p>
+<pre><code>cd
+wget https://ark.io/ARKcommander.sh
+bash ARKcommander.sh
+</code></pre><p>For developers, please read below in section “Developer Installation”</p>
+<h2 id="details">Details</h2>
+<p>This is a fork from Lisk with the following features:</p>
+<ul>
+<li>Removed sidechains (deprecated in favor of smartbridge)</li>
+<li>Removed custom node version</li>
+<li>Removed UI for stability and security reasons</li>
+<li>Changed some constants (block rewards, blocktime etc…)</li>
+<li>Added simple PBFT before forging new block</li>
+<li>Ditch addresses from the protocol in favor of bitcoin like system, enabling HD Wallet as for BIP32</li>
+<li>Completely rewritten node management using a single NodeManager and messaging system</li>
+<li>Completely rewritten round management (removed mem_round, reward block fees to forger)</li>
+<li>Added 64 bytes vendorField as first iteration of smart bridge</li>
+<li>Made peers management entirely in-memory for efficiency</li>
+<li>Strengthened the transaction management and broadcast (reject often, reject soon)</li>
+<li>Rearchitect with relay nodes and forging nodes</li>
+<li>Nodes broadcast only block headers.</li>
+</ul>
+<h3 id="planned-features-">Planned features:</h3>
+<ul>
+<li>Simple blockchain validation for SPV and use in lite clients</li>
+<li>Add IPFS as first class citizen (using smartbridge addressing)</li>
+<li>Protocol improvements (uncle forging, voting weights).</li>
+<li>Remove unsecured API</li>
+<li>Routing tables</li>
+</ul>
+<h3 id="performance">Performance</h3>
+<ul>
+<li>stable on testnet at 5tx/s</li>
+<li>pushed to 10tx/s on devnet</li>
+</ul>
+<h2 id="developer-installation">Developer Installation</h2>
+<p>Install essentials:</p>
+<pre><code>sudo apt-get update
+sudo apt-get install -y curl build-essential python git
+</code></pre><p>Install PostgreSQL (min version: 9.5.2)</p>
+<pre><code>sudo apt-get install -y postgresql postgresql-contrib
+sudo -u postgres createuser --createdb --password $USER
+createdb ark_test
+</code></pre><p>Install Node.js (tested with version 6.9.2, but any recent LTS release should do):</p>
+<pre><code>sudo apt-get install -y nodejs
+sudo npm install -g n
+sudo n 6.9.2
+</code></pre><p>Install grunt-cli (globally):</p>
+<pre><code>sudo npm install grunt-cli -g
+</code></pre><p>Clone this repository</p>
+<pre><code>git clone https://github.com/arkecosytem/ark-node.git
+cd ark-node
+</code></pre><p>Install node modules:</p>
+<pre><code>npm install libpq secp256k1
+npm install
+</code></pre><h2 id="launch">Launch</h2>
+<p>To launch Ark on testnet:</p>
+<pre><code>createdb ark_testnet
+node run start:testnet
+</code></pre><p>To launch Ark on devtnet:</p>
+<pre><code>createdb ark_devnet
+node run start:devnet
+</code></pre><p>To launch Ark on mainnet (when launched):</p>
+<pre><code>createdb ark_mainnet
+node run start:mainnet
+</code></pre><p><strong>NOTE:</strong> The <strong>port</strong>, <strong>address</strong>, <strong>genesis block</strong> and <strong>config-path</strong> can be overridden by providing the relevant command switch:</p>
+<pre><code>node app.js -p [port] -a [address] -c [config-path] -g [genesisBlock-path]
+</code></pre><p>This allow you to run several different networks, or your own private chain</p>
+<h2 id="launch-your-own-private-or-public-chain">Launch your own private or public chain</h2>
+<p>Generate a genesisBlock.json + a default config.json containing all passphrases of genesis delegates</p>
+<pre><code>node tasks/createGenesisBlock.js
+</code></pre><p>You can find generated files in tasks/</p>
+<ul>
+<li>genesisBlock.json</li>
+<li>config.json</li>
+<li>delegatesPassphrases.json (containing details about the genesis delegates)</li>
+<li>genesisPassphrase.json (containing the details of account having all premined arks)</li>
+</ul>
+<p>Obviously you can hack away tasks/createGenesisBlock.js for your own custom use.</p>
+<p>You can the start with your own chain on a single node (all delegates will forge on your single node) using:</p>
+<pre><code>createdb ark_newtest
+npm run start:newtest
+</code></pre><p>Then you can distribute the config.json (without the delegates secrets inside, and with custom peers settings) to peers to let them join your chain</p>
+<h2 id="tests">Tests</h2>
+<p>Load git submodule <a href="https://github.com/arkecosystem/ark-js">ark-js</a>:</p>
+<pre><code>git submodule init
+git submodule update
+</code></pre><p>You should run using test configurations</p>
+<pre><code>npm run start:test
+</code></pre><p>Run the test suite:</p>
+<pre><code>npm test
+</code></pre><p>Run individual tests:</p>
+<pre><code>npm test -- test/api/accounts.js
+npm test -- test/api/transactions.js
+</code></pre><p><strong>NOTE:</strong> The master passphrase for this test genesis block is as follows:</p>
+<pre><code>peace vanish bleak box tuna woman rally manage undo royal lucky since
+</code></pre><h2 id="authors">Authors</h2>
+<ul>
+<li>FX Thoorens <a href="&#109;&#x61;&#x69;&#x6c;&#116;&#111;&#58;&#102;&#x78;&#x2e;&#x74;&#x68;&#111;&#x6f;&#x72;&#x65;&#x6e;&#x73;&#64;&#x61;&#x72;&#107;&#46;&#x69;&#x6f;">&#102;&#x78;&#x2e;&#x74;&#x68;&#111;&#x6f;&#x72;&#x65;&#x6e;&#x73;&#64;&#x61;&#x72;&#107;&#46;&#x69;&#x6f;</a></li>
+<li>Boris Povod <a href="&#x6d;&#97;&#105;&#108;&#x74;&#x6f;&#x3a;&#98;&#x6f;&#x72;&#105;&#x73;&#x40;&#x63;&#114;&#x79;&#x70;&#116;&#105;&#x2e;&#109;&#x65;">&#98;&#x6f;&#x72;&#105;&#x73;&#x40;&#x63;&#114;&#x79;&#x70;&#116;&#105;&#x2e;&#109;&#x65;</a></li>
+<li>Pavel Nekrasov <a href="&#x6d;&#97;&#x69;&#108;&#x74;&#111;&#x3a;&#108;&#97;&#x6e;&#x64;&#x67;&#114;&#97;&#x66;&#46;&#112;&#x61;&#117;&#108;&#x40;&#x67;&#109;&#97;&#x69;&#108;&#46;&#x63;&#111;&#109;">&#108;&#97;&#x6e;&#x64;&#x67;&#114;&#97;&#x66;&#46;&#112;&#x61;&#117;&#108;&#x40;&#x67;&#109;&#97;&#x69;&#108;&#46;&#x63;&#111;&#109;</a></li>
+<li>Sebastian Stupurac <a href="&#x6d;&#97;&#x69;&#108;&#116;&#111;&#58;&#x73;&#x74;&#x75;&#x70;&#117;&#114;&#97;&#99;&#46;&#x73;&#x65;&#x62;&#97;&#x73;&#x74;&#105;&#97;&#x6e;&#x40;&#x67;&#109;&#x61;&#x69;&#x6c;&#x2e;&#x63;&#x6f;&#x6d;">&#x73;&#x74;&#x75;&#x70;&#117;&#114;&#97;&#99;&#46;&#x73;&#x65;&#x62;&#97;&#x73;&#x74;&#105;&#97;&#x6e;&#x40;&#x67;&#109;&#x61;&#x69;&#x6c;&#x2e;&#x63;&#x6f;&#x6d;</a></li>
+<li>Oliver Beddows <a href="&#x6d;&#97;&#x69;&#x6c;&#x74;&#x6f;&#58;&#111;&#108;&#x69;&#118;&#x65;&#x72;&#x40;&#x6c;&#105;&#115;&#x6b;&#46;&#x69;&#111;">&#111;&#108;&#x69;&#118;&#x65;&#x72;&#x40;&#x6c;&#105;&#115;&#x6b;&#46;&#x69;&#111;</a></li>
+</ul>
+<h2 id="license">License</h2>
+<p>The MIT License (MIT)</p>
+<p>Copyright (c) 2016 Ark
+Copyright (c) 2016 Lisk
+Copyright (c) 2014-2015 Crypti</p>
+<p>Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:  </p>
+<p>The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.</p>
+<p>THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
+
+            </div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>

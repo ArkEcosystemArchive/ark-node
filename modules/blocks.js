@@ -329,7 +329,7 @@ __private.getPreviousBlock = function(block, cb){
 		library.db.query(sql.getBlockById, {
 			id: block.previousBlock
 		}).then(function (rows) {
-			
+
 			previousBlock = rows[0];
 
 			//TODO: get this right without this cleaning
@@ -579,7 +579,7 @@ Blocks.prototype.getCommonBlock = function (peer, height, cb) {
 			});
 		},
 		function (res, waterCb) {
-			
+
 			library.db.query(sql.getCommonBlock(res.body.common.previousBlock), {
 				id: res.body.common.id,
 				previousBlock: res.body.common.previousBlock,
@@ -871,7 +871,7 @@ Blocks.prototype.getLastBlock = function () {
 //
 Blocks.prototype.onVerifyBlock = function (block, cb) {
 	var result = self.verifyBlock(block, true);
-	
+
 	if(result.verified){
 		return library.bus.message("blockVerified", block, cb);
 	}
@@ -1129,8 +1129,8 @@ __private.applyBlock = function (block, cb) {
 			async.eachSeries(keptTransactions, function (transaction, eachSeriesCb) {
 				modules.transactions.applyUnconfirmed(transaction, function (err) {
 					if (err) {
-						err = ['Failed to apply transaction:', transaction.id, '-', err].join(' ');
-						library.logger.error("error:",err);
+						library.logger.error('Failed to apply transaction:', transaction.id);
+						library.logger.error('Error', err);
 						library.logger.error('Transaction', transaction);
 						return setImmediate(eachSeriesCb, err);
 					}
@@ -1221,7 +1221,8 @@ __private.applyGenesisBlock = function (block, cb) {
 	}, function (err) {
 		if (err) {
 			// If genesis block is invalid, kill the node...
-			library.logger.error("error:",err);
+			library.logger.fatal("Can't validate load genesis block");
+			library.logger.fatal("Error", err);
 			return process.exit(0);
 		} else {
 			modules.rounds.tick(block, cb);
@@ -1360,11 +1361,11 @@ Blocks.prototype.processEmptyBlock = function (block, cb) {
 		return cb('Not an empty block', block);
 	}
 
-	
+
 	return async.applyEachSeries([
 		// function(block, applycb){
 		// 	library.db.query(sql.getBlockId, { id: block.id }).then(function (rows) {
-		// 		
+		//
 		// 		if (rows.length > 0) {
 		// 			return setImmediate(applycb,['Block', block.id, 'already exists'].join(' '));
 		// 		}
@@ -1372,15 +1373,15 @@ Blocks.prototype.processEmptyBlock = function (block, cb) {
 		// 	});
 		// },
 		function(block, applycb){
-			
+
 			modules.delegates.validateBlockSlot(block, applycb);
 		},
 		function(block, applycb){
-			
+
 			return __private.saveBlock(block, applycb);
 		},
 		function(block, applycb){
-			
+
 			return modules.rounds.tick(block, applycb);
 		}
 	],
@@ -1464,7 +1465,7 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, cb) {
 			peer=res.peer;
 		}
 
-		
+
 
 		var report = library.schema.validate(res.body.blocks, schema.loadBlocksFromPeer);
 
@@ -1584,7 +1585,7 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 Blocks.prototype.onProcessBlock = function (block, cb) {
 	library.blockSequence.add(function(seriesCb){
 		if(block.numberOfTransactions == 0){
-			
+
 			return self.processEmptyBlock(block,seriesCb);
 		}
 		else{

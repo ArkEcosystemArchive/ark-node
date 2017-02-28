@@ -631,8 +631,9 @@ Loader.prototype.getNetwork = function (force, cb) {
 						timeout: 2000
 					}, function (err, res) {
 						if (err) {
-							library.logger.error("error:",err);
+
 							library.logger.warn('Failed to get height from peer', peer.string);
+							library.logger.warn("Error",err);
 							return cb();
 						}
 
@@ -644,7 +645,8 @@ Loader.prototype.getNetwork = function (force, cb) {
 							// or maybe only the ones claiming height > current node height
 							verification = modules.blocks.verifyBlockHeader(res.body.header);
 						} catch (e) {
-							library.logger.error("error:", e);
+							library.logger.warn('Failed verifiy block header from', peer.string);
+							library.logger.warn("Error", e);
 						}
 
 
