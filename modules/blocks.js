@@ -1513,8 +1513,6 @@ Blocks.prototype.deleteBlocksBefore = function (block, cb) {
 
 //
 Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
-	//TODO: fireworks!
-	var lastBlock = modules.blockchain.getLastBlock();
 
 	var transactions = modules.transactionPool.getUnconfirmedTransactionList(false, constants.maxTxsPerBlock);
 	var ready = [];
@@ -1523,7 +1521,7 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 
 		if(!transaction){
 			library.logger.debug('no tx!!!');
-			return setImmediate(cb);
+			return cb();
 		}
 		// Check if tx id is already in blockchain
 		// TODO: to remove.
@@ -1531,32 +1529,32 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 			if (rows.length > 0) {
 				modules.transactionPool.removeUnconfirmedTransaction(transaction.id);
 				library.logger.debug('removing tx from unconfirmed', transaction.id);
-				return setImmediate(cb, 'Transaction ID is already in blockchain - ' + transaction.id);
+				return cb('Transaction ID is already in blockchain - ' + transaction.id);
 			}
 			modules.accounts.getAccount({ publicKey: transaction.senderPublicKey }, function (err, sender) {
 				if (err || !sender) {
-					return setImmediate(cb, 'Sender not found');
+					return cb('Sender not found');
 				}
 
 				if (library.logic.transaction.ready(transaction, sender)) {
 					library.logic.transaction.verify(transaction, sender, function (err) {
 						ready.push(transaction);
-						return setImmediate(cb);
+						return cb();
 					});
 				} else {
-					return setImmediate(cb);
+					return cb();
 				}
 			});
 		});
 	}, function () {
 		var block;
+		var lastBlock = modules.blockchain.getLastBlock();
 
 		// ok sometimes it takes time to get there so timestamp
 		// could have been calculated BEFORE the lastBlock received.
-		// imagine the disaster
-		// so if this is the case we push the timestamp forward
+		// imagine the disaster...
 		if(timestamp <= lastBlock.timestamp){
-			timestamp = lastBlock.timestamp + 1;
+			return cb("New block received while forging. Forging canceled")
 		}
 
 		try {
@@ -1568,10 +1566,10 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 			});
 		} catch (e) {
 			library.logger.error("stack", e.stack);
-			return setImmediate(cb, e);
+			return return cb(e);
 		}
 
-		setImmediate(cb, null, block);
+		return cb(null, block);
 	});
 };
 
