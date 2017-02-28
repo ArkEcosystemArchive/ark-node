@@ -524,14 +524,14 @@ function startInteractiveMode(scope){
 	var tail;
 
 	vorpal
-	  .command('log start', 'strat output logs')
+	  .command('log start', 'Start output logs')
 	  .action(function(args, callback) {
 			var self=this;
 			if(tail){
 				self.log("Already listening to logs");
 				return callback();
 			}
-			tail = spawn('tail', ['-f', 'logs/ark.log']);
+			tail = spawn('tail', ['-f', appConfig.logFileName]);
 			tail.stdout.on('data', function(data) {
 			  self.log(data.toString("UTF-8"));
 			});
@@ -539,7 +539,7 @@ function startInteractiveMode(scope){
 	  });
 
 	vorpal
-	  .command('log stop', 'stop output logs')
+	  .command('log stop', 'Stop output logs')
 	  .action(function(args, callback) {
 			var self=this;
 			if(tail){
@@ -550,16 +550,15 @@ function startInteractiveMode(scope){
 	  });
 
 	vorpal
-	  .command('log grep <query>', 'grep logs with <query>')
+	  .command('log grep <query>', 'Grep logs with <query>')
 	  .action(function(args, callback) {
 			var self=this;
-			var grep = spawn('grep', ['-e', args.query, 'logs/ark.log']);
+			var grep = spawn('grep', ['-e', args.query, appConfig.logFileName]);
 			grep.stdout.on('data', function(data) {
 			  self.log(data.toString("UTF-8"));
 			});
 			callback();
 	  });
-
 
 	vorpal
 	  .command('update node', 'force update from network')
@@ -619,27 +618,29 @@ function startInteractiveMode(scope){
 	  .action(function(args, callback) {
 			scope.db.query("select * from mem_accounts where address ='"+args.address+"'").then(function(rows){
 				var publicKey=rows[0].publicKey.toString("hex");
-				var receivedSQL='select sum(amount) as received from transactions where "recipientId" = \''+args.address+'\';'
-				var spentSQL='select sum(amount+fee) as spent from transactions where "senderPublicKey" = \'\\x'+publicKey+'\';'
-				var rewardsSQL='select sum(reward+"totalFee") as rewards from blocks where "generatorPublicKey" = \'\\x'+publicKey+'\';'
+				var receivedSQL='select sum(amount) as total, count(amount) as count from transactions where amount > 0 and "recipientId" = \''+args.address+'\';'
+				var spentSQL='select sum(amount+fee) as total, count(amount) as count from transactions where "senderPublicKey" = \'\\x'+publicKey+'\';'
+				var rewardsSQL='select sum(reward+"totalFee") as total, count(reward) as count from blocks where "generatorPublicKey" = \'\\x'+publicKey+'\';'
 				async.series({
 					received: function(cb){
 						scope.db.query(receivedSQL).then(function(rows){
-							cb(null, parseInt(rows[0].received));
+							cb(null, rows[0]);
 						});
 					},
 					spent: function(cb){
 						scope.db.query(spentSQL).then(function(rows){
-							cb(null, parseInt(rows[0].spent));
+							cb(null, rows[0]);
 						});
 					},
 					rewards: function(cb){
 						scope.db.query(rewardsSQL).then(function(rows){
-							cb(null, parseInt(rows[0].rewards));
+							cb(null, rows[0]);
 						});
 					}
 				}, function(err, result){
-					result.balance = result.received - result.spent + result.rewards;
+					result.balance = parseInt(result.received.total||0) - parseInt(result.spent.total||0) + parseInt(result.rewards.total||0);
+					result.numberOfTransactions = parseInt(result.received.count||0) + parseInt(result.spent.count||0)
+					result.forgedBlocks =parseInt(result.rewards.count||0);
 					self.log(JSON.stringify(result));
 				});
 				callback();
@@ -650,7 +651,6 @@ function startInteractiveMode(scope){
 			var self = this;
 
 	  });
-
 
 	vorpal.history('ark-node');
 
