@@ -59,7 +59,7 @@ Blockchain.prototype.onStartBlockchain = function(){
 					library.logger.warn("Blockchain rebuild done", __private.timestampState());
 					if(!timedout){
 						timedout=true;
-						setTimeout(listenBlockchainState, 1000);
+						return setTimeout(listenBlockchainState, 1000);
 					}
 				}
 				// rebuild not done because in sync with network (ie network stale)
@@ -68,7 +68,7 @@ Blockchain.prototype.onStartBlockchain = function(){
 					library.logger.warn("# Network looks stopped");
 					if(!timedout){
 						timedout=true;
-						setTimeout(listenBlockchainState, 10000);
+						return setTimeout(listenBlockchainState, 10000);
 					}
 				}
 				// rebuild not done because of internal error
@@ -76,7 +76,7 @@ Blockchain.prototype.onStartBlockchain = function(){
 					library.logger.error("Error rebuilding blockchain. You need to restart the node to get in sync", __private.timestampState());
 					if(!timedout){
 						timedout=true;
-						setTimeout(listenBlockchainState, 10000);
+						return setTimeout(listenBlockchainState, 10000);
 					}
 				}
 			});
@@ -86,13 +86,12 @@ Blockchain.prototype.onStartBlockchain = function(){
 
 			library.bus.message("downloadBlocks", function(err, lastblock){
 
-				// TODO: see how the download went for further action
 			});
 			// ok let's try in one more blocktime if still stale
-			setTimeout(listenBlockchainState, 8000);
+			return setTimeout(listenBlockchainState, 8000);
 		}
 		else{
-			setTimeout(listenBlockchainState, 1000);
+			return setTimeout(listenBlockchainState, 1000);
 		}
 	});
 
@@ -104,7 +103,7 @@ Blockchain.prototype.onStartBlockchain = function(){
 			delete __private.blockchain[blockremoved.height];
 			blockremoved = __private.blockchain[""+(blockremoved.height-1)];
 		}
-		setTimeout(cleanBlockchain, 10000);
+		return setTimeout(cleanBlockchain, 10000);
 	});
 }
 

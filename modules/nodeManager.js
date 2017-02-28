@@ -185,14 +185,6 @@ NodeManager.prototype.onBlocksReceived = function(blocks, peer, cb) {
 			// we don't deal with download management, just return to say "blocks processed, go ahead"
 			return mSequence && mSequence(err, currentBlock);
 
-			// if(!blocks || blocks.length === 0){
-			// 	return cb();
-			// }
-			// else{
-			// 	return cb();
-			// 	return library.bus.message("downloadBlocks", cb);
-			// }
-
 		});
 
 	}, cb);
@@ -216,7 +208,7 @@ NodeManager.prototype.onRebuildBlockchain = function(blocksToRemove, state, cb) 
 			}
 			else{
 				var bestBlock = modules.loader.getNetworkSmallestBlock();
-				//network.height is some kind of "conservative" estimation, so some peers can have bigger height
+				// network.height is some kind of "conservative" estimation, so some peers can have bigger height
 				if(bestBlock && bestBlock.height > lastBlock.height){
 					library.logger.info("Observed network is on same height, but some peers with bigger height", {network: {id: bestBlock.id, height:bestBlock.height}, node:{id: lastBlock.id, height:lastBlock.height}});
 					library.logger.info("Rebuilding from network");
@@ -229,7 +221,7 @@ NodeManager.prototype.onRebuildBlockchain = function(blocksToRemove, state, cb) 
 				}
 				else{
 					library.logger.info("Observed network is on same height, and same block timestamp", {network: network.height, node:lastBlock.height});
-					return mSequence && mSequence();
+					return modules.blocks.removeSomeBlocks(1, mSequence);
 				}
 			}
 		});
