@@ -29,7 +29,7 @@ function Transactions (cb, scope) {
 		transactionTypes.SEND, new Transfer()
 	);
 
-	setImmediate(cb, null, self);
+	return cb(null, self);
 }
 
 // Private methods
@@ -109,7 +109,7 @@ __private.list = function (filter, cb) {
 	}
 
 	if (params.limit > constants.maxTxsPerBlock) {
-		return setImmediate(cb, 'Invalid limit. Maximum is '+constants.maxTxsPerBlock);
+		return cb('Invalid limit. Maximum is '+constants.maxTxsPerBlock);
 	}
 
 	var orderBy = OrderBy(
@@ -126,7 +126,7 @@ __private.list = function (filter, cb) {
 	);
 
 	if (orderBy.error) {
-		return setImmediate(cb, orderBy.error);
+		return cb(orderBy.error);
 	}
 
 	library.db.query(sql.countList({
@@ -142,7 +142,7 @@ __private.list = function (filter, cb) {
 			sortMethod: orderBy.sortMethod
 		}), params).then(function (rows) {
 			var transactions = [];
-			
+
 			for (var i = 0; i < rows.length; i++) {
 				transactions.push(library.logic.transaction.dbRead(rows[i]));
 			}
@@ -152,36 +152,36 @@ __private.list = function (filter, cb) {
 				count: count
 			};
 
-			return setImmediate(cb, null, data);
+			return cb(null, data);
 		}).catch(function (err) {
 			library.logger.error("stack", err.stack);
-			return setImmediate(cb, 'Transactions#list error');
+			return cb('Transactions#list error');
 		});
 	}).catch(function (err) {
 		library.logger.error("stack", err.stack);
-		return setImmediate(cb, 'Transactions#list error');
+		return cb('Transactions#list error');
 	});
 };
 
 __private.getById = function (id, cb) {
 	library.db.query(sql.getById, {id: id}).then(function (rows) {
 		if (!rows.length) {
-			return setImmediate(cb, 'Transaction not found: ' + id);
+			return cb('Transaction not found: ' + id);
 		}
 
 		var transaction = library.logic.transaction.dbRead(rows[0]);
 
-		return setImmediate(cb, null, transaction);
+		return cb(null, transaction);
 	}).catch(function (err) {
 		library.logger.error("stack", err);
-		return setImmediate(cb, 'Transactions#getById error');
+		return cb('Transactions#getById error');
 	});
 };
 
 __private.getVotesById = function (transaction, cb) {
 	library.db.query(sql.getVotesById, {id: transaction.id}).then(function (rows) {
 		if (!rows.length) {
-			return setImmediate(cb, 'Transaction not found: ' + id);
+			return cb('Transaction not found: ' + id);
 		}
 
 		var votes = rows[0].votes.split(',');
@@ -198,10 +198,10 @@ __private.getVotesById = function (transaction, cb) {
 
 		transaction.votes = {added: added, deleted: deleted};
 
-		return setImmediate(cb, null, transaction);
+		return cb(null, transaction);
 	}).catch(function (err) {
 		library.logger.error("stack", err.stack);
-		return setImmediate(cb, 'Transactions#getVotesById error');
+		return cb('Transactions#getVotesById error');
 	});
 };
 
@@ -212,13 +212,13 @@ __private.getVotesById = function (transaction, cb) {
 
 //
 Transactions.prototype.apply = function (transaction, block, cb) {
-	library.transactionSequence.add(function (cb){
+	library.transactionSequence.add(function (sequenceCb){
 		library.logger.debug('Applying confirmed transaction', transaction.id);
 		modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, function (err, sender) {
 			if (err) {
-				return setImmediate(eachSeriesCb, err);
+				return sequenceCb(err);
 			}
-			library.logic.transaction.apply(transaction, block, sender, cb);
+			library.logic.transaction.apply(transaction, block, sender, sequenceCb);
 		});
 	}, cb);
 };
@@ -228,13 +228,13 @@ Transactions.prototype.apply = function (transaction, block, cb) {
 
 //
 Transactions.prototype.undo = function (transaction, block, cb) {
-	library.transactionSequence.add(function (cb){
+	library.transactionSequence.add(function (sequenceCb){
 		library.logger.debug('Undoing confirmed transaction', transaction.id);
 		modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, function (err, sender) {
 			if (err) {
-				return setImmediate(eachSeriesCb, err);
+				return sequenceCb(err);
 			}
-			library.logic.transaction.undo(transaction, block, sender, cb);
+			library.logic.transaction.undo(transaction, block, sender, sequenceCb);
 		});
 	}, cb);
 };
@@ -246,24 +246,24 @@ Transactions.prototype.undo = function (transaction, block, cb) {
 Transactions.prototype.applyUnconfirmed = function (transaction, cb) {
 	modules.accounts.setAccountAndGet({publicKey: transaction.senderPublicKey}, function (err, sender) {
 		if (!sender && transaction.blockId !== genesisblock.block.id) {
-			return setImmediate(cb, 'Invalid block id');
+			return cb('Invalid block id');
 		} else {
-			library.transactionSequence.add(function (cb){
+			library.transactionSequence.add(function (sequenceCb){
 				library.logger.debug('Applying unconfirmed transaction', transaction.id);
 				if (transaction.requesterPublicKey) {
 					modules.accounts.getAccount({publicKey: transaction.requesterPublicKey}, function (err, requester) {
 						if (err) {
-							return setImmediate(cb, err);
+							return sequenceCb(err);
 						}
 
 						if (!requester) {
-							return setImmediate(cb, 'Requester not found');
+							return sequenceCb('Requester not found');
 						}
 
-						library.logic.transaction.applyUnconfirmed(transaction, sender, requester, cb);
+						library.logic.transaction.applyUnconfirmed(transaction, sender, requester, sequenceCb);
 					});
 				} else {
-					library.logic.transaction.applyUnconfirmed(transaction, sender, cb);
+					library.logic.transaction.applyUnconfirmed(transaction, sender, sequenceCb);
 				}
 			}, cb);
 		}
@@ -275,13 +275,13 @@ Transactions.prototype.applyUnconfirmed = function (transaction, cb) {
 
 //
 Transactions.prototype.undoUnconfirmed = function (transaction, cb) {
-	library.transactionSequence.add(function (cb){
+	library.transactionSequence.add(function (sequenceCb){
 		library.logger.debug('Undoing unconfirmed transaction', transaction.id);
 		modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, function (err, sender) {
 			if (err) {
-				return setImmediate(cb, err);
+				return sequenceCb(err);
 			}
-			library.logic.transaction.undoUnconfirmed(transaction, sender, cb);
+			library.logic.transaction.undoUnconfirmed(transaction, sender, sequenceCb);
 		});
 	}, cb);
 };
@@ -478,7 +478,7 @@ shared.addTransactions = function (req, cb) {
 
 								transaction.id=library.logic.transaction.getId(transaction);
 
-								
+
 
 							} catch (e) {
 								return setImmediate(cb, e.toString());

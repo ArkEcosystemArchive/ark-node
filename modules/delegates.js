@@ -42,7 +42,7 @@ function Delegates (cb, scope) {
 		transactionTypes.DELEGATE, new Delegate()
 	);
 
-	setImmediate(cb, null, self);
+	return cb(null, self);
 }
 
 // Private methods
@@ -192,27 +192,6 @@ __private.attachApi = function () {
 	});
 };
 
-__private.getKeysSortByVote = function (cb) {
-	modules.accounts.getAccounts({
-		isDelegate: 1,
-		sort: {'vote': -1, 'publicKey': 1},
-		limit: slots.delegates
-	}, ['publicKey'], function (err, rows) {
-		if (err) {
-			return setImmediate(cb, err);
-		}
-		var registeredDelegatesPublicKeys = Object.keys(__private.keypairs);
-		var isActive = false;
-		var activeDelegates = rows.map(function (el) {
-			if(registeredDelegatesPublicKeys.indexOf(el.publicKey) > -1){
-				isActive=true;
-			}
-			return el.publicKey;
-		});
-		__private.isActiveDelegate = isActive;
-		return setImmediate(cb, null, activeDelegates);
-	});
-};
 
 // TODO: highly buggy
 // 1. we are not sure we have the last block height!
@@ -220,7 +199,7 @@ __private.getKeysSortByVote = function (cb) {
 __private.getBlockSlotData = function (slot, height, cb) {
 	modules.rounds.getActiveDelegates(function (err, activeDelegates) {
 		if (err) {
-			return setImmediate(cb, err);
+			return cb(err);
 		}
 
 		var currentSlot = slot;
@@ -231,11 +210,10 @@ __private.getBlockSlotData = function (slot, height, cb) {
 			var delegate_id = activeDelegates[delegate_pos];
 
 			if (delegate_id && __private.keypairs[delegate_id]) {
-				return setImmediate(cb, null, {time: slots.getSlotTime(currentSlot), keypair: __private.keypairs[delegate_id]});
+				return cb(null, {time: slots.getSlotTime(currentSlot), keypair: __private.keypairs[delegate_id]});
 			}
 		}
-
-		return setImmediate(cb, null, null);
+		return cb(null, null);
 	});
 };
 
@@ -243,12 +221,12 @@ __private.forge = function (cb) {
 	var err;
 	if (!Object.keys(__private.keypairs).length) {
 		err = 'No delegates enabled';
-		return setImmediate(cb, err);
+		return cb(err);
 	}
 
 	if (!__private.forging) {
 		err = 'Forging disabled';
-		return setImmediate(cb, err);
+		return cb(err);
 	}
 
 	var currentSlot = slots.getSlotNumber();
@@ -256,13 +234,13 @@ __private.forge = function (cb) {
 	var lastBlock = modules.blockchain.getLastBlock();
 	if (!lastBlock || currentSlot === slots.getSlotNumber(lastBlock.timestamp)) {
 		err = 'Last block within same delegate slot';
-		return setImmediate(cb, err);
+		return cb(err);
 	}
 
 	__private.getBlockSlotData(currentSlot, lastBlock.height + 1, function (err, currentBlockData) {
 		if (err || currentBlockData === null) {
 			err = 'Skipping delegate slot';
-			return setImmediate(cb, err);
+			return cb(err);
 		}
 
 
@@ -276,16 +254,16 @@ __private.forge = function (cb) {
 				if(!minimumNetworkReach){
 					minimumNetworkReach = 20;
 				}
-				
+
 				if (err) {
-					return setImmediate(cb, err);
+					return cb(err);
 				}
 				else if(network.peers.length < minimumNetworkReach){
 					library.logger.info("Network reach is not sufficient to get quorum",[
 						"network # of reached peers:", network.peers.length,
 						"last block id:", lastBlock.id
 					].join(' '));
-					return setImmediate(cb);
+					return cb();
 				}
 				else {
 					var quorum = 0;
@@ -320,7 +298,7 @@ __private.forge = function (cb) {
 						//TODO: we should check if the "over height" block is legit:
 						// # if delegate = myself -> legit -> letsforge = false (multiple node forging same delegate)
 						if(overheightblock.generatorPublicKey == currentBlockData.keypair.publicKey){
-							return setImmediate(cb);
+							return cb();
 						}
 						// # if delegate != myself and blockslot = my slot -> attack or forked from them.
 
@@ -330,7 +308,7 @@ __private.forge = function (cb) {
 						//   -> if delegate is legit for the blockslot -> too late -> letsforge = false (otherwise the node will fork 1)
 						//   -> if delegate is not legit -> attack -> letsforge = true
 
-						return setImmediate(cb);
+						return cb();
 					}
 
 					// PBFT: most nodes are on same branch, no other block have been forged
@@ -345,7 +323,7 @@ __private.forge = function (cb) {
 							"last block id:", lastBlock.id
 						].join(' '));
 						library.bus.message("fork",lastBlock, 6);
-						return setImmediate(cb, "Fork 6 - Not enough quorum to forge next block: " + quorum/(quorum+noquorum));
+						return cb("Fork 6 - Not enough quorum to forge next block: " + quorum/(quorum+noquorum));
 					}
 
 					if(letsforge){
@@ -367,7 +345,7 @@ __private.forge = function (cb) {
 							}
 							else{
 								library.logger.error('Failed generate block within delegate slot', err);
-								return setImmediate(cb, err);
+								return cb(err);
 							}
 						});
 					}
@@ -375,34 +353,34 @@ __private.forge = function (cb) {
 			});
 		} else {
 			library.logger.debug('Delegate slot', slots.getSlotNumber());
-			return setImmediate(cb);
+			return cb();
 		}
 	});
 };
 
 __private.checkDelegates = function (publicKey, votes, state, cb) {
 	if (!Array.isArray(votes)) {
-		return setImmediate(cb, 'Votes must be an array');
+		return cb('Votes must be an array');
 	}
 
 	modules.accounts.getAccount({publicKey: publicKey}, function (err, account) {
 		if (err) {
-			return setImmediate(cb, err);
+			return cb(err);
 		}
 
 		if (!account) {
-			return setImmediate(cb, 'Account not found');
+			return cb('Account not found');
 		}
 
 		var delegates = (state === 'confirmed') ? account.delegates : account.u_delegates;
 		var existing_votes = Array.isArray(delegates) ? delegates.length : 0;
 		var additions = 0, removals = 0;
 
-		async.eachSeries(votes, function (action, cb) {
+		async.eachSeries(votes, function (action, eachSeriesCb) {
 			var math = action[0];
 
 			if (math !== '+' && math !== '-') {
-				return setImmediate(cb, 'Invalid math operator');
+				return eachSeriesCb('Invalid math operator');
 			}
 
 			if (math === '+') {
@@ -417,31 +395,31 @@ __private.checkDelegates = function (publicKey, votes, state, cb) {
 				new Buffer(publicKey, 'hex');
 			} catch (e) {
 				library.logger.error("stack", e.stack);
-				return setImmediate(cb, 'Invalid public key');
+				return eachSeriesCb('Invalid public key');
 			}
 
 			if (math === '+' && (delegates != null && delegates.indexOf(publicKey) !== -1)) {
-				return setImmediate(cb, 'Failed to add vote, account has already voted for this delegate');
+				return eachSeriesCb('Failed to add vote, account has already voted for this delegate');
 			}
 
 			if (math === '-' && (delegates === null || delegates.indexOf(publicKey) === -1)) {
-				return setImmediate(cb, 'Failed to remove vote, account has not voted for this delegate');
+				return eachSeriesCb('Failed to remove vote, account has not voted for this delegate');
 			}
 
 			modules.accounts.getAccount({ publicKey: publicKey, isDelegate: 1 }, function (err, account) {
 				if (err) {
-					return setImmediate(cb, err);
+					return eachSeriesCb(err);
 				}
 
 				if (!account) {
-					return setImmediate(cb, 'Delegate not found');
+					return eachSeriesCb('Delegate not found');
 				}
 
-				return setImmediate(cb);
+				return eachSeriesCb();
 			});
 		}, function (err) {
 			if (err) {
-				return setImmediate(cb, err);
+				return cb(err);
 			}
 
 			var total_votes = (existing_votes + additions) - removals;
@@ -449,9 +427,9 @@ __private.checkDelegates = function (publicKey, votes, state, cb) {
 			if (total_votes > constants.maximumVotes) {
 				var exceeded = total_votes - constants.maximumVotes;
 
-				return setImmediate(cb, 'Maximum number of ' + constants.maximumVotes + ' votes exceeded (' + exceeded + ' too many)');
+				return cb('Maximum number of ' + constants.maximumVotes + ' votes exceeded (' + exceeded + ' too many)');
 			} else {
-				return setImmediate(cb);
+				return cb();
 			}
 		});
 	});
@@ -506,32 +484,6 @@ Delegates.prototype.isAForgingDelegatesPublicKey = function(publicKey) {
 	return !!__private.keypairs[publicKey];
 }
 
-//
-//__API__ `generateDelegateList`
-
-//
-Delegates.prototype.generateDelegateList = function (height, cb) {
-	__private.getKeysSortByVote(function (err, truncDelegateList) {
-		if (err) {
-			return cb(err);
-		}
-
-		var seedSource = modules.rounds.getRoundFromHeight(height).toString();
-		var currentSeed = crypto.createHash('sha256').update(seedSource, 'utf8').digest();
-
-		for (var i = 0, delCount = truncDelegateList.length; i < delCount; i++) {
-			for (var x = 0; x < 4 && i < delCount; i++, x++) {
-				var newIndex = currentSeed[x] % delCount;
-				var b = truncDelegateList[newIndex];
-				truncDelegateList[newIndex] = truncDelegateList[i];
-				truncDelegateList[i] = b;
-			}
-			currentSeed = crypto.createHash('sha256').update(currentSeed).digest();
-		}
-
-		return cb(null, truncDelegateList);
-	});
-};
 
 //
 //__API__ `getDelegates`
@@ -546,7 +498,7 @@ Delegates.prototype.getDelegates = function (query, cb) {
 		sort: { 'vote': -1, 'publicKey': 1 }
 	}, ['username', 'address', 'publicKey', 'vote', 'missedblocks', 'producedblocks'], function (err, delegates) {
 		if (err) {
-			return setImmediate(cb, err);
+			return cb(err);
 		}
 
 		var limit = query.limit || constants.activeDelegates;
@@ -577,10 +529,10 @@ Delegates.prototype.getDelegates = function (query, cb) {
 		var orderBy = OrderBy(query.orderBy, {quoteField: false});
 
 		if (orderBy.error) {
-			return setImmediate(cb, orderBy.error);
+			return cb(orderBy.error);
 		}
 
-		return setImmediate(cb, null, {
+		return cb(null, {
 			delegates: delegates,
 			sortField: orderBy.sortField,
 			sortMethod: orderBy.sortMethod,
@@ -828,7 +780,7 @@ __private.toggleForgingOnReceipt = function () {
 	if (lastReceipt) {
 		var timeOut = Number(constants.forgingTimeOut);
 
-		
+
 
 		// if (lastReceipt.secondsAgo > timeOut) {
 		// 	return self.disableForging('timeout');
@@ -1005,7 +957,7 @@ shared.getDelegates = function (req, cb) {
 };
 
 shared.getFee = function (req, cb) {
-	return setImmediate(cb, null, {fee: constants.fees.delegate});
+	return cb(null, {fee: constants.fees.delegate});
 };
 
 shared.getForgedByAccount = function (req, cb) {

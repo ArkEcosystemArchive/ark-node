@@ -31,7 +31,7 @@ var __private = {
 function Blockchain (cb, scope) {
 	library = scope;
 	self = this;
-	setImmediate(cb, null, self);
+	cb(null, self);
 }
 
 //
@@ -122,7 +122,7 @@ Blockchain.prototype.upsertBlock = function(block, cb){
   } else {
     __private.blockchain[block.height]=block;
   }
-  return cb && setImmediate(cb, error, __private.blockchain[block.height]);
+  return cb && cb(error, __private.blockchain[block.height]);
 }
 
 //
@@ -192,7 +192,7 @@ Blockchain.prototype.addBlock = function(block, cb){
     error = "addBlock - Orphaned Block has been added in the blockchain";
   }
 	// if same block id don't update
-  return cb && setImmediate(cb, error, __private.blockchain[block.height]);
+  return cb && cb(error, __private.blockchain[block.height]);
 };
 
 // return the previousBlock even if orphaned.
@@ -233,7 +233,7 @@ Blockchain.prototype.removeBlock = function(block, cb){
 		// if one of the orphaned block is at the origin (ie block.previousBlock == orphanedBlock.previousBlock)
 		delete __private.orphanedBlocks[block.id];
   }
-  return cb && setImmediate(cb, error, block);
+  return cb && cb(error, block);
 };
 
 //

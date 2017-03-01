@@ -34,7 +34,7 @@ function Loader (cb, scope) {
 
 	__private.genesisBlock = __private.lastBlock = library.genesisblock;
 
-	setImmediate(cb, null, self);
+	return cb(null, self);
 }
 
 // Private methods
@@ -114,13 +114,13 @@ __private.loadUnconfirmedTransactions = function (cb) {
 		method: 'GET'
 	}, function (err, res) {
 		if (err) {
-			return setImmediate(cb, err);
+			return cb(err);
 		}
 
 		var report = library.schema.validate(res.body, schema.loadUnconfirmedTransactions);
 
 		if (!report) {
-			return setImmediate(cb, "Transactions list is not conform");
+			return cb("Transactions list is not conform");
 		}
 
 		var peer = modules.peers.inspect(res.peer);
@@ -399,9 +399,9 @@ __private.loadBlocksFromNetwork = function (cb) {
 		function (err) {
 			if (err) {
 				library.logger.error('Failed to load blocks from network', err);
-				return setImmediate(cb, err);
+				return cb(err);
 			} else {
-				return setImmediate(cb, null, __private.lastBlock);
+				return cb(null, __private.lastBlock);
 			}
 		}
 	);
@@ -477,7 +477,7 @@ __private.loadBlocksFromNetwork = function (cb) {
 __private.syncFromNetwork = function (cb) {
 	if(self.syncing()){
 		library.logger.info('Already syncing');
-		return setImmediate(cb);
+		return cb();
 	}
 	library.logger.debug('Starting sync');
 	__private.syncFromNetworkTrigger(true);
@@ -499,7 +499,7 @@ __private.syncFromNetwork = function (cb) {
 		__private.blocksToSync = 0;
 
 		library.logger.debug('Finished sync');
-		return setImmediate(cb, err);
+		return cb(err);
 	});
 };
 
@@ -935,14 +935,14 @@ Loader.prototype.onDownloadBlocks = function (cb) {
 //
 Loader.prototype.cleanup = function (cb) {
 	if (!__private.noShutdownRequired) {
-		return setImmediate(cb);
+		return cb();
 	} else {
 		setImmediate(function nextWatch () {
 			if (__private.noShutdownRequired) {
 				library.logger.info('Waiting for network synchronisation to finish...');
 				setTimeout(nextWatch, 1 * 1000);
 			} else {
-				return setImmediate(cb);
+				return cb();
 			}
 		});
 	}

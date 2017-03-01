@@ -77,7 +77,7 @@ function Blocks (cb, scope) {
 	self = this;
 
 	__private.saveGenesisBlock(function (err) {
-		return setImmediate(cb, err, self);
+		return cb(err, self);
 	});
 }
 
@@ -122,23 +122,23 @@ __private.saveGenesisBlock = function (cb) {
 
 		if (!blockId) {
 			__private.saveBlock(genesisblock.block, function (err) {
-				return setImmediate(cb, err);
+				return cb(err);
 			});
 		} else {
-			return setImmediate(cb);
+			return cb();
 		}
 	}).catch(function (err) {
 		library.logger.error("stack", err.stack);
-		return setImmediate(cb, 'Blocks#saveGenesisBlock error');
+		return cb('Blocks#saveGenesisBlock error');
 	});
 };
 
 __private.deleteBlock = function (blockId, cb) {
 	library.db.none(sql.deleteBlock, {id: blockId}).then(function () {
-		return setImmediate(cb);
+		return cb();
 	}).catch(function (err) {
 		library.logger.error("stack", err.stack);
-		return setImmediate(cb, 'Blocks#deleteBlock error');
+		return cb('Blocks#deleteBlock error');
 	});
 };
 
@@ -193,7 +193,7 @@ __private.list = function (filter, cb) {
 	}
 
 	if (params.limit > 100) {
-		return setImmediate(cb, 'Invalid limit. Maximum is 100');
+		return cb('Invalid limit. Maximum is 100');
 	}
 
 	var orderBy = OrderBy(
@@ -204,7 +204,7 @@ __private.list = function (filter, cb) {
 	);
 
 	if (orderBy.error) {
-		return setImmediate(cb, orderBy.error);
+		return cb(orderBy.error);
 	}
 
 	library.db.query(sql.countList({
@@ -228,29 +228,29 @@ __private.list = function (filter, cb) {
 				count: count
 			};
 
-			return setImmediate(cb, null, data);
+			return cb(null, data);
 		}).catch(function (err) {
 			library.logger.error("stack", err.stack);
-			return setImmediate(cb, 'Blocks#list error');
+			return cb('Blocks#list error');
 		});
 	}).catch(function (err) {
 		library.logger.error("stack", err.stack);
-		return setImmediate(cb, 'Blocks#list error');
+		return cb('Blocks#list error');
 	});
 };
 
 __private.getById = function (id, cb) {
 	library.db.query(sql.getById, {id: id}).then(function (rows) {
 		if (!rows.length) {
-			return setImmediate(cb, 'Block not found');
+			return cb('Block not found');
 		}
 
 		var block = library.logic.block.dbRead(rows[0]);
 
-		return setImmediate(cb, null, block);
+		return cb(null, block);
 	}).catch(function (err) {
 		library.logger.error("stack", err.stack);
-		return setImmediate(cb, 'Blocks#getById error');
+		return cb('Blocks#getById error');
 	});
 };
 
@@ -269,7 +269,7 @@ __private.saveBlock = function (block, cb) {
 		return __private.afterSave(block, cb);
 	}).catch(function (err) {
 		library.logger.error("stack", err.stack);
-		return setImmediate(cb, 'Blocks#saveBlock error');
+		return cb('Blocks#saveBlock error');
 	});
 };
 
@@ -316,14 +316,14 @@ __private.afterSave = function (block, cb) {
 	async.eachSeries(block.transactions, function (transaction, cb) {
 		return library.logic.transaction.afterSave(transaction, cb);
 	}, function (err) {
-		return setImmediate(cb, err);
+		return cb(err);
 	});
 };
 
 __private.getPreviousBlock = function(block, cb){
 	var previousBlock = modules.blockchain.getPreviousBlock(block);
 	if(previousBlock){
-		setImmediate(cb, null, previousBlock);
+		cb(null, previousBlock);
 	}
 	else { //let's get from database
 		library.db.query(sql.getBlockById, {
@@ -340,9 +340,9 @@ __private.getPreviousBlock = function(block, cb){
 			// we add this previous block in the mem blockchain
 			modules.blockchain.upsertBlock(previousBlock);
 
-			setImmediate(cb, null, previousBlock);
+			cb(null, previousBlock);
 		}).catch(function (err) {
-			setImmediate(cb, err);
+			cb(err);
 		});
 	}
 }
@@ -354,11 +354,11 @@ __private.popLastBlock = function (oldLastBlock, cb) {
 				library.logger.warn("removing block", oldLastBlock.height);
 				modules.blockchain.removeBlock(oldLastBlock);
 			});
-			return setImmediate(cb, "No previous block");
+			return cb("No previous block");
 		}
 		__private.getPreviousBlock(oldLastBlock, function (err, previousBlock) {
 			if (err) {
-				return setImmediate(cb, err);
+				return cb(err);
 			}
 			if (!previousBlock) {
 				// very wrong removing block from db only
@@ -367,7 +367,7 @@ __private.popLastBlock = function (oldLastBlock, cb) {
 					modules.blockchain.removeBlock(oldLastBlock);
 				});
 
-				return setImmediate(cb, "No previous block");
+				return cb("No previous block");
 			}
 
 			async.eachSeries(oldLastBlock.transactions.reverse(), function (transaction, cb) {
@@ -395,7 +395,7 @@ __private.popLastBlock = function (oldLastBlock, cb) {
 __private.getIdSequence = function (height, cb) {
 	library.db.query(sql.getIdSequence, { height: height, limit: 10, delegates: slots.delegates, activeDelegates: constants.activeDelegates }).then(function (rows) {
 		if (rows.length === 0) {
-			return setImmediate(cb, 'Failed to get id sequence for height: ' + height);
+			return cb('Failed to get id sequence for height: ' + height);
 		}
 
 		var ids = [];
@@ -427,10 +427,10 @@ __private.getIdSequence = function (height, cb) {
 			}
 		});
 
-		return setImmediate(cb, null, { firstHeight: rows[0].height, ids: ids.join(',') });
+		return cb(null, { firstHeight: rows[0].height, ids: ids.join(',') });
 	}).catch(function (err) {
 		library.logger.error("stack", err.stack);
-		return setImmediate(cb, 'Blocks#getIdSequence error');
+		return cb('Blocks#getIdSequence error');
 	});
 };
 
@@ -476,7 +476,7 @@ __private.applyGenesisTransaction = function (block, transaction, sender, cb) {
 	transaction.blockId=block.id;
 	modules.transactions.applyUnconfirmed(transaction, function (err) {
 		if (err) {
-			return setImmediate(cb, {
+			return cb({
 				message: err,
 				transaction: transaction,
 				block: block
@@ -485,13 +485,13 @@ __private.applyGenesisTransaction = function (block, transaction, sender, cb) {
 
 		modules.transactions.apply(transaction, block, function (err) {
 			if (err) {
-				return setImmediate(cb, {
+				return cb({
 					message: 'Failed to apply transaction: ' + transaction.id,
 					transaction: transaction,
 					block: block
 				});
 			}
-			return setImmediate(cb);
+			return cb();
 		});
 	});
 };
@@ -744,7 +744,7 @@ Blocks.prototype.loadBlocksOffset = function (limit, offset, verify, cb) {
 //
 Blocks.prototype.removeSomeBlocks = function(numbers, cb){
 	if (modules.blockchain.getLastBlock().height === 1) {
-		return setImmediate(cb);
+		return cb();
 	}
 
 	// Don't shutdown now
@@ -838,10 +838,10 @@ Blocks.prototype.loadLastBlock = function (cb) {
 			if(!block.transactions){
 				block.transactions=[];
 			}
-			return setImmediate(cb, null, block);
+			return cb(null, block);
 		}).catch(function (err) {
 			library.logger.error("stack", err.stack);
-			return setImmediate(cb, 'Blocks#loadLastBlock error');
+			return cb('Blocks#loadLastBlock error');
 		});
 	}, cb);
 };
@@ -1100,7 +1100,7 @@ __private.applyBlock = function (block, cb) {
 	__private.noShutdownRequired = true;
 
 	// Transactions to rewind in case of error.
-	var appliedTransactions = {};
+	var appliedUnconfirmedTransactions = {}, appliedTransactions = {};
 
 	// List of currrently unconfirmed transactions that have been popped and unconfirmed transactions from the block already present in the node
 	var removedTransactionsIds, keptTransactions;
@@ -1113,14 +1113,14 @@ __private.applyBlock = function (block, cb) {
 		undoUnconfirmedList: function (seriesCb) {
 			modules.transactionPool.undoUnconfirmedList(block.transactions, function (err, removedTransactionsIds, alreadyUnconfirmedTransactionIds) {
 				if (err) {
-					return setImmediate(seriesCb, err);
+					return seriesCb(err);
 				} else {
 					removedTransactionsIds = removedTransactionsIds;
 					// filter out tx that have been already applied as unconfirmed, or applied in a previous block
 					keptTransactions = block.transactions.filter(function(tx){
 						return alreadyUnconfirmedTransactionIds.indexOf(tx.id) == -1 && !tx.applied;
 					});
-					return setImmediate(seriesCb);
+					return seriesCb();
 				}
 			});
 		},
@@ -1132,12 +1132,12 @@ __private.applyBlock = function (block, cb) {
 						library.logger.error('Failed to apply transaction:', transaction.id);
 						library.logger.error('Error', err);
 						library.logger.error('Transaction', transaction);
-						return setImmediate(eachSeriesCb, err);
+						return eachSeriesCb(err);
 					}
 
-					appliedTransactions[transaction.id] = transaction;
+					appliedUnconfirmedTransactions[transaction.id] = transaction;
 
-					return setImmediate(eachSeriesCb);
+					return eachSeriesCb();
 				});
 			}, function (err) {
 				if (err) {
@@ -1145,29 +1145,24 @@ __private.applyBlock = function (block, cb) {
 					// Leaves the database state as per the previous block.
 					async.eachSeries(keptTransactions, function (transaction, eachSeriesCb) {
 						// The transaction has been applied?
-						if (appliedTransactions[transaction.id]) {
+						if (appliedUnconfirmedTransactions[transaction.id]) {
 							// DATABASE: write
 							modules.transactions.undoUnconfirmed(transaction, eachSeriesCb);
 						} else {
-							return setImmediate(eachSeriesCb);
+							return eachSeriesCb();
 						}
-					}, function (err) {
-						return setImmediate(seriesCb, err);
+					}, function (error) {
+						return seriesCb(err);
 					});
 				} else {
-					return setImmediate(seriesCb);
+					return seriesCb();
 				}
 			});
 		},
 		// Block and transactions are ok.
 		// Apply transactions to confirmed mem_accounts fields.
 		applyConfirmed: function (seriesCb) {
-			// filter out all tx processed in previous block
-			// but keep this time tx that were already unconfirmed previously
-			keptTransactions = block.transactions.filter(function(tx){
-				return !tx.applied;
-			});
-			async.eachSeries(keptTransactions, function (transaction, eachSeriesCb) {
+			async.eachSeries(block.transactions, function (transaction, eachSeriesCb) {
 				// DATABASE: write
 				modules.transactions.apply(transaction, block, function (err) {
 					if (err) {
@@ -1175,14 +1170,30 @@ __private.applyBlock = function (block, cb) {
 						library.logger.error("error:",err);
 						library.logger.error('Transaction', transaction);
 						// TODO: Send a numbered signal to be caught by forever to trigger a rebuild.
-						return setImmediate(eachSeriesCb, err);
+						return eachSeriesCb(err);
 					}
+					appliedTransactions[transaction.id] = transaction;
 					// Transaction applied, removed from the unconfirmed list.
 					modules.transactionPool.removeUnconfirmedTransaction(transaction.id);
-					return setImmediate(eachSeriesCb);
+					return eachSeriesCb();
 				});
 			}, function (err) {
-				return setImmediate(seriesCb, err);
+				if(err){
+					async.eachSeries(block.transactions, function (transaction, eachSeriesCb) {
+						// The transaction has been applied?
+						if (appliedTransactions[transaction.id]) {
+							// DATABASE: write
+							modules.transactions.undo(transaction, block, eachSeriesCb);
+						} else {
+							return eachSeriesCb();
+						}
+					}, function (error) {
+						return seriesCb(err);
+					});
+				}
+				else{
+					return seriesCb();
+				}
 			});
 		}
 	}, function (err) {
@@ -1191,9 +1202,9 @@ __private.applyBlock = function (block, cb) {
 
 		// Nullify large objects.
 		// Prevents memory leak during synchronisation.
-		keptTransactions = appliedTransactions = removedTransactionsIds = block = null;
+		keptTransactions = appliedTransactions = appliedUnconfirmedTransactions = removedTransactionsIds = block = null;
 
-		return setImmediate(cb, err);
+		return cb(err);
 	});
 };
 
@@ -1210,7 +1221,7 @@ __private.applyGenesisBlock = function (block, cb) {
 	async.eachSeries(block.transactions, function (transaction, cb) {
 			modules.accounts.setAccountAndGet({publicKey: transaction.senderPublicKey}, function (err, sender) {
 				if (err) {
-					return setImmediate(cb, {
+					return cb({
 						message: err,
 						transaction: transaction,
 						block: block
@@ -1244,17 +1255,6 @@ Blocks.prototype.processBlock = function (block, cb) {
 
 	// be sure to apply only one block after the other
 
-		// Sanity check of the block, if values are coherent.
-		// No access to database
-		// var check = self.verifyBlock(block);
-
-		// if (!check.verified) {
-		// 	library.logger.error(['Block', block.id, 'verification failed'].join(' '), check.errors.join(', '));
-		// 	library.logger.debug("block", block);
-		// 	return setImmediate(cb, check.errors[0]);
-		// }
-
-
 		// Check if block id is already in the database (very low probability of hash collision).
 		// TODO: In case of hash-collision, to me it would be a special autofork...
 		// DATABASE: read only
@@ -1276,11 +1276,6 @@ Blocks.prototype.processBlock = function (block, cb) {
 					async.waterfall([
 						function (waterfallCb) {
 							// Removed LOC because it makes no sense
-							// try {
-							// 	transaction.id = library.logic.transaction.getId(transaction);
-							// } catch (e) {
-							// 	return setImmediate(cb, e.toString());
-							// }
 							transaction.blockId = block.id;
 							// Check if transaction is already in database, otherwise fork 2.
 							// TODO: Uncle forging: Double inclusion is allowed.
@@ -1363,25 +1358,13 @@ Blocks.prototype.processEmptyBlock = function (block, cb) {
 
 
 	return async.applyEachSeries([
-		// function(block, applycb){
-		// 	library.db.query(sql.getBlockId, { id: block.id }).then(function (rows) {
-		//
-		// 		if (rows.length > 0) {
-		// 			return setImmediate(applycb,['Block', block.id, 'already exists'].join(' '));
-		// 		}
-		// 		return setImmediate(applycb);
-		// 	});
-		// },
 		function(block, applycb){
-
 			modules.delegates.validateBlockSlot(block, applycb);
 		},
 		function(block, applycb){
-
 			return __private.saveBlock(block, applycb);
 		},
 		function(block, applycb){
-
 			return modules.rounds.tick(block, applycb);
 		}
 	],
@@ -1396,35 +1379,6 @@ Blocks.prototype.processEmptyBlock = function (block, cb) {
 		}
 	});
 
-
-	// Check if block id is already in the database (very low probability of hash collision).
-	// TODO: In case of hash-collision, to me it would be a special autofork...
-	// DATABASE: read only
-	// library.db.query(sql.getBlockId, { id: block.id }).then(function (rows) {
-	// 	console.log("getBlockId " + block.height);
-	// 	if (rows.length > 0) {
-	// 		return setImmediate(cb, ['Block', block.id, 'already exists'].join(' '));
-	// 	}
-	//
-	// 	// Check if block was generated by the right active delagate. Otherwise, fork 3.
-	// 	// DATABASE: Read only to mem_accounts to extract active delegate list
-	// 	modules.delegates.validateBlockSlot(block, function (err) {
-	// 		if (err) {
-	// 			library.bus.message("fork",block, 3);
-	// 			return setImmediate(cb, err);
-	// 		}
-	//
-	//
-	// 		async.waterfall([
-	// 			function(cb){
-	// 				__private.saveBlock(block, cb);
-	// 			},
-	// 			function(cb){
-	// 				modules.rounds.tick(block, cb);
-	// 			},
-	// 		],cb);
-	// 	});
-	// });
 };
 
 //
@@ -1433,10 +1387,10 @@ Blocks.prototype.processEmptyBlock = function (block, cb) {
 //
 Blocks.prototype.simpleDeleteAfterBlock = function (blockId, cb) {
 	library.db.query(sql.simpleDeleteAfterBlock, {id: blockId}).then(function (res) {
-		return setImmediate(cb, null, res);
+		return cb(null, res);
 	}).catch(function (err) {
 		library.logger.error("stack", err.stack);
-		return setImmediate(cb, 'Blocks#simpleDeleteAfterBlock error');
+		return cb('Blocks#simpleDeleteAfterBlock error');
 	});
 };
 
@@ -1621,14 +1575,14 @@ Blocks.prototype.cleanup = function (cb) {
 	var count = 0;
 
 	if (!__private.noShutdownRequired) {
-		return setImmediate(cb);
+		return cb();
 	} else {
 		setImmediate(function nextWatch () {
 			if (__private.noShutdownRequired || count++ > 10) {
 				library.logger.info('Waiting for block processing to finish...');
 				setTimeout(nextWatch, 1 * 1000);
 			} else {
-				return setImmediate(cb);
+				return cb();
 			}
 		});
 	}
@@ -1639,15 +1593,15 @@ shared.getBlock = function (req, cb) {
 
 	library.schema.validate(req.body, schema.getBlock, function (err) {
 		if (err) {
-			return setImmediate(cb, err[0].message);
+			return cb(err[0].message);
 		}
 
-		library.dbSequence.add(function (cb) {
+		library.dbSequence.add(function (sequenceCb) {
 			__private.getById(req.body.id, function (err, block) {
 				if (!block || err) {
-					return setImmediate(cb, 'Block not found');
+					return sequenceCb('Block not found');
 				}
-				return setImmediate(cb, null, {block: block});
+				return sequenceCb(null, {block: block});
 			});
 		}, cb);
 	});
@@ -1657,15 +1611,15 @@ shared.getBlocks = function (req, cb) {
 
 	library.schema.validate(req.body, schema.getBlocks, function (err) {
 		if (err) {
-			return setImmediate(cb, err[0].message);
+			return cb(err[0].message);
 		}
 
-		library.dbSequence.add(function (cb) {
+		library.dbSequence.add(function (sequenceCb) {
 			__private.list(req.body, function (err, data) {
 				if (err) {
-					return setImmediate(cb, err);
+					return sequenceCb(err);
 				}
-				return setImmediate(cb, null, {blocks: data.blocks, count: data.count});
+				return sequenceCb(null, {blocks: data.blocks, count: data.count});
 			});
 		}, cb);
 	});
@@ -1673,47 +1627,47 @@ shared.getBlocks = function (req, cb) {
 
 shared.getEpoch = function (req, cb) {
 
-	return setImmediate(cb, null, {epoch: constants.epochTime});
+	return cb(null, {epoch: constants.epochTime});
 };
 
 shared.getHeight = function (req, cb) {
 	var block=modules.blockchain.getLastBlock();
 
-	return setImmediate(cb, null, {height: block.height, id:block.id});
+	return cb(null, {height: block.height, id:block.id});
 };
 
 shared.getFee = function (req, cb) {
 
-	return setImmediate(cb, null, {fee: library.logic.block.calculateFee()});
+	return cb(null, {fee: library.logic.block.calculateFee()});
 };
 
 shared.getFees = function (req, cb) {
 
-	return setImmediate(cb, null, {fees: constants.fees});
+	return cb(null, {fees: constants.fees});
 };
 
 shared.getNethash = function (req, cb) {
 
-	return setImmediate(cb, null, {nethash: library.config.nethash});
+	return cb(null, {nethash: library.config.nethash});
 };
 
 shared.getMilestone = function (req, cb) {
-	return setImmediate(cb, null, {milestone: __private.blockReward.calcMilestone(modules.blockchain.getLastBlock().height)});
+	return cb(null, {milestone: __private.blockReward.calcMilestone(modules.blockchain.getLastBlock().height)});
 };
 
 shared.getReward = function (req, cb) {
-	return setImmediate(cb, null, {reward: __private.blockReward.calcReward(modules.blockchain.getLastBlock().height)});
+	return cb(null, {reward: __private.blockReward.calcReward(modules.blockchain.getLastBlock().height)});
 };
 
 shared.getSupply = function (req, cb) {
-	return setImmediate(cb, null, {supply: __private.blockReward.calcSupply(modules.blockchain.getLastBlock().height)});
+	return cb(null, {supply: __private.blockReward.calcSupply(modules.blockchain.getLastBlock().height)});
 };
 
 shared.getStatus = function (req, cb) {
 
 	var block = modules.blockchain.getLastBlock();
 
-	return setImmediate(cb, null, {
+	return cb(null, {
 		epoch:     constants.epochTime,
 		height:    block.height,
 		fee:       library.logic.block.calculateFee(),
