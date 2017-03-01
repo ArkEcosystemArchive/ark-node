@@ -80,7 +80,6 @@ if (program.interactive) {
 var config = {
 	db: appConfig.db,
 	modules: {
-		server: './modules/server.js',
 		accounts: './modules/accounts.js',
 		transactions: './modules/transactions.js',
 		blocks: './modules/blocks.js',
@@ -97,6 +96,12 @@ var config = {
 		nodeManager: './modules/nodeManager.js'
 	}
 };
+
+if(appConfig.modules){
+	for(var name in appConfig.modules){
+		config.modules[name]=appConfig.modules[name];
+	}
+}
 
 var logger = new Logger({ echo: appConfig.consoleLogLevel, errorLevel: appConfig.fileLogLevel, filename: appConfig.logFileName });
 
