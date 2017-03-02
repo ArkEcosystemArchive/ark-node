@@ -41,7 +41,7 @@ function TransactionPool (cb, scope) {
 		}
 	}
 
-	setImmediate(cb, null, self);
+	cb(null, self);
 }
 
 // Public methods
@@ -340,19 +340,19 @@ TransactionPool.prototype.getMempoolSize = function(){
 TransactionPool.prototype.receiveTransactions = function (transactions, cb) {
 
 	var expirationdate=slots.getTime()-__private.mempoolConfig.maximumAgeInMinutes*60;
-	async.eachSeries(transactions, function (transaction, cb) {
+	async.eachSeries(transactions, function (transaction, eachSeriesCb) {
 		var memtx=__private.mempool[transaction.id];
 		if(memtx){
 			if(memtx.error){ // sounds like already rejected.
-				setImmediate(cb, memtx.error);
+				cb(memtx.error);
 			}
 			else{ // already verified
-				setImmediate(cb);
+				return eachSeriesCb();
 			}
 		}
 		else if(transaction.timestamp < expirationdate){ // too old, ignore
 			// ignore
-			setImmediate(cb);
+			return eachSeriesCb();
 		}
 		else {
 			// we add transaction in mempool but still can be a spam.
@@ -360,7 +360,7 @@ TransactionPool.prototype.receiveTransactions = function (transactions, cb) {
 			__private.mempool[transaction.id]=transaction;
 			__private.processVerifyTransaction(transaction, function (err) {
 				if (!err) {
-					return self.queueTransaction(transaction, cb);
+					return self.queueTransaction(transaction, eachSeriesCb);
 				} else {
 					// TODO: do we want to remove from mempool if somebody is spamming?
 					// we delete the tx in 1 min, so max 1 verification per spammy tx
@@ -369,13 +369,13 @@ TransactionPool.prototype.receiveTransactions = function (transactions, cb) {
 					setTimeout(function(){
 						delete __private.mempool[transaction.id];
 					}, 60000);
-					return setImmediate(cb, err, transaction);
+					return eachSeriesCb(err, transaction);
 				}
 			});
 		}
 
 	}, function (err) {
-		return setImmediate(cb, err, transactions);
+		return cb(err, transactions);
 	});
 };
 
@@ -392,19 +392,19 @@ TransactionPool.prototype.queueTransaction = function (transaction, cb) {
 
   if (transaction.type === transactionTypes.MULTI || Array.isArray(transaction.signatures)) {
 		if (self.countMultisignature() >= constants.maxTxsPerQueue) {
-			return setImmediate(cb, 'Multisignature Ttansaction pool is full');
+			return cb('Multisignature Ttansaction pool is full');
 		} else if (!self.multisignature[transaction.id]) {
 			self.multisignature[transaction.id] = transaction;
 		}
 	} else if (!self.queued[transaction.id]){
 		if (self.countQueued() >= constants.maxTxsPerQueue) {
-			return setImmediate(cb, 'Transaction pool is full');
+			return cb('Transaction pool is full');
 		} else {
 			self.queued[transaction.id] = transaction;
 		}
 	}
 
-	return setImmediate(cb);
+	return cb();
 };
 
 //
@@ -438,16 +438,16 @@ TransactionPool.prototype.undoUnconfirmedList = function (keepUnconfirmedTransac
 			modules.transactions.undoUnconfirmed(transaction, function (err) {
 				if (err) {
 					library.logger.error('Failed to undo unconfirmed transaction: ' + transaction.id, err);
-					self.removeUnconfirmedTransaction(transaction.id);
 				}
-				return setImmediate(eachSeriesCb);
+				self.removeUnconfirmedTransaction(transaction.id);
+				return eachSeriesCb(err);
 			});
 		} else {
 			keptIds.push(transaction.id);
-			return setImmediate(eachSeriesCb);
+			return eachSeriesCb();
 		}
 	}, function (err) {
-		return setImmediate(cb, err, removedIds, keptIds);
+		return cb(err, removedIds, keptIds);
 	});
 };
 
@@ -470,7 +470,24 @@ TransactionPool.prototype.expireTransactions = function (cb) {
 			__private.expireTransactions(self.getMultisignatureTransactionList(true, false), ids, seriesCb);
 		}
 	], function (err, ids) {
-		return setImmediate(cb, err, ids);
+		return cb(err, ids);
+	});
+};
+
+
+//
+//__API__ `cleanup`
+
+// This is stategic to keep mem_accounts cleaned
+TransactionPool.prototype.cleanup = function (cb) {
+	self.undoUnconfirmedList([], function(err, removedIds, keptIds){
+		if(err){
+			library.logger.error('Error cleaning TransactionPool', err);
+		}
+		else{
+			library.logger.info('Cleaned TransactionPool. Unconfirmed transations undone: ' + removedIds.length);
+		}
+		return cb();
 	});
 };
 
@@ -483,7 +500,7 @@ TransactionPool.prototype.fillPool = function (cb) {
 	var unconfirmedCount = self.countUnconfirmed();
 
 	if (unconfirmedCount >= constants.maxTxsPerBlock) {
-		return setImmediate(cb);
+		return cb();
 	} else {
 		var spare = 0, spareMulti;
 		var multisignatures;
@@ -556,7 +573,7 @@ __private.getMissingTransactions = function(ids, cb){
 			missingtransactionsids.push(ids[i]);
 		}
 	}
-	setImmediate(cb, null, missingtransactionsids, transactions);
+	cb(null, missingtransactionsids, transactions);
 }
 
 __private.processVerifyTransaction = function (transaction, cb) {
@@ -567,9 +584,9 @@ __private.processVerifyTransaction = function (transaction, cb) {
 		function verifyTransaction (sender, waterCb) {
 			library.logic.transaction.verify(transaction, sender, function (err) {
 				if (err) {
-					return setImmediate(waterCb, err);
+					return waterCb(err);
 				} else {
-					return setImmediate(waterCb, null, sender);
+					return waterCb(null, sender);
 				}
 			});
 		},
@@ -583,21 +600,21 @@ __private.processVerifyTransaction = function (transaction, cb) {
 			if (sender && transaction.requesterPublicKey && multisignatures) {
 				modules.accounts.getAccount({publicKey: transaction.requesterPublicKey}, function (err, requester) {
 					if (!requester) {
-						return setImmediate(waterCb, 'Requester not found');
+						return waterCb('Requester not found');
 					} else {
-						return setImmediate(waterCb, null, sender, requester);
+						return waterCb(null, sender, requester);
 					}
 				});
 			} else {
-				return setImmediate(waterCb, null, sender, null);
+				return waterCb(null, sender, null);
 			}
 		},
 		function processTransaction (sender, requester, waterCb) {
 			library.logic.transaction.process(transaction, sender, requester, function (err) {
 				if (err) {
-					return setImmediate(waterCb, err);
+					return waterCb(err);
 				} else {
-					return setImmediate(waterCb, null, sender);
+					return waterCb(null, sender);
 				}
 			});
 		}
@@ -607,7 +624,7 @@ __private.processVerifyTransaction = function (transaction, cb) {
 			library.bus.message('broadcastTransaction', transaction);
 		}
 
-		return setImmediate(cb, err, sender);
+		return cb(err, sender);
 	});
 };
 
@@ -617,21 +634,21 @@ __private.applyUnconfirmedList = function (transactions, cb) {
 			transaction = self.getUnconfirmedTransaction(transaction);
 		}
 		if (!transaction) {
-			return setImmediate(eachSeriesCb);
+			return eachSeriesCb();
 		}
 
 		__private.processVerifyTransaction(transaction, function (err, sender) {
 			if (err) {
 				library.logger.error('Failed to process / verify unconfirmed transaction: ' + transaction.id, err);
 				self.removeUnconfirmedTransaction(transaction.id);
-				return setImmediate(eachSeriesCb);
+				return eachSeriesCb();
 			}
 			modules.transactions.applyUnconfirmed(transaction, function (err) {
 				if (err) {
 					library.logger.error('Failed to apply unconfirmed transaction: ' + transaction.id, err);
 					self.removeUnconfirmedTransaction(transaction.id);
 				}
-				return setImmediate(eachSeriesCb);
+				return eachSeriesCb();
 			});
 		});
 	}, cb);
@@ -654,7 +671,7 @@ __private.expireTransactions = function (transactions, parentIds, cb) {
 
 	async.eachSeries(transactions, function (transaction, eachSeriesCb) {
 		if (!transaction) {
-			return setImmediate(eachSeriesCb);
+			return eachSeriesCb();
 		}
 
 		var timeNow = new Date();
@@ -665,12 +682,12 @@ __private.expireTransactions = function (transactions, parentIds, cb) {
 			ids.push(transaction.id);
 			self.removeUnconfirmedTransaction(transaction.id);
 			library.logger.info('Expired transaction: ' + transaction.id + ' received at: ' + transaction.receivedAt.toUTCString());
-			return setImmediate(eachSeriesCb);
+			return eachSeriesCb();
 		} else {
-			return setImmediate(eachSeriesCb);
+			return eachSeriesCb();
 		}
 	}, function (err) {
-		return setImmediate(cb, err, ids.concat(parentIds));
+		return cb(err, ids.concat(parentIds));
 	});
 };
 

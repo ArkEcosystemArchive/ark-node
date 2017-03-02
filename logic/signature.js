@@ -46,23 +46,23 @@ Signature.prototype.calculateFee = function (trs) {
 //
 Signature.prototype.verify = function (trs, sender, cb) {
 	if (!trs.asset || !trs.asset.signature) {
-		return setImmediate(cb, 'Invalid transaction asset');
+		return cb('Invalid transaction asset');
 	}
 
 	if (trs.amount !== 0) {
-		return setImmediate(cb, 'Invalid transaction amount');
+		return cb('Invalid transaction amount');
 	}
 
 	try {
 		if (!trs.asset.signature.publicKey || new Buffer(trs.asset.signature.publicKey, 'hex').length !== 33) {
-			return setImmediate(cb, 'Invalid public key');
+			return cb('Invalid public key');
 		}
 	} catch (e) {
 		library.logger.error("stack", e.stack);
-		return setImmediate(cb, 'Invalid public key');
+		return cb('Invalid public key');
 	}
 
-	return setImmediate(cb, null, trs);
+	return cb(null, trs);
 };
 
 //
@@ -70,7 +70,7 @@ Signature.prototype.verify = function (trs, sender, cb) {
 
 //
 Signature.prototype.process = function (trs, sender, cb) {
-	return setImmediate(cb, null, trs);
+	return cb(null, trs);
 };
 
 //
@@ -127,7 +127,7 @@ Signature.prototype.undo = function (trs, block, sender, cb) {
 //
 Signature.prototype.applyUnconfirmed = function (trs, sender, cb) {
 	if (sender.u_secondSignature || sender.secondSignature) {
-		return setImmediate(cb, 'Failed second signature: ' + trs.id);
+		return cb('Failed second signature: ' + trs.id);
 	}
 
 	modules.accounts.setAccountAndGet({address: sender.address, u_secondSignature: 1}, cb);

@@ -82,11 +82,6 @@
                 </a>
               
                 
-                <a class="source" href="server.html">
-                  server.js
-                </a>
-              
-                
                 <a class="source" href="signatures.html">
                   signatures.js
                 </a>
@@ -194,7 +189,7 @@ __private.syncFromNetworkIntervalId = <span class="hljs-literal">null</span>;</p
 
 	__private.genesisBlock = __private.lastBlock = library.genesisblock;
 
-	setImmediate(cb, <span class="hljs-literal">null</span>, self);
+	<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, self);
 }</pre></div></div>
             
         </li>
@@ -269,11 +264,11 @@ __private.syncFromNetworkTrigger = <span class="hljs-function"><span class="hljs
         method: ‘GET’
     }, function (err, res) {
         if (err) {
-            return setImmediate(cb);
+            return cb();
         }</p>
 <pre><code>    library.schema.validate(res.body, schema.loadSignatures, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
         <span class="hljs-keyword">if</span> (err) {
-            <span class="hljs-keyword">return</span> setImmediate(cb);
+            <span class="hljs-keyword">return</span> cb();
         }
 
         library.sequence.add(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">cb</span>) </span>{
@@ -283,7 +278,7 @@ __private.syncFromNetworkTrigger = <span class="hljs-function"><span class="hljs
                         <span class="hljs-attr">signature</span>: s,
                         <span class="hljs-attr">transaction</span>: signature.transaction
                     }, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
-                        <span class="hljs-keyword">return</span> setImmediate(cb);
+                        <span class="hljs-keyword">return</span> cb();
                     });
                 }, cb);
             }, cb);
@@ -301,13 +296,13 @@ __private.loadUnconfirmedTransactions = <span class="hljs-function"><span class=
 		<span class="hljs-attr">method</span>: <span class="hljs-string">'GET'</span>
 	}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, res</span>) </span>{
 		<span class="hljs-keyword">if</span> (err) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, err);
+			<span class="hljs-keyword">return</span> cb(err);
 		}
 
 		<span class="hljs-keyword">var</span> report = library.schema.validate(res.body, schema.loadUnconfirmedTransactions);
 
 		<span class="hljs-keyword">if</span> (!report) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">"Transactions list is not conform"</span>);
+			<span class="hljs-keyword">return</span> cb(<span class="hljs-string">"Transactions list is not conform"</span>);
 		}
 
 		<span class="hljs-keyword">var</span> peer = modules.peers.inspect(res.peer);
@@ -375,9 +370,42 @@ __private.loadBlockChain = <span class="hljs-function"><span class="hljs-keyword
 			library.logger.warn(<span class="hljs-string">'Recreating memory tables'</span>);
 		}
 		load(count);
-	}
+	}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-6">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-6">&#182;</a>
+              </div>
+              <p>Reset unconfirmed columns in mem_accounts</p>
 
-	library.db.query(sql.countBlocks).then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">rows</span>)</span>{
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	library.db.none(sql.updateMemAccounts);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-7">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-7">&#182;</a>
+              </div>
+              <p>Count the number of blocks in database. Start build if only 1.
+Otherwise try to get some blocks from</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	library.db.query(sql.countBlocks).then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">rows</span>)</span>{
 
 		<span class="hljs-keyword">if</span>(rows[<span class="hljs-number">0</span>].count == <span class="hljs-number">1</span>){
 			load(rows[<span class="hljs-number">0</span>].count);
@@ -397,13 +425,13 @@ __private.loadBlockChain = <span class="hljs-function"><span class="hljs-keyword
         </li>
         
         
-        <li id="section-6">
+        <li id="section-8">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-6">&#182;</a>
+                <a class="pilcrow" href="#section-8">&#182;</a>
               </div>
               <p>function checkMemTables (t) {
     var promises = [
@@ -500,13 +528,13 @@ __private.shuffle = <span class="hljs-function"><span class="hljs-keyword">funct
         </li>
         
         
-        <li id="section-7">
+        <li id="section-9">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-7">&#182;</a>
+                <a class="pilcrow" href="#section-9">&#182;</a>
               </div>
               <p>While there remain elements to shuffle…</p>
 
@@ -517,13 +545,13 @@ __private.shuffle = <span class="hljs-function"><span class="hljs-keyword">funct
         </li>
         
         
-        <li id="section-8">
+        <li id="section-10">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-8">&#182;</a>
+                <a class="pilcrow" href="#section-10">&#182;</a>
               </div>
               <p>Pick a remaining element…</p>
 
@@ -535,13 +563,13 @@ __private.shuffle = <span class="hljs-function"><span class="hljs-keyword">funct
         </li>
         
         
-        <li id="section-9">
+        <li id="section-11">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-9">&#182;</a>
+                <a class="pilcrow" href="#section-11">&#182;</a>
               </div>
               <p>And swap it with the current element.</p>
 
@@ -561,13 +589,13 @@ __private.loadBlocksFromNetwork = <span class="hljs-function"><span class="hljs-
         </li>
         
         
-        <li id="section-10">
+        <li id="section-12">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-10">&#182;</a>
+                <a class="pilcrow" href="#section-12">&#182;</a>
               </div>
               <p>var loaded = false;</p>
 
@@ -588,13 +616,13 @@ __private.loadBlocksFromNetwork = <span class="hljs-function"><span class="hljs-
         </li>
         
         
-        <li id="section-11">
+        <li id="section-13">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-11">&#182;</a>
+                <a class="pilcrow" href="#section-13">&#182;</a>
               </div>
               <p>TODO: tryCount is accounting for 2 use cases :</p>
 <ul>
@@ -611,13 +639,13 @@ should be separated because the strategies are different.</li>
         </li>
         
         
-        <li id="section-12">
+        <li id="section-14">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-12">&#182;</a>
+                <a class="pilcrow" href="#section-14">&#182;</a>
               </div>
               <p>return !loaded &amp;&amp; (tryCount &lt; 5) &amp;&amp; (peers.length &gt; tryCount);</p>
 
@@ -680,9 +708,9 @@ should be separated because the strategies are different.</li>
 		<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 			<span class="hljs-keyword">if</span> (err) {
 				library.logger.error(<span class="hljs-string">'Failed to load blocks from network'</span>, err);
-				<span class="hljs-keyword">return</span> setImmediate(cb, err);
+				<span class="hljs-keyword">return</span> cb(err);
 			} <span class="hljs-keyword">else</span> {
-				<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, __private.lastBlock);
+				<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, __private.lastBlock);
 			}
 		}
 	);</pre></div></div>
@@ -690,13 +718,13 @@ should be separated because the strategies are different.</li>
         </li>
         
         
-        <li id="section-13">
+        <li id="section-15">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-13">&#182;</a>
+                <a class="pilcrow" href="#section-15">&#182;</a>
               </div>
               <p>async.whilst(
     function () {
@@ -711,12 +739,12 @@ should be separated because the strategies are different.</li>
             <span class="hljs-keyword">if</span> (err) {
                 library.logger.error(err.toString());
                 errorCount += <span class="hljs-number">1</span>;
-                <span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Unable to load blocks from '</span> + peer.string);
+                <span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Unable to load blocks from '</span> + peer.string);
             }
             loaded = (lastValidBlock.height == modules.blocks.getLastBlock().height) || (lastValidBlock.id == __private.lastBlock.id);
             __private.lastBlock = lastValidBlock;
             lastValidBlock = <span class="hljs-literal">null</span>;
-            <span class="hljs-keyword">return</span> setImmediate(cb);
+            <span class="hljs-keyword">return</span> cb();
         });
     }
     <span class="hljs-comment">// we make sure we are on same chain</span>
@@ -730,10 +758,10 @@ should be separated because the strategies are different.</li>
                     library.logger.error(err.toString());
                 }
                 modules.peers.remove(peer.ip, peer.port);
-                <span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">"Detected forked chain, no common block with: "</span> + peer.string);
+                <span class="hljs-keyword">return</span> cb(<span class="hljs-string">"Detected forked chain, no common block with: "</span> + peer.string);
             } <span class="hljs-keyword">else</span> {
                 library.logger.info([<span class="hljs-string">'Found common block:'</span>, commonBlock.id, <span class="hljs-string">'with:'</span>, peer.string].join(<span class="hljs-string">' '</span>));
-                <span class="hljs-keyword">return</span> setImmediate(cb);
+                <span class="hljs-keyword">return</span> cb();
             }
         });
     }
@@ -757,9 +785,9 @@ should be separated because the strategies are different.</li>
 <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
     <span class="hljs-keyword">if</span> (err) {
         library.logger.error(<span class="hljs-string">'Failed to load blocks from network'</span>, err);
-        <span class="hljs-keyword">return</span> setImmediate(cb, err);
+        <span class="hljs-keyword">return</span> cb(err);
     } <span class="hljs-keyword">else</span> {
-        <span class="hljs-keyword">return</span> setImmediate(cb);
+        <span class="hljs-keyword">return</span> cb();
     }
 }
 </code></pre><p>);</p>
@@ -771,7 +799,7 @@ should be separated because the strategies are different.</li>
 __private.syncFromNetwork = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">cb</span>) </span>{
 	<span class="hljs-keyword">if</span>(self.syncing()){
 		library.logger.info(<span class="hljs-string">'Already syncing'</span>);
-		<span class="hljs-keyword">return</span> setImmediate(cb);
+		<span class="hljs-keyword">return</span> cb();
 	}
 	library.logger.debug(<span class="hljs-string">'Starting sync'</span>);
 	__private.syncFromNetworkTrigger(<span class="hljs-literal">true</span>);
@@ -793,20 +821,20 @@ __private.syncFromNetwork = <span class="hljs-function"><span class="hljs-keywor
 		__private.blocksToSync = <span class="hljs-number">0</span>;
 
 		library.logger.debug(<span class="hljs-string">'Finished sync'</span>);
-		<span class="hljs-keyword">return</span> setImmediate(cb, err);
+		<span class="hljs-keyword">return</span> cb(err);
 	});
 };</pre></div></div>
             
         </li>
         
         
-        <li id="section-14">
+        <li id="section-16">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-14">&#182;</a>
+                <a class="pilcrow" href="#section-16">&#182;</a>
               </div>
               <p>Given a list of peers with associated blockchain height (heights = {peer: peer, height: height}), we find a list of good peers (likely to sync with), then perform a histogram cut, removing peers far from the most common observed height. This is not as easy as it sounds, since the histogram has likely been made accross several blocks, therefore need to aggregate).</p>
 
@@ -817,13 +845,13 @@ __private.syncFromNetwork = <span class="hljs-function"><span class="hljs-keywor
         </li>
         
         
-        <li id="section-15">
+        <li id="section-17">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-15">&#182;</a>
+                <a class="pilcrow" href="#section-17">&#182;</a>
               </div>
               <p>Removing unreachable peers</p>
 
@@ -836,13 +864,13 @@ __private.syncFromNetwork = <span class="hljs-function"><span class="hljs-keywor
         </li>
         
         
-        <li id="section-16">
+        <li id="section-18">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-16">&#182;</a>
+                <a class="pilcrow" href="#section-18">&#182;</a>
               </div>
               <p>Ordering the peers with descending height</p>
 
@@ -859,13 +887,13 @@ __private.syncFromNetwork = <span class="hljs-function"><span class="hljs-keywor
         </li>
         
         
-        <li id="section-17">
+        <li id="section-19">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-17">&#182;</a>
+                <a class="pilcrow" href="#section-19">&#182;</a>
               </div>
               <p>Aggregating height by 2. TODO: To be changed if node latency increases?</p>
 
@@ -876,13 +904,13 @@ __private.syncFromNetwork = <span class="hljs-function"><span class="hljs-keywor
         </li>
         
         
-        <li id="section-18">
+        <li id="section-20">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-18">&#182;</a>
+                <a class="pilcrow" href="#section-20">&#182;</a>
               </div>
               <p>Histogram calculation, together with histogram maximum</p>
 
@@ -901,13 +929,13 @@ __private.syncFromNetwork = <span class="hljs-function"><span class="hljs-keywor
         </li>
         
         
-        <li id="section-19">
+        <li id="section-21">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-19">&#182;</a>
+                <a class="pilcrow" href="#section-21">&#182;</a>
               </div>
               <p>Performing histogram cut of peers too far from histogram maximum
 TODO: to fine tune</p>
@@ -928,50 +956,17 @@ TODO: to fine tune</p>
         </li>
         
         
-        <li id="section-20">
-          
-            <div class="fullblock">
-          
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-20">&#182;</a>
-              </div>
-              <p>Public methods</p>
-
-            </div>
-            
-        </li>
-        
-        
-        <li id="section-21">
-          
-            <div class="fullblock">
-          
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-21">&#182;</a>
-              </div>
-              <p><strong>API</strong> <code>triggerBlockRemoval</code></p>
-
-            </div>
-            
-        </li>
-        
-        
         <li id="section-22">
           
-            <div class="annotation">
+            <div class="fullblock">
           
               
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-22">&#182;</a>
               </div>
-              
+              <p>Public methods</p>
+
             </div>
-            
-            <div class="content"><div class='highlight'><pre>Loader.prototype.triggerBlockRemoval = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">number</span>)</span>{
-	__private.forceRemoveBlocks = number;
-};</pre></div></div>
             
         </li>
         
@@ -984,8 +979,7 @@ TODO: to fine tune</p>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-23">&#182;</a>
               </div>
-              <p>get the smallest block timestamp at the higjest height from network</p>
-<p><strong>API</strong> <code>getNetworkSmallestBlock</code></p>
+              <p><strong>API</strong> <code>triggerBlockRemoval</code></p>
 
             </div>
             
@@ -999,6 +993,40 @@ TODO: to fine tune</p>
               
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-24">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Loader.prototype.triggerBlockRemoval = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">number</span>)</span>{
+	__private.forceRemoveBlocks = number;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-25">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-25">&#182;</a>
+              </div>
+              <p>get the smallest block timestamp at the higjest height from network</p>
+<p><strong>API</strong> <code>getNetworkSmallestBlock</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-26">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-26">&#182;</a>
               </div>
               
             </div>
@@ -1024,13 +1052,13 @@ TODO: to fine tune</p>
         </li>
         
         
-        <li id="section-25">
+        <li id="section-27">
           
             <div class="fullblock">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-25">&#182;</a>
+                <a class="pilcrow" href="#section-27">&#182;</a>
               </div>
               <p>Rationale:</p>
 <ul>
@@ -1045,13 +1073,13 @@ TODO: to fine tune</p>
         </li>
         
         
-        <li id="section-26">
+        <li id="section-28">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-26">&#182;</a>
+                <a class="pilcrow" href="#section-28">&#182;</a>
               </div>
               
             </div>
@@ -1061,13 +1089,13 @@ TODO: to fine tune</p>
         </li>
         
         
-        <li id="section-27">
+        <li id="section-29">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-27">&#182;</a>
+                <a class="pilcrow" href="#section-29">&#182;</a>
               </div>
               <p>If <strong>private.network.height is not so far (i.e. 1 round) from current node height, just return cached </strong>private.network.
 If node is forging, do it more often (every block?)</p>
@@ -1083,13 +1111,13 @@ If node is forging, do it more often (every block?)</p>
         </li>
         
         
-        <li id="section-28">
+        <li id="section-30">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-28">&#182;</a>
+                <a class="pilcrow" href="#section-30">&#182;</a>
               </div>
               <p>Fetch a list of 100 random peers
 modules.peers.list({limit:100}, function (err, peers) {</p>
@@ -1120,13 +1148,13 @@ modules.peers.list({limit:100}, function (err, peers) {</p>
         </li>
         
         
-        <li id="section-29">
+        <li id="section-31">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-29">&#182;</a>
+                <a class="pilcrow" href="#section-31">&#182;</a>
               </div>
               <p>Validate each peer and then attempt to get its height</p>
 
@@ -1155,13 +1183,13 @@ modules.peers.list({limit:100}, function (err, peers) {</p>
         </li>
         
         
-        <li id="section-30">
+        <li id="section-32">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-30">&#182;</a>
+                <a class="pilcrow" href="#section-32">&#182;</a>
               </div>
               <p>TODO: also check that the delegate was legit to forge the block ?
 likely too much work since in the end we use only a few peers of the list
@@ -1212,13 +1240,13 @@ or maybe only the ones claiming height &gt; current node height</p>
         </li>
         
         
-        <li id="section-31">
+        <li id="section-33">
           
             <div class="fullblock">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-31">&#182;</a>
+                <a class="pilcrow" href="#section-33">&#182;</a>
               </div>
               <p><strong>API</strong> <code>syncing</code></p>
 
@@ -1227,13 +1255,13 @@ or maybe only the ones claiming height &gt; current node height</p>
         </li>
         
         
-        <li id="section-32">
+        <li id="section-34">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-32">&#182;</a>
+                <a class="pilcrow" href="#section-34">&#182;</a>
               </div>
               
             </div>
@@ -1245,71 +1273,32 @@ or maybe only the ones claiming height &gt; current node height</p>
         </li>
         
         
-        <li id="section-33">
-          
-            <div class="fullblock">
-          
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-33">&#182;</a>
-              </div>
-              <p>Events</p>
-
-            </div>
-            
-        </li>
-        
-        
-        <li id="section-34">
-          
-            <div class="fullblock">
-          
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-34">&#182;</a>
-              </div>
-              <p>The state of blockchain is unclear.</p>
-<p><strong>EVENT</strong> <code>onPeersReady</code></p>
-
-            </div>
-            
-        </li>
-        
-        
         <li id="section-35">
           
-            <div class="annotation">
+            <div class="fullblock">
           
               
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-35">&#182;</a>
               </div>
-              
+              <p>#Events</p>
+
             </div>
-            
-            <div class="content"><div class='highlight'><pre>Loader.prototype.onPeersReady = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{</pre></div></div>
             
         </li>
         
         
         <li id="section-36">
           
-            <div class="annotation">
+            <div class="fullblock">
           
               
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-36">&#182;</a>
               </div>
-              <p>Main loop to observe network state (peers, height, forks etc…)
-And strategy to sync to winning chain</p>
+              <p><strong>EVENT</strong> <code>onBind</code></p>
 
             </div>
-            
-            <div class="content"><div class='highlight'><pre>	setImmediate(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">listenToNetwork</span>(<span class="hljs-params"></span>)</span>{
-		<span class="hljs-keyword">if</span>(self.syncing()){
-			setTimeout(listenToNetwork, <span class="hljs-number">1000</span>);
-			<span class="hljs-keyword">return</span>;
-		}</pre></div></div>
             
         </li>
         
@@ -1322,37 +1311,27 @@ And strategy to sync to winning chain</p>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-37">&#182;</a>
               </div>
-              <p>Active delegate: poll every 30s
-Standby delegate: poll every 2min
-Not active delegate: poll every 5min
-Maybe special for forging standBy delegates?</p>
-
+              
             </div>
             
-            <div class="content"><div class='highlight'><pre>		<span class="hljs-keyword">var</span> timeout = <span class="hljs-number">300000</span>;
-
-		<span class="hljs-keyword">if</span>(modules.delegates.isActiveDelegate()){
-			timeout = <span class="hljs-number">30000</span>;
-		}</pre></div></div>
+            <div class="content"><div class='highlight'><pre>Loader.prototype.onBind = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">scope</span>) </span>{
+	modules = scope;
+};</pre></div></div>
             
         </li>
         
         
         <li id="section-38">
           
-            <div class="annotation">
+            <div class="fullblock">
           
               
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-38">&#182;</a>
               </div>
-              <p>here, this means standBy delegate ready to forge</p>
+              <p><strong>EVENT</strong> <code>onLoadDatabase</code></p>
 
             </div>
-            
-            <div class="content"><div class='highlight'><pre>		<span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span>(modules.delegates.isForging()){
-			timeout = <span class="hljs-number">120000</span>;
-		}</pre></div></div>
             
         </li>
         
@@ -1365,28 +1344,27 @@ Maybe special for forging standBy delegates?</p>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-39">&#182;</a>
               </div>
-              <p>try to connect to timed out peers and include them in peers if successful</p>
-
+              
             </div>
             
-            <div class="content"><div class='highlight'><pre>		modules.peers.releaseTimeoutPeers();</pre></div></div>
+            <div class="content"><div class='highlight'><pre>Loader.prototype.onLoadDatabase = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
+	__private.loadBlockChain();
+};</pre></div></div>
             
         </li>
         
         
         <li id="section-40">
           
-            <div class="annotation">
+            <div class="fullblock">
           
               
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-40">&#182;</a>
               </div>
-              <p>Triggers a network poll and then comparing to the node state decide if a rebuild should be done.</p>
+              <p><strong>EVENT</strong> <code>onObserveNetwork</code></p>
 
             </div>
-            
-            <div class="content"><div class='highlight'><pre>		self.getNetwork(<span class="hljs-literal">true</span>,<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">err, network</span>)</span>{</pre></div></div>
             
         </li>
         
@@ -1398,418 +1376,6 @@ Maybe special for forging standBy delegates?</p>
               
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-41">&#182;</a>
-              </div>
-              <p>If node is an active delegate we should not be too far from network height, otherwise node might fork for missing consensus.</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>			<span class="hljs-keyword">var</span> distance = modules.delegates.isActiveDelegate() ? <span class="hljs-number">5</span> : <span class="hljs-number">60</span>;</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-42">
-          
-            <div class="annotation">
-          
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-42">&#182;</a>
-              </div>
-              <p>If node is an active delegate, might be locked in a small fork, unloading only a few blocks.</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>			<span class="hljs-keyword">var</span> blocksToRemove = modules.delegates.isActiveDelegate() ? <span class="hljs-number">3</span> : <span class="hljs-number">50</span>;</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-43">
-          
-            <div class="annotation">
-          
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-43">&#182;</a>
-              </div>
-              <p>If node is far from observed network height, try some small rebuild</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>			<span class="hljs-keyword">if</span>(modules.blocks.getLastBlock().height &gt; <span class="hljs-number">1</span> &amp;&amp; __private.blockchainReady &amp;&amp; (__private.network.height - modules.blocks.getLastBlock().height &gt; distance)){
-				library.logger.info(<span class="hljs-string">'Late on blockchain height, unloading some blocks to restart synchronisation...'</span>);
-				self.triggerBlockRemoval(blocksToRemove);
-			}
-			setTimeout(listenToNetwork, timeout);
-		});
-	});
-
-
-	setImmediate(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">nextLoadBlock</span> (<span class="hljs-params"></span>) </span>{
-		<span class="hljs-keyword">if</span>(!__private.blockchainReady || self.syncing()){
-			<span class="hljs-keyword">return</span> setTimeout(nextLoadBlock, <span class="hljs-number">1000</span>);
-		}
-
-		<span class="hljs-keyword">if</span>(__private.forceRemoveBlocks){
-			library.logger.info(<span class="hljs-string">'# Triggered block removal... '</span>);
-			modules.blocks.removeSomeBlocks(__private.forceRemoveBlocks, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">err, removedBlocks</span>)</span>{
-				__private.forceRemoveBlocks=<span class="hljs-number">0</span>;
-				library.logger.info(<span class="hljs-string">"1. Removing several blocks to restart synchronisation... Finished"</span>);
-				library.logger.info(<span class="hljs-string">"2. Downloading blocks from network..."</span>);</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-44">
-          
-            <div class="annotation">
-          
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-44">&#182;</a>
-              </div>
-              <p>Update blockchain from network</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>				__private.syncFromNetwork(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">err</span>)</span>{
-					<span class="hljs-keyword">if</span>(err){
-						library.logger.error(<span class="hljs-string">"Could not download all blocks from network"</span>, err);
-					}
-					library.logger.info(<span class="hljs-string">"2. Downloading blocks from network... Finished"</span>);
-					library.logger.info(<span class="hljs-string">'# Triggered block removal... Finished'</span>);
-					setTimeout(nextLoadBlock, <span class="hljs-number">10000</span>);
-				});
-			});
-		}
-		<span class="hljs-keyword">else</span>{
-			<span class="hljs-keyword">var</span> lastReceipt = modules.blocks.lastReceipt();</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-45">
-          
-            <div class="annotation">
-          
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-45">&#182;</a>
-              </div>
-              <p>if we have not received a block for a long time, we think about rebuilding</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>			<span class="hljs-keyword">if</span>(lastReceipt.rebuild){
-				library.logger.info(<span class="hljs-string">'# Synchronising with network...'</span>);
-				library.logger.info(<span class="hljs-string">'Looks like the node has not received a valid block for too long, assessing if a rebuild should be done...'</span>);
-				library.logger.info(<span class="hljs-string">'1. polling network...'</span>);
-				self.getNetwork(<span class="hljs-literal">true</span>,<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">err, network</span>)</span>{
-					library.logger.info(<span class="hljs-string">'1. polling network... Finished'</span>);
-
-					<span class="hljs-keyword">var</span> distance = modules.delegates.isForging() ? <span class="hljs-number">20</span> : <span class="hljs-number">50</span>;
-					<span class="hljs-keyword">if</span>(modules.delegates.isActiveDelegate()){
-						distance = <span class="hljs-number">10</span>;
-					}</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-46">
-          
-            <div class="annotation">
-          
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-46">&#182;</a>
-              </div>
-              <p>The more we wait without block, the more likely we will rebuild</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>					distance = distance - (lastReceipt.secondsAgo/<span class="hljs-number">20</span>);</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-47">
-          
-            <div class="annotation">
-          
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-47">&#182;</a>
-              </div>
-              <p>If we are far behind from observed network height, rebuild</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>					<span class="hljs-keyword">if</span>(__private.network.height - modules.blocks.getLastBlock().height &gt; distance){
-						library.logger.info(<span class="hljs-string">'Node too behind from network height, rebuild triggered'</span>, {<span class="hljs-attr">networkHeight</span>: __private.network.height, <span class="hljs-attr">nodeHeight</span>: modules.blocks.getLastBlock().height});
-						library.logger.info(<span class="hljs-string">'2. Removing several blocks to restart synchronisation...'</span>);
-						<span class="hljs-keyword">var</span> blocksToRemove=<span class="hljs-number">10</span>;
-						modules.blocks.removeSomeBlocks(blocksToRemove, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">err, removedBlocks</span>)</span>{
-							library.logger.info(<span class="hljs-string">"2. Removing several blocks to restart synchronisation... Finished"</span>);
-							library.logger.info(<span class="hljs-string">"3. Downloading blocks from network..."</span>);</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-48">
-          
-            <div class="annotation">
-          
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-48">&#182;</a>
-              </div>
-              <p>Update blockchain from network</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>							__private.syncFromNetwork(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">err</span>)</span>{
-								<span class="hljs-keyword">if</span>(err){
-									library.logger.error(<span class="hljs-string">"Could not download all blocks from network"</span>, err);
-								}
-								library.logger.info(<span class="hljs-string">"3. Downloading blocks from network... Finished"</span>);
-								library.logger.info(<span class="hljs-string">'# Synchronising with network... Finished'</span>);
-								setTimeout(nextLoadBlock, <span class="hljs-number">10000</span>);
-							});
-						});
-					}
-					<span class="hljs-keyword">else</span> <span class="hljs-comment">//If we are far front from observed (majority) network height, rebuild harder</span>
-					<span class="hljs-keyword">if</span>(modules.blocks.getLastBlock().height - __private.network.height &gt; <span class="hljs-number">1</span>){
-						library.logger.info(<span class="hljs-string">'Node too front from network majority height, rebuild triggered'</span>, {<span class="hljs-attr">networkHeight</span>: __private.network.height, <span class="hljs-attr">nodeHeight</span>: modules.blocks.getLastBlock().height});
-						library.logger.info(<span class="hljs-string">'2. Removing several blocks to restart synchronisation...'</span>);
-						<span class="hljs-keyword">var</span> blocksToRemove=(modules.blocks.getLastBlock().height - __private.network.height)*<span class="hljs-number">10</span>;
-						modules.blocks.removeSomeBlocks(blocksToRemove, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">err, removedBlocks</span>)</span>{
-							library.logger.info(<span class="hljs-string">"2. Removing several blocks to restart synchronisation... Finished"</span>);
-							library.logger.info(<span class="hljs-string">"3. Downloading blocks from network..."</span>);</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-49">
-          
-            <div class="annotation">
-          
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-49">&#182;</a>
-              </div>
-              <p>Update blockchain from network</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>							__private.syncFromNetwork(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">err</span>)</span>{
-								<span class="hljs-keyword">if</span>(err){
-									library.logger.error(<span class="hljs-string">"Could not download all blocks from network"</span>, err);
-								}
-								library.logger.info(<span class="hljs-string">"3. Downloading blocks from network... Finished"</span>);
-								library.logger.info(<span class="hljs-string">'# Synchronising with network... Finished'</span>);
-								setTimeout(nextLoadBlock, <span class="hljs-number">10000</span>);
-							});
-						});
-					}
-					<span class="hljs-keyword">else</span> {
-						library.logger.info(<span class="hljs-string">'Node in sync with network, likely some active delegates are missing blocks, rebuild NOT triggered'</span>, {<span class="hljs-attr">networkHeight</span>: __private.network.height, <span class="hljs-attr">nodeHeight</span>: modules.blocks.getLastBlock().height});
-						__private.syncFromNetwork(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
-							<span class="hljs-keyword">if</span> (err) {
-								library.logger.warn(<span class="hljs-string">'Failed to sync from network'</span>, err);
-							}
-							library.logger.info(<span class="hljs-string">'# Synchronising with network... Finished'</span>);
-							setTimeout(nextLoadBlock, <span class="hljs-number">10000</span>);
-						});
-					}
-				});
-			}</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-50">
-          
-            <div class="annotation">
-          
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-50">&#182;</a>
-              </div>
-              <p>we have received a block but it sounds we did get any for over a blocktime, so we try to poll the network to find some</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>			<span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span>(lastReceipt.stale) {
-				library.logger.info(<span class="hljs-string">'# Synchronising with network...'</span>);
-				library.logger.info(<span class="hljs-string">'Not received blocks for over a blocktime'</span>);
-				__private.syncFromNetwork(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
-					<span class="hljs-keyword">if</span> (err) {
-						library.logger.warn(<span class="hljs-string">'Failed to sync from network'</span>, err);
-					}
-					library.logger.info(<span class="hljs-string">'# Synchronising with network... Finished'</span>);
-					setTimeout(nextLoadBlock, modules.delegates.isActiveDelegate()?<span class="hljs-number">500</span>:<span class="hljs-number">10000</span>);
-				});
-			}</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-51">
-          
-            <div class="annotation">
-          
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-51">&#182;</a>
-              </div>
-              <p>all clear last block was recent enough.</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>			<span class="hljs-keyword">else</span> {
-				setTimeout(nextLoadBlock, <span class="hljs-number">10000</span>);
-			}
-		}
-	});
-
-	setImmediate(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">nextLoadUnconfirmedTransactions</span> (<span class="hljs-params"></span>) </span>{
-		<span class="hljs-keyword">if</span> (__private.blockchainReady &amp;&amp; !self.syncing()) {
-			library.logger.info(<span class="hljs-string">'# Loading unconfirmed transactions...'</span>);
-			__private.loadUnconfirmedTransactions(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
-				<span class="hljs-keyword">if</span> (err) {
-					library.logger.debug(<span class="hljs-string">'Unconfirmed transactions timer'</span>, err);
-				}
-				library.logger.info(<span class="hljs-string">'# Loading unconfirmed transactions... Finished'</span>);
-
-				setTimeout(nextLoadUnconfirmedTransactions, <span class="hljs-number">30000</span>);
-			});
-		} <span class="hljs-keyword">else</span> {
-			setTimeout(nextLoadUnconfirmedTransactions, <span class="hljs-number">30000</span>);
-		}
-	});</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-52">
-          
-            <div class="annotation">
-          
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-52">&#182;</a>
-              </div>
-              <p>setImmediate(function nextLoadSignatures () {
-    if (<strong>private.blockchainReady &amp;&amp; !self.syncing()) {
-        library.logger.debug(‘Loading signatures’);
-        </strong>private.loadSignatures(function (err) {
-            if (err) {
-                library.logger.warn(‘Signatures timer’, err);
-            }</p>
-<pre><code>        setTimeout(nextLoadSignatures, <span class="hljs-number">14000</span>);
-    });
-} <span class="hljs-keyword">else</span> {
-    setTimeout(nextLoadSignatures, <span class="hljs-number">14000</span>);
-}
-</code></pre><p>});</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>};</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-53">
-          
-            <div class="fullblock">
-          
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-53">&#182;</a>
-              </div>
-              <p>started up</p>
-<p><strong>EVENT</strong> <code>onBind</code></p>
-
-            </div>
-            
-        </li>
-        
-        
-        <li id="section-54">
-          
-            <div class="annotation">
-          
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-54">&#182;</a>
-              </div>
-              
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>Loader.prototype.onBind = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">scope</span>) </span>{
-	modules = scope;
-};</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-55">
-          
-            <div class="fullblock">
-          
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-55">&#182;</a>
-              </div>
-              <p><strong>EVENT</strong> <code>onLoadDatabase</code></p>
-
-            </div>
-            
-        </li>
-        
-        
-        <li id="section-56">
-          
-            <div class="annotation">
-          
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-56">&#182;</a>
-              </div>
-              
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>Loader.prototype.onLoadDatabase = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
-	__private.loadBlockChain();
-};</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-57">
-          
-            <div class="fullblock">
-          
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-57">&#182;</a>
-              </div>
-              <p><strong>EVENT</strong> <code>onObserveNetwork</code></p>
-
-            </div>
-            
-        </li>
-        
-        
-        <li id="section-58">
-          
-            <div class="annotation">
-          
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-58">&#182;</a>
               </div>
               
             </div>
@@ -1823,13 +1389,13 @@ Maybe special for forging standBy delegates?</p>
         </li>
         
         
-        <li id="section-59">
+        <li id="section-42">
           
             <div class="fullblock">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-59">&#182;</a>
+                <a class="pilcrow" href="#section-42">&#182;</a>
               </div>
               <p><strong>EVENT</strong> <code>onAttachPublicApi</code></p>
 
@@ -1838,13 +1404,13 @@ Maybe special for forging standBy delegates?</p>
         </li>
         
         
-        <li id="section-60">
+        <li id="section-43">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-60">&#182;</a>
+                <a class="pilcrow" href="#section-43">&#182;</a>
               </div>
               
             </div>
@@ -1856,13 +1422,13 @@ Maybe special for forging standBy delegates?</p>
         </li>
         
         
-        <li id="section-61">
+        <li id="section-44">
           
             <div class="fullblock">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-61">&#182;</a>
+                <a class="pilcrow" href="#section-44">&#182;</a>
               </div>
               <p>Blockchain loaded from database and ready to accept blocks from network</p>
 <p><strong>EVENT</strong> <code>onDownloadBlocks</code></p>
@@ -1872,13 +1438,13 @@ Maybe special for forging standBy delegates?</p>
         </li>
         
         
-        <li id="section-62">
+        <li id="section-45">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-62">&#182;</a>
+                <a class="pilcrow" href="#section-45">&#182;</a>
               </div>
               
             </div>
@@ -1891,13 +1457,13 @@ Maybe special for forging standBy delegates?</p>
         </li>
         
         
-        <li id="section-63">
+        <li id="section-46">
           
             <div class="fullblock">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-63">&#182;</a>
+                <a class="pilcrow" href="#section-46">&#182;</a>
               </div>
               <p>Shutdown asked.</p>
 <p><strong>API</strong> <code>cleanup</code></p>
@@ -1907,27 +1473,27 @@ Maybe special for forging standBy delegates?</p>
         </li>
         
         
-        <li id="section-64">
+        <li id="section-47">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-64">&#182;</a>
+                <a class="pilcrow" href="#section-47">&#182;</a>
               </div>
               
             </div>
             
             <div class="content"><div class='highlight'><pre>Loader.prototype.cleanup = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">cb</span>) </span>{
 	<span class="hljs-keyword">if</span> (!__private.noShutdownRequired) {
-		<span class="hljs-keyword">return</span> setImmediate(cb);
+		<span class="hljs-keyword">return</span> cb();
 	} <span class="hljs-keyword">else</span> {
 		setImmediate(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">nextWatch</span> (<span class="hljs-params"></span>) </span>{
 			<span class="hljs-keyword">if</span> (__private.noShutdownRequired) {
 				library.logger.info(<span class="hljs-string">'Waiting for network synchronisation to finish...'</span>);
 				setTimeout(nextWatch, <span class="hljs-number">1</span> * <span class="hljs-number">1000</span>);
 			} <span class="hljs-keyword">else</span> {
-				<span class="hljs-keyword">return</span> setImmediate(cb);
+				<span class="hljs-keyword">return</span> cb();
 			}
 		});
 	}
@@ -1936,13 +1502,13 @@ Maybe special for forging standBy delegates?</p>
         </li>
         
         
-        <li id="section-65">
+        <li id="section-48">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-65">&#182;</a>
+                <a class="pilcrow" href="#section-48">&#182;</a>
               </div>
               <p>Private</p>
 
@@ -1952,29 +1518,29 @@ Maybe special for forging standBy delegates?</p>
 	<span class="hljs-keyword">var</span> lastBlock = modules.blocks.getLastBlock();
 
 	<span class="hljs-keyword">if</span> (lastBlock &amp;&amp; lastBlock.fresh) {
-		<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-number">200</span>, {<span class="hljs-attr">success</span>: <span class="hljs-literal">true</span>});
+		<span class="hljs-keyword">return</span> cb(<span class="hljs-number">200</span>, {<span class="hljs-attr">success</span>: <span class="hljs-literal">true</span>});
 	} <span class="hljs-keyword">else</span> {
-		<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-number">503</span>, {<span class="hljs-attr">success</span>: <span class="hljs-literal">false</span>});
+		<span class="hljs-keyword">return</span> cb(<span class="hljs-number">503</span>, {<span class="hljs-attr">success</span>: <span class="hljs-literal">false</span>});
 	}
 };</pre></div></div>
             
         </li>
         
         
-        <li id="section-66">
+        <li id="section-49">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-66">&#182;</a>
+                <a class="pilcrow" href="#section-49">&#182;</a>
               </div>
               <p>Shared</p>
 
             </div>
             
             <div class="content"><div class='highlight'><pre>shared.status = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">req, cb</span>) </span>{
-	<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, {
+	<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, {
 		<span class="hljs-attr">loaded</span>: __private.blockchainReady,
 		<span class="hljs-attr">now</span>: __private.lastBlock.height,
 		<span class="hljs-attr">blocksCount</span>: __private.total
@@ -1982,7 +1548,7 @@ Maybe special for forging standBy delegates?</p>
 };
 
 shared.sync = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">req, cb</span>) </span>{
-	<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, {
+	<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, {
 		<span class="hljs-attr">syncing</span>: self.syncing(),
 		<span class="hljs-attr">blocks</span>: __private.blocksToSync,
 		<span class="hljs-attr">height</span>: modules.blocks.getLastBlock().height,
@@ -1993,13 +1559,13 @@ shared.sync = <span class="hljs-function"><span class="hljs-keyword">function</s
         </li>
         
         
-        <li id="section-67">
+        <li id="section-50">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-67">&#182;</a>
+                <a class="pilcrow" href="#section-50">&#182;</a>
               </div>
               <p>Export</p>
 

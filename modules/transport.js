@@ -37,7 +37,7 @@ function Transport (cb, scope) {
 		}
 	}, 3000);
 
-	setImmediate(cb, null, self);
+	cb(null, self);
 }
 
 // Private methods
@@ -162,7 +162,7 @@ __private.attachApi = function () {
 				limit: limit
 			}).then(function (rows) {
 				res.status(200);
-				
+
 				res.json({blocks: rows});
 			}).catch(function (err) {
 				library.logger.error("Error getting blocks from DB", err);
@@ -182,7 +182,7 @@ __private.attachApi = function () {
 				id: query.id
 			}).then(function (rows) {
 				res.status(200);
-				
+
 				res.json(rows[0]);
 			}).catch(function (err) {
 				library.logger.error("Error getting block from DB", err);
@@ -494,7 +494,7 @@ Transport.prototype.getFromPeer = function (peer, options, cb) {
 	.then(function (res) {
 		if (res.status !== 200) {
 			// Remove peer
-			
+
 			__private.removePeer({peer: peer, code: 'ERESPONSE ' + res.status, req: req});
 
 			return cb(['Received bad response code', res.status, req.method, req.url].join(' '));
@@ -643,7 +643,7 @@ Transport.prototype.onBroadcastBlock = function (block) {
 	}
 	if(block.numberOfTransactions>0){//i send only ids, because nodes likely have already transactions in mempool.
 		blockheaders.transactionIds=block.transactions.map(function(t){return t.id});
-		
+
 	}
 
 	self.broadcast({all: block.forged, limit: limitbroadcast}, {api: '/blocks', data: {block: blockheaders}, method: 'POST'});
@@ -655,7 +655,7 @@ Transport.prototype.onBroadcastBlock = function (block) {
 
 //
 Transport.prototype.cleanup = function (cb) {
-	return setImmediate(cb);
+	return cb();
 };
 
 

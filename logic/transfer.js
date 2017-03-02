@@ -44,14 +44,14 @@ Transfer.prototype.calculateFee = function (trs) {
 Transfer.prototype.verify = function (trs, sender, cb) {
 	var isAddress = /^[1-9A-Za-z]{1,35}$/g;
 	if (!trs.recipientId || !isAddress.test(trs.recipientId)) {
-		return setImmediate(cb, 'Invalid recipient');
+		return cb('Invalid recipient');
 	}
 
 	if (trs.amount <= 0) {
-		return setImmediate(cb, 'Invalid transaction amount');
+		return cb('Invalid transaction amount');
 	}
 
-	return setImmediate(cb, null, trs);
+	return cb(null, trs);
 };
 
 //
@@ -59,7 +59,7 @@ Transfer.prototype.verify = function (trs, sender, cb) {
 
 //
 Transfer.prototype.process = function (trs, sender, cb) {
-	return setImmediate(cb, null, trs);
+	return cb(null, trs);
 };
 
 //
@@ -77,7 +77,7 @@ Transfer.prototype.getBytes = function (trs) {
 Transfer.prototype.apply = function (trs, block, sender, cb) {
 	modules.accounts.setAccountAndGet({address: trs.recipientId}, function (err, recipient) {
 		if (err) {
-			return setImmediate(cb, err);
+			return cb(err);
 		}
 
 		modules.accounts.mergeAccountAndGet({
@@ -86,9 +86,7 @@ Transfer.prototype.apply = function (trs, block, sender, cb) {
 			u_balance: trs.amount,
 			blockId: block.id,
 			round: modules.rounds.getRoundFromHeight(block.height)
-		}, function (err) {
-			return setImmediate(cb, err);
-		});
+		}, cb);
 	});
 };
 
@@ -99,7 +97,7 @@ Transfer.prototype.apply = function (trs, block, sender, cb) {
 Transfer.prototype.undo = function (trs, block, sender, cb) {
 	modules.accounts.setAccountAndGet({address: trs.recipientId}, function (err, recipient) {
 		if (err) {
-			return setImmediate(cb, err);
+			return cb(err);
 		}
 
 		modules.accounts.mergeAccountAndGet({
@@ -108,9 +106,7 @@ Transfer.prototype.undo = function (trs, block, sender, cb) {
 			u_balance: -trs.amount,
 			blockId: block.id,
 			round: modules.rounds.getRoundFromHeight(block.height)
-		}, function (err) {
-			return setImmediate(cb, err);
-		});
+		}, cb);
 	});
 };
 
@@ -119,7 +115,7 @@ Transfer.prototype.undo = function (trs, block, sender, cb) {
 
 //
 Transfer.prototype.applyUnconfirmed = function (trs, sender, cb) {
-	return setImmediate(cb);
+	return cb(null, trs);
 };
 
 //
@@ -127,7 +123,7 @@ Transfer.prototype.applyUnconfirmed = function (trs, sender, cb) {
 
 //
 Transfer.prototype.undoUnconfirmed = function (trs, sender, cb) {
-	return setImmediate(cb);
+	return cb(null, trs);
 };
 
 //

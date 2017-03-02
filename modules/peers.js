@@ -138,10 +138,10 @@ __private.count = function (cb) {
 __private.banManager = function (cb) {
 	return cb(null, 1);
 	// library.db.query(sql.banManager, { now: Date.now() }).then(function (res) {
-	// 	return setImmediate(cb, null, res);
+	// 	return cb(null, res);
 	// }).catch(function (err) {
 	// 	library.logger.error("stack", err.stack);
-	// 	return setImmediate(cb, 'Peers#banManager error');
+	// 	return cb('Peers#banManager error');
 	// });
 };
 
@@ -207,10 +207,10 @@ __private.getByFilter = function (filter, cb) {
 	// 	sortField: orderBy.sortField,
 	// 	sortMethod: orderBy.sortMethod
 	// }), params).then(function (rows) {
-	// 	return setImmediate(cb, null, rows);
+	// 	return cb(null, rows);
 	// }).catch(function (err) {
 	// 	library.logger.error("stack", err.stack);
-	// 	return setImmediate(cb, 'Peers#getByFilter error');
+	// 	return cb('Peers#getByFilter error');
 	// });
 };
 
@@ -290,10 +290,10 @@ Peers.prototype.list = function (options, cb) {
 	// options.limit = options.limit || 100;
 	//
 	// library.db.query(sql.randomList(options), options).then(function (rows) {
-	// 	return setImmediate(cb, null, rows);
+	// 	return cb(null, rows);
 	// }).catch(function (err) {
 	// 	library.logger.error("stack", err.stack);
-	// 	return setImmediate(cb, 'Peers#list error');
+	// 	return cb('Peers#list error');
 	// });
 };
 
@@ -382,10 +382,10 @@ Peers.prototype.remove = function (pip, port) {
 	return true;
 	// library.db.query(sql.remove, params).then(function (res) {
 	// 	library.logger.debug('Removed peer', params);
-	// 	return cb && setImmediate(cb, null, res);
+	// 	return cb && cb(null, res);
 	// }).catch(function (err) {
 	// 	library.logger.error("stack", err.stack);
-	// 	return cb && setImmediate(cb);
+	// 	return cb && cb();
 	// });
 };
 
@@ -434,10 +434,10 @@ Peers.prototype.update = function (peer) {
 
 	// library.db.query(query, params).then(function () {
 	// 	library.logger.debug('Upserted peer', params);
-	// 	return setImmediate(cb);
+	// 	return cb();
 	// }).catch(function (err) {
 	// 	library.logger.error("stack", err.stack);
-	// 	return setImmediate(cb, 'Peers#update error');
+	// 	return cb('Peers#update error');
 	// });
 };
 
@@ -460,6 +460,14 @@ Peers.prototype.onBind = function (scope) {
 		var peer = library.config.peers.list[i];
 		__private.peers[peer.ip+":"+peer.port] = peer;
 	}
+	setImmediate(function nextUpdate () {
+		__private.updatePeersList(function (err) {
+			if (err) {
+				library.logger.error('Error while updating the list of peers:', err);
+			}
+			setTimeout(nextUpdate, 60 * 1000);
+		});
+	});
 };
 
 
@@ -482,15 +490,6 @@ Peers.prototype.onUpdatePeers = function () {
 		}
 		library.bus.message('peersUpdated');
 	});
-
-	setImmediate(function nextUpdate () {
-		__private.updatePeersList(function (err) {
-			if (err) {
-				library.logger.error('Error while updating the list of peers:', err);
-			}
-			setTimeout(nextUpdate, 60 * 1000);
-		});
-	});
 };
 
 //
@@ -498,7 +497,6 @@ Peers.prototype.onUpdatePeers = function () {
 
 //
 Peers.prototype.onPeersReady = function () {
-
 
 	setImmediate(function nextBanManager () {
 		__private.banManager(function (err) {
@@ -515,19 +513,19 @@ Peers.prototype.onPeersReady = function () {
 shared.getPeers = function (req, cb) {
 	library.schema.validate(req.body, schema.getPeers, function (err) {
 		if (err) {
-			return setImmediate(cb, err[0].message);
+			return cb(err[0].message);
 		}
 
 		if (req.body.limit < 0 || req.body.limit > 100) {
-			return setImmediate(cb, 'Invalid limit. Maximum is 100');
+			return cb('Invalid limit. Maximum is 100');
 		}
 
 		__private.getByFilter(req.body, function (err, peers) {
 			if (err) {
-				return setImmediate(cb, 'Failed to get peers');
+				return cb('Failed to get peers');
 			}
 
-			return setImmediate(cb, null, {peers: peers});
+			return cb(null, {peers: peers});
 		});
 	});
 };
@@ -535,34 +533,34 @@ shared.getPeers = function (req, cb) {
 shared.getPeer = function (req, cb) {
 	library.schema.validate(req.body, schema.getPeer, function (err) {
 		if (err) {
-			return setImmediate(cb, err[0].message);
+			return cb(err[0].message);
 		}
 
 		var peer = __private.peers[req.body.ip+":"+req.body.port];
 		if (peer) {
-			return setImmediate(cb, null, {success: true, peer: peer});
+			return cb(null, {success: true, peer: peer});
 		} else {
-			return setImmediate(cb, null, {success: false, error: 'Peer not found'});
+			return cb(null, {success: false, error: 'Peer not found'});
 		}
 		// __private.getByFilter({
 		// 	ip: req.body.ip,
 		// 	port: req.body.port
 		// }, function (err, peers) {
 		// 	if (err) {
-		// 		return setImmediate(cb, 'Failed to get peer');
+		// 		return cb('Failed to get peer');
 		// 	}
 		//
 		// 	if (peers.length) {
-		// 		return setImmediate(cb, null, {success: true, peer: peers[0]});
+		// 		return cb(null, {success: true, peer: peers[0]});
 		// 	} else {
-		// 		return setImmediate(cb, null, {success: false, error: 'Peer not found'});
+		// 		return cb(null, {success: false, error: 'Peer not found'});
 		// 	}
 		// });
 	});
 };
 
 shared.version = function (req, cb) {
-	return setImmediate(cb, null, {version: library.config.version, build: library.build});
+	return cb(null, {version: library.config.version, build: library.build});
 };
 
 // Export

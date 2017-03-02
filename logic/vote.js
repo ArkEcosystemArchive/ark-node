@@ -49,23 +49,23 @@ Vote.prototype.calculateFee = function (trs) {
 //
 Vote.prototype.verify = function (trs, sender, cb) {
 	if (trs.recipientId !== trs.senderId) {
-		return setImmediate(cb, 'Invalid recipient');
+		return cb('Invalid recipient');
 	}
 
 	if (!trs.asset || !trs.asset.votes) {
-		return setImmediate(cb, 'Invalid transaction asset');
+		return cb('Invalid transaction asset');
 	}
 
 	if (!Array.isArray(trs.asset.votes)) {
-		return setImmediate(cb, 'Invalid votes. Must be an array');
+		return cb('Invalid votes. Must be an array');
 	}
 
 	if (!trs.asset.votes.length) {
-		return setImmediate(cb, 'Invalid votes. Must not be empty');
+		return cb('Invalid votes. Must not be empty');
 	}
 
 	if (trs.asset.votes && trs.asset.votes.length > constants.maximumVotes) {
-		return setImmediate(cb, 'Voting limit exceeded. Maximum is '+constants.maximumVotes+' vote per transaction');
+		return cb('Voting limit exceeded. Maximum is '+constants.maximumVotes+' vote per transaction');
 	}
 
 	modules.delegates.checkConfirmedDelegates(trs.senderPublicKey, trs.asset.votes, function (err) {
@@ -74,7 +74,7 @@ Vote.prototype.verify = function (trs, sender, cb) {
 			library.logger.debug(JSON.stringify(trs));
 			err = null;
 		}
-		return setImmediate(cb, err, trs);
+		return cb(err, trs);
 	});
 };
 
@@ -83,7 +83,7 @@ Vote.prototype.verify = function (trs, sender, cb) {
 
 //
 Vote.prototype.process = function (trs, sender, cb) {
-	return setImmediate(cb, null, trs);
+	return cb(null, trs);
 };
 
 //
@@ -115,7 +115,7 @@ Vote.prototype.checkConfirmedDelegates = function (trs, cb) {
 			err = null;
 		}
 
-		return setImmediate(cb, err);
+		return cb(err);
 	});
 };
 
@@ -132,7 +132,7 @@ Vote.prototype.checkUnconfirmedDelegates = function (trs, cb) {
 			err = null;
 		}
 
-		return setImmediate(cb, err);
+		return cb(err);
 	});
 };
 
@@ -152,9 +152,7 @@ Vote.prototype.apply = function (trs, block, sender, cb) {
 				delegates: trs.asset.votes,
 				blockId: block.id,
 				round: modules.rounds.getRoundFromHeight(block.height)
-			}, function (err) {
-				return setImmediate(cb, err);
-			});
+			}, seriesCb);
 		}
 	], cb);
 };
@@ -165,7 +163,7 @@ Vote.prototype.apply = function (trs, block, sender, cb) {
 
 //
 Vote.prototype.undo = function (trs, block, sender, cb) {
-	if (trs.asset.votes === null) { return setImmediate(cb); }
+	if (trs.asset.votes === null) { return cb(); }
 
 	var votesInvert = Diff.reverse(trs.asset.votes);
 
@@ -173,9 +171,7 @@ Vote.prototype.undo = function (trs, block, sender, cb) {
 		delegates: votesInvert,
 		blockId: block.id,
 		round: modules.rounds.getRoundFromHeight(block.height)
-	}, function (err) {
-		return setImmediate(cb, err);
-	});
+	}, cb);
 };
 
 //
@@ -192,9 +188,7 @@ Vote.prototype.applyUnconfirmed = function (trs, sender, cb) {
 		function (seriesCb) {
 			parent.scope.account.merge(sender.address, {
 				u_delegates: trs.asset.votes
-			}, function (err) {
-				return setImmediate(seriesCb, err);
-			});
+			}, seriesCb);
 		}
 	], cb);
 };
@@ -204,13 +198,10 @@ Vote.prototype.applyUnconfirmed = function (trs, sender, cb) {
 
 //
 Vote.prototype.undoUnconfirmed = function (trs, sender, cb) {
-	if (trs.asset.votes === null) { return setImmediate(cb); }
+	if (trs.asset.votes === null) { return cb(); }
 
 	var votesInvert = Diff.reverse(trs.asset.votes);
-
-	this.scope.account.merge(sender.address, {u_delegates: votesInvert}, function (err) {
-		return setImmediate(cb, err);
-	});
+	this.scope.account.merge(sender.address, {u_delegates: votesInvert}, cb);
 };
 
 Vote.prototype.schema = {

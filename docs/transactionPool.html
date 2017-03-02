@@ -82,11 +82,6 @@
                 </a>
               
                 
-                <a class="source" href="server.html">
-                  server.js
-                </a>
-              
-                
                 <a class="source" href="signatures.html">
                   signatures.js
                 </a>
@@ -229,7 +224,7 @@
 		}
 	}
 
-	setImmediate(cb, <span class="hljs-literal">null</span>, self);
+	cb(<span class="hljs-literal">null</span>, self);
 }</pre></div></div>
             
         </li>
@@ -1166,14 +1161,14 @@ launched every </strong>private.mempoolConfig.intervalInSeconds</p>
             <div class="content"><div class='highlight'><pre>TransactionPool.prototype.receiveTransactions = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">transactions, cb</span>) </span>{
 
 	<span class="hljs-keyword">var</span> expirationdate=slots.getTime()-__private.mempoolConfig.maximumAgeInMinutes*<span class="hljs-number">60</span>;
-	<span class="hljs-keyword">async</span>.eachSeries(transactions, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">transaction, cb</span>) </span>{
+	<span class="hljs-keyword">async</span>.eachSeries(transactions, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">transaction, eachSeriesCb</span>) </span>{
 		<span class="hljs-keyword">var</span> memtx=__private.mempool[transaction.id];
 		<span class="hljs-keyword">if</span>(memtx){
 			<span class="hljs-keyword">if</span>(memtx.error){ <span class="hljs-comment">// sounds like already rejected.</span>
-				setImmediate(cb, memtx.error);
+				cb(memtx.error);
 			}
 			<span class="hljs-keyword">else</span>{ <span class="hljs-comment">// already verified</span>
-				setImmediate(cb);
+				<span class="hljs-keyword">return</span> eachSeriesCb();
 			}
 		}
 		<span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span>(transaction.timestamp &lt; expirationdate){ <span class="hljs-comment">// too old, ignore</span></pre></div></div>
@@ -1193,7 +1188,7 @@ launched every </strong>private.mempoolConfig.intervalInSeconds</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>			setImmediate(cb);
+            <div class="content"><div class='highlight'><pre>			<span class="hljs-keyword">return</span> eachSeriesCb();
 		}
 		<span class="hljs-keyword">else</span> {</pre></div></div>
             
@@ -1216,7 +1211,7 @@ be sure to remove if there is an error in processing</p>
             <div class="content"><div class='highlight'><pre>			__private.mempool[transaction.id]=transaction;
 			__private.processVerifyTransaction(transaction, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 				<span class="hljs-keyword">if</span> (!err) {
-					<span class="hljs-keyword">return</span> self.queueTransaction(transaction, cb);
+					<span class="hljs-keyword">return</span> self.queueTransaction(transaction, eachSeriesCb);
 				} <span class="hljs-keyword">else</span> {</pre></div></div>
             
         </li>
@@ -1240,13 +1235,13 @@ we keep the error in memory.</p>
 					setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
 						<span class="hljs-keyword">delete</span> __private.mempool[transaction.id];
 					}, <span class="hljs-number">60000</span>);
-					<span class="hljs-keyword">return</span> setImmediate(cb, err, transaction);
+					<span class="hljs-keyword">return</span> eachSeriesCb(err, transaction);
 				}
 			});
 		}
 
 	}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
-		<span class="hljs-keyword">return</span> setImmediate(cb, err, transactions);
+		<span class="hljs-keyword">return</span> cb(err, transactions);
 	});
 };</pre></div></div>
             
@@ -1286,19 +1281,19 @@ we keep the error in memory.</p>
 
   <span class="hljs-keyword">if</span> (transaction.type === transactionTypes.MULTI || <span class="hljs-built_in">Array</span>.isArray(transaction.signatures)) {
 		<span class="hljs-keyword">if</span> (self.countMultisignature() &gt;= constants.maxTxsPerQueue) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Multisignature Ttansaction pool is full'</span>);
+			<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Multisignature Ttansaction pool is full'</span>);
 		} <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (!self.multisignature[transaction.id]) {
 			self.multisignature[transaction.id] = transaction;
 		}
 	} <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (!self.queued[transaction.id]){
 		<span class="hljs-keyword">if</span> (self.countQueued() &gt;= constants.maxTxsPerQueue) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Transaction pool is full'</span>);
+			<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Transaction pool is full'</span>);
 		} <span class="hljs-keyword">else</span> {
 			self.queued[transaction.id] = transaction;
 		}
 	}
 
-	<span class="hljs-keyword">return</span> setImmediate(cb);
+	<span class="hljs-keyword">return</span> cb();
 };</pre></div></div>
             
         </li>
@@ -1407,16 +1402,16 @@ we keep the error in memory.</p>
 			modules.transactions.undoUnconfirmed(transaction, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 				<span class="hljs-keyword">if</span> (err) {
 					library.logger.error(<span class="hljs-string">'Failed to undo unconfirmed transaction: '</span> + transaction.id, err);
-					self.removeUnconfirmedTransaction(transaction.id);
 				}
-				<span class="hljs-keyword">return</span> setImmediate(eachSeriesCb);
+				self.removeUnconfirmedTransaction(transaction.id);
+				<span class="hljs-keyword">return</span> eachSeriesCb(err);
 			});
 		} <span class="hljs-keyword">else</span> {
 			keptIds.push(transaction.id);
-			<span class="hljs-keyword">return</span> setImmediate(eachSeriesCb);
+			<span class="hljs-keyword">return</span> eachSeriesCb();
 		}
 	}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
-		<span class="hljs-keyword">return</span> setImmediate(cb, err, removedIds, keptIds);
+		<span class="hljs-keyword">return</span> cb(err, removedIds, keptIds);
 	});
 };</pre></div></div>
             
@@ -1464,7 +1459,7 @@ we keep the error in memory.</p>
 			__private.expireTransactions(self.getMultisignatureTransactionList(<span class="hljs-literal">true</span>, <span class="hljs-literal">false</span>), ids, seriesCb);
 		}
 	], <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, ids</span>) </span>{
-		<span class="hljs-keyword">return</span> setImmediate(cb, err, ids);
+		<span class="hljs-keyword">return</span> cb(err, ids);
 	});
 };</pre></div></div>
             
@@ -1479,7 +1474,7 @@ we keep the error in memory.</p>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-70">&#182;</a>
               </div>
-              <p><strong>API</strong> <code>fillPool</code></p>
+              <p><strong>API</strong> <code>cleanup</code></p>
 
             </div>
             
@@ -1494,6 +1489,49 @@ we keep the error in memory.</p>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-71">&#182;</a>
               </div>
+              <p>This is stategic to keep mem_accounts cleaned</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>TransactionPool.prototype.cleanup = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">cb</span>) </span>{
+	<span class="hljs-built_in">console</span>.log(<span class="hljs-string">"BONG"</span>);
+	self.undoUnconfirmedList([], <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">err, removedIds, keptIds</span>)</span>{
+		<span class="hljs-keyword">if</span>(err){
+			library.logger.error(<span class="hljs-string">'Error cleaning TransactionPool'</span>, err);
+		}
+		<span class="hljs-keyword">else</span>{
+			library.logger.info(<span class="hljs-string">'Cleaned TransactionPool. Unconfirmed transations undone: '</span> + removedIds.length);
+		}
+		<span class="hljs-keyword">return</span> cb();
+	});
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-72">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-72">&#182;</a>
+              </div>
+              <p><strong>API</strong> <code>fillPool</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-73">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-73">&#182;</a>
+              </div>
               
             </div>
             
@@ -1502,7 +1540,7 @@ we keep the error in memory.</p>
 	<span class="hljs-keyword">var</span> unconfirmedCount = self.countUnconfirmed();
 
 	<span class="hljs-keyword">if</span> (unconfirmedCount &gt;= constants.maxTxsPerBlock) {
-		<span class="hljs-keyword">return</span> setImmediate(cb);
+		<span class="hljs-keyword">return</span> cb();
 	} <span class="hljs-keyword">else</span> {
 		<span class="hljs-keyword">var</span> spare = <span class="hljs-number">0</span>, spareMulti;
 		<span class="hljs-keyword">var</span> multisignatures;
@@ -1533,13 +1571,13 @@ we keep the error in memory.</p>
         </li>
         
         
-        <li id="section-72">
+        <li id="section-74">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-72">&#182;</a>
+                <a class="pilcrow" href="#section-74">&#182;</a>
               </div>
               <p>Private</p>
 
@@ -1571,13 +1609,13 @@ __private.getMissingTransactions = <span class="hljs-function"><span class="hljs
         </li>
         
         
-        <li id="section-73">
+        <li id="section-75">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-73">&#182;</a>
+                <a class="pilcrow" href="#section-75">&#182;</a>
               </div>
               <p>copy of ids</p>
 
@@ -1600,13 +1638,13 @@ __private.getMissingTransactions = <span class="hljs-function"><span class="hljs
         </li>
         
         
-        <li id="section-74">
+        <li id="section-76">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-74">&#182;</a>
+                <a class="pilcrow" href="#section-76">&#182;</a>
               </div>
               <p>beware we send an incomplete transaction, to be taken care of</p>
 
@@ -1619,7 +1657,7 @@ __private.getMissingTransactions = <span class="hljs-function"><span class="hljs
 			missingtransactionsids.push(ids[i]);
 		}
 	}
-	setImmediate(cb, <span class="hljs-literal">null</span>, missingtransactionsids, transactions);
+	cb(<span class="hljs-literal">null</span>, missingtransactionsids, transactions);
 }
 
 __private.processVerifyTransaction = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">transaction, cb</span>) </span>{
@@ -1630,9 +1668,9 @@ __private.processVerifyTransaction = <span class="hljs-function"><span class="hl
 		<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">verifyTransaction</span> (<span class="hljs-params">sender, waterCb</span>) </span>{
 			library.logic.transaction.verify(transaction, sender, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 				<span class="hljs-keyword">if</span> (err) {
-					<span class="hljs-keyword">return</span> setImmediate(waterCb, err);
+					<span class="hljs-keyword">return</span> waterCb(err);
 				} <span class="hljs-keyword">else</span> {
-					<span class="hljs-keyword">return</span> setImmediate(waterCb, <span class="hljs-literal">null</span>, sender);
+					<span class="hljs-keyword">return</span> waterCb(<span class="hljs-literal">null</span>, sender);
 				}
 			});
 		},
@@ -1646,21 +1684,21 @@ __private.processVerifyTransaction = <span class="hljs-function"><span class="hl
 			<span class="hljs-keyword">if</span> (sender &amp;&amp; transaction.requesterPublicKey &amp;&amp; multisignatures) {
 				modules.accounts.getAccount({<span class="hljs-attr">publicKey</span>: transaction.requesterPublicKey}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, requester</span>) </span>{
 					<span class="hljs-keyword">if</span> (!requester) {
-						<span class="hljs-keyword">return</span> setImmediate(waterCb, <span class="hljs-string">'Requester not found'</span>);
+						<span class="hljs-keyword">return</span> waterCb(<span class="hljs-string">'Requester not found'</span>);
 					} <span class="hljs-keyword">else</span> {
-						<span class="hljs-keyword">return</span> setImmediate(waterCb, <span class="hljs-literal">null</span>, sender, requester);
+						<span class="hljs-keyword">return</span> waterCb(<span class="hljs-literal">null</span>, sender, requester);
 					}
 				});
 			} <span class="hljs-keyword">else</span> {
-				<span class="hljs-keyword">return</span> setImmediate(waterCb, <span class="hljs-literal">null</span>, sender, <span class="hljs-literal">null</span>);
+				<span class="hljs-keyword">return</span> waterCb(<span class="hljs-literal">null</span>, sender, <span class="hljs-literal">null</span>);
 			}
 		},
 		<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">processTransaction</span> (<span class="hljs-params">sender, requester, waterCb</span>) </span>{
 			library.logic.transaction.process(transaction, sender, requester, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 				<span class="hljs-keyword">if</span> (err) {
-					<span class="hljs-keyword">return</span> setImmediate(waterCb, err);
+					<span class="hljs-keyword">return</span> waterCb(err);
 				} <span class="hljs-keyword">else</span> {
-					<span class="hljs-keyword">return</span> setImmediate(waterCb, <span class="hljs-literal">null</span>, sender);
+					<span class="hljs-keyword">return</span> waterCb(<span class="hljs-literal">null</span>, sender);
 				}
 			});
 		}
@@ -1670,7 +1708,7 @@ __private.processVerifyTransaction = <span class="hljs-function"><span class="hl
 			library.bus.message(<span class="hljs-string">'broadcastTransaction'</span>, transaction);
 		}
 
-		<span class="hljs-keyword">return</span> setImmediate(cb, err, sender);
+		<span class="hljs-keyword">return</span> cb(err, sender);
 	});
 };
 
@@ -1680,21 +1718,21 @@ __private.applyUnconfirmedList = <span class="hljs-function"><span class="hljs-k
 			transaction = self.getUnconfirmedTransaction(transaction);
 		}
 		<span class="hljs-keyword">if</span> (!transaction) {
-			<span class="hljs-keyword">return</span> setImmediate(eachSeriesCb);
+			<span class="hljs-keyword">return</span> eachSeriesCb();
 		}
 
 		__private.processVerifyTransaction(transaction, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, sender</span>) </span>{
 			<span class="hljs-keyword">if</span> (err) {
 				library.logger.error(<span class="hljs-string">'Failed to process / verify unconfirmed transaction: '</span> + transaction.id, err);
 				self.removeUnconfirmedTransaction(transaction.id);
-				<span class="hljs-keyword">return</span> setImmediate(eachSeriesCb);
+				<span class="hljs-keyword">return</span> eachSeriesCb();
 			}
 			modules.transactions.applyUnconfirmed(transaction, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 				<span class="hljs-keyword">if</span> (err) {
 					library.logger.error(<span class="hljs-string">'Failed to apply unconfirmed transaction: '</span> + transaction.id, err);
 					self.removeUnconfirmedTransaction(transaction.id);
 				}
-				<span class="hljs-keyword">return</span> setImmediate(eachSeriesCb);
+				<span class="hljs-keyword">return</span> eachSeriesCb();
 			});
 		});
 	}, cb);
@@ -1703,13 +1741,13 @@ __private.applyUnconfirmedList = <span class="hljs-function"><span class="hljs-k
         </li>
         
         
-        <li id="section-75">
+        <li id="section-77">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-75">&#182;</a>
+                <a class="pilcrow" href="#section-77">&#182;</a>
               </div>
               <p>TODO: to remove</p>
 
@@ -1728,13 +1766,13 @@ __private.applyUnconfirmedList = <span class="hljs-function"><span class="hljs-k
         </li>
         
         
-        <li id="section-76">
+        <li id="section-78">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-76">&#182;</a>
+                <a class="pilcrow" href="#section-78">&#182;</a>
               </div>
               <p>TODO: to remove</p>
 
@@ -1745,7 +1783,7 @@ __private.applyUnconfirmedList = <span class="hljs-function"><span class="hljs-k
 
 	<span class="hljs-keyword">async</span>.eachSeries(transactions, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">transaction, eachSeriesCb</span>) </span>{
 		<span class="hljs-keyword">if</span> (!transaction) {
-			<span class="hljs-keyword">return</span> setImmediate(eachSeriesCb);
+			<span class="hljs-keyword">return</span> eachSeriesCb();
 		}
 
 		<span class="hljs-keyword">var</span> timeNow = <span class="hljs-keyword">new</span> <span class="hljs-built_in">Date</span>();
@@ -1756,25 +1794,25 @@ __private.applyUnconfirmedList = <span class="hljs-function"><span class="hljs-k
 			ids.push(transaction.id);
 			self.removeUnconfirmedTransaction(transaction.id);
 			library.logger.info(<span class="hljs-string">'Expired transaction: '</span> + transaction.id + <span class="hljs-string">' received at: '</span> + transaction.receivedAt.toUTCString());
-			<span class="hljs-keyword">return</span> setImmediate(eachSeriesCb);
+			<span class="hljs-keyword">return</span> eachSeriesCb();
 		} <span class="hljs-keyword">else</span> {
-			<span class="hljs-keyword">return</span> setImmediate(eachSeriesCb);
+			<span class="hljs-keyword">return</span> eachSeriesCb();
 		}
 	}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
-		<span class="hljs-keyword">return</span> setImmediate(cb, err, ids.concat(parentIds));
+		<span class="hljs-keyword">return</span> cb(err, ids.concat(parentIds));
 	});
 };</pre></div></div>
             
         </li>
         
         
-        <li id="section-77">
+        <li id="section-79">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-77">&#182;</a>
+                <a class="pilcrow" href="#section-79">&#182;</a>
               </div>
               <p>Export</p>
 

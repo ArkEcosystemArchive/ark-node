@@ -319,15 +319,15 @@ Transactions.prototype.onPeersReady = function () {
 shared.getTransactions = function (req, cb) {
 	library.schema.validate(req.body, schema.getTransactions, function (err) {
 		if (err) {
-			return setImmediate(cb, err[0].message);
+			return cb(err[0].message);
 		}
 
 		__private.list(req.body, function (err, data) {
 			if (err) {
-				return setImmediate(cb, 'Failed to get transactions: ' + err);
+				return cb('Failed to get transactions: ' + err);
 			}
 
-			return setImmediate(cb, null, {transactions: data.transactions, count: data.count});
+			return cb(null, {transactions: data.transactions, count: data.count});
 		});
 	});
 };
@@ -335,19 +335,19 @@ shared.getTransactions = function (req, cb) {
 shared.getTransaction = function (req, cb) {
 	library.schema.validate(req.body, schema.getTransaction, function (err) {
 		if (err) {
-			return setImmediate(cb, err[0].message);
+			return cb(err[0].message);
 		}
 
 		__private.getById(req.body.id, function (err, transaction) {
 			if (!transaction || err) {
-				return setImmediate(cb, 'Transaction not found');
+				return cb('Transaction not found');
 			}
 			if (transaction.type == 3) {
 				__private.getVotesById(transaction, function (err, transaction) {
-					return setImmediate(cb, null, {transaction: transaction});
+					return cb(null, {transaction: transaction});
 				});
 			} else {
-				return setImmediate(cb, null, {transaction: transaction});
+				return cb(null, {transaction: transaction});
 			}
 		});
 	});
@@ -356,23 +356,23 @@ shared.getTransaction = function (req, cb) {
 shared.getUnconfirmedTransaction = function (req, cb) {
 	library.schema.validate(req.body, schema.getUnconfirmedTransaction, function (err) {
 		if (err) {
-			return setImmediate(cb, err[0].message);
+			return cb(err[0].message);
 		}
 
 		var unconfirmedTransaction = modules.transactionPool.getUnconfirmedTransaction(req.body.id);
 
 		if (!unconfirmedTransaction) {
-			return setImmediate(cb, 'Transaction not found');
+			return cb('Transaction not found');
 		}
 
-		return setImmediate(cb, null, {transaction: unconfirmedTransaction});
+		return cb(null, {transaction: unconfirmedTransaction});
 	});
 };
 
 shared.getUnconfirmedTransactions = function (req, cb) {
 	library.schema.validate(req.body, schema.getUnconfirmedTransactions, function (err) {
 		if (err) {
-			return setImmediate(cb, err[0].message);
+			return cb(err[0].message);
 		}
 
 		var transactions = modules.transactionPool.getUnconfirmedTransactionList(true);
@@ -390,71 +390,70 @@ shared.getUnconfirmedTransactions = function (req, cb) {
 			}
 		}
 
-		return setImmediate(cb, null, {transactions: toSend});
+		return cb(null, {transactions: toSend});
 	});
 };
 
 shared.addTransactions = function (req, cb) {
 	library.schema.validate(req.body, schema.addTransactions, function (err) {
 		if (err) {
-			return setImmediate(cb, err[0].message);
+			return cb(err[0].message);
 		}
 
 		var keypair = library.ed.makeKeypair(req.body.secret);
 
 		if (req.body.publicKey) {
 			if (keypair.publicKey.toString('hex') !== req.body.publicKey) {
-				return setImmediate(cb, 'Invalid passphrase');
+				return cb('Invalid passphrase');
 			}
 		}
 
 		var query = { address: req.body.recipientId };
 
-		library.balancesSequence.add(function (cb) {
 			modules.accounts.getAccount(query, function (err, recipient) {
 				if (err) {
-					return setImmediate(cb, err);
+					return cb(err);
 				}
 
 				var recipientId = recipient ? recipient.address : req.body.recipientId;
 
 				if (!recipientId) {
-					return setImmediate(cb, 'Invalid recipient');
+					return cb('Invalid recipient');
 				}
 
 				if (req.body.multisigAccountPublicKey && req.body.multisigAccountPublicKey !== keypair.publicKey.toString('hex')) {
 					modules.accounts.getAccount({publicKey: req.body.multisigAccountPublicKey}, function (err, account) {
 						if (err) {
-							return setImmediate(cb, err);
+							return cb(err);
 						}
 
 						if (!account || !account.publicKey) {
-							return setImmediate(cb, 'Multisignature account not found');
+							return cb('Multisignature account not found');
 						}
 
 						if (!Array.isArray(account.multisignatures)) {
-							return setImmediate(cb, 'Account does not have multisignatures enabled');
+							return cb('Account does not have multisignatures enabled');
 						}
 
 						if (account.multisignatures.indexOf(keypair.publicKey.toString('hex')) < 0) {
-							return setImmediate(cb, 'Account does not belong to multisignature group');
+							return cb('Account does not belong to multisignature group');
 						}
 
 						modules.accounts.getAccount({publicKey: keypair.publicKey}, function (err, requester) {
 							if (err) {
-								return setImmediate(cb, err);
+								return cb(err);
 							}
 
 							if (!requester || !requester.publicKey) {
-								return setImmediate(cb, 'Requester not found');
+								return cb('Requester not found');
 							}
 
 							if (requester.secondSignature && !req.body.secondSecret) {
-								return setImmediate(cb, 'Missing requester second passphrase');
+								return cb('Missing requester second passphrase');
 							}
 
 							if (requester.publicKey === account.publicKey) {
-								return setImmediate(cb, 'Invalid requester public key');
+								return cb('Invalid requester public key');
 							}
 
 							var secondKeypair = null;
@@ -478,27 +477,31 @@ shared.addTransactions = function (req, cb) {
 
 								transaction.id=library.logic.transaction.getId(transaction);
 
-
-
 							} catch (e) {
-								return setImmediate(cb, e.toString());
+								return balanceCb(e.toString());
 							}
 
-							library.bus.message("transactionsReceived", [transaction], "api", cb);
+							library.bus.message("transactionsReceived", [transaction], "api", function (err, transactions) {
+								if (err) {
+									return cb(err, transaction);
+								}
+
+								return cb(null, {transactionId: transactions[0].id});
+							});
 						});
 					});
 				} else {
 					modules.accounts.setAccountAndGet({publicKey: keypair.publicKey.toString('hex')}, function (err, account) {
 						if (err) {
-							return setImmediate(cb, err);
+							return cb(err);
 						}
 
 						if (!account || !account.publicKey) {
-							return setImmediate(cb, 'Account not found');
+							return cb('Account not found');
 						}
 
 						if (account.secondSignature && !req.body.secondSecret) {
-							return setImmediate(cb, 'Missing second passphrase');
+							return cb('Missing second passphrase');
 						}
 
 						var secondKeypair = null;
@@ -523,20 +526,19 @@ shared.addTransactions = function (req, cb) {
 							transaction.id=library.logic.transaction.getId(transaction);
 
 						} catch (e) {
-							return setImmediate(cb, e.toString());
+							return cb(e.toString());
 						}
 
-						library.bus.message("transactionsReceived", [transaction], "api", cb);
+						library.bus.message("transactionsReceived", [transaction], "api", function (err, transactions) {
+							if (err) {
+								return cb(err, transaction);
+							}
+
+							return cb(null, {transactionId: transactions[0].id});
+						});
 					});
 				}
 			});
-		}, function (err, transaction) {
-			if (err) {
-				return setImmediate(cb, err);
-			}
-
-			return setImmediate(cb, null, {transactionId: transaction[0].id});
-		});
 	});
 };
 

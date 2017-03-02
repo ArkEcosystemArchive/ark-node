@@ -105,10 +105,10 @@ NodeManager.prototype.onDelegatesLoaded = function(keypairs) {
   }
   else{
     if(loadedPairs > 0){
-			library.logger.info("No new delegates found in config file");
+			library.logger.info(loadedPairs + " delegates already forging. No new delegates found in config file");
 		}
 		else if(numberOfDelegates == 0){
-			library.logger.info("No delegates found in config file");
+			library.logger.info("No delegate found in config file");
 		}
   }
 

@@ -647,61 +647,6 @@ Delegates.prototype.onAttachPublicApi = function () {
 
 
 //
-//__EVENT__ `onBlockchainReady`
-
-//
-// Delegates.prototype.onBlockchainReady = function () {
-// 	__private.loaded = true;
-// 	__private.attachApi();
-// 	__private.loadMyDelegates(function nextForge (err) {
-// 		if (err) {
-// 			library.logger.error('Failed to load delegates', err);
-// 		}
-//
-// 		try {
-// 			__private.toggleForgingOnReceipt();
-// 		} catch(error){
-// 			library.logger.error('Failed to toggle Forging On Receipt', error);
-// 		}
-//
-// 		async.series([
-// 			__private.forge,
-// 			modules.transactionPool.fillPool
-// 		], function (debug) {
-// 			if(debug && Math.random()<0.1){
-// 				library.logger.debug(debug);
-// 			}
-// 			return setTimeout(nextForge, 1000);
-// 		});
-// 	});
-// };
-//
-//
-//__EVENT__ `onBlockchainReady`
-
-//
-// Delegates.prototype.onBlockchainReady = function () {
-// 	__private.loaded = true;
-//
-// 	__private.loadMyDelegates(function nextForge (err) {
-// 		if (err) {
-// 			library.logger.error('Failed to load delegates', err);
-// 		}
-//
-// 		// try {
-// 		// 	__private.toggleForgingOnReceipt();
-// 		// } catch(error){
-// 		// 	library.logger.error('Failed to toggle Forging On Receipt', error);
-// 		// }
-// 		__private.forge(function () {
-// 			setTimeout(nextForge, 1000);
-// 		});
-// 	});
-// };
-
-
-// To trigger a blockchain update from network
-//
 //__API__ `cleanup`
 
 //
@@ -794,12 +739,12 @@ __private.toggleForgingOnReceipt = function () {
 shared.getDelegate = function (req, cb) {
 	library.schema.validate(req.body, schema.getDelegate, function (err) {
 		if (err) {
-			return setImmediate(cb, err[0].message);
+			return cb(err[0].message);
 		}
 
 		modules.delegates.getDelegates(req.body, function (err, data) {
 			if (err) {
-				return setImmediate(cb, err);
+				return cb(err);
 			}
 
 			var delegate = _.find(data.delegates, function (delegate) {
@@ -813,9 +758,9 @@ shared.getDelegate = function (req, cb) {
 			});
 
 			if (delegate) {
-				return setImmediate(cb, null, {delegate: delegate});
+				return cb(null, {delegate: delegate});
 			} else {
-				return setImmediate(cb, 'Delegate not found');
+				return cb('Delegate not found');
 			}
 		});
 	});
@@ -827,7 +772,7 @@ shared.getNextForgers = function (req, cb) {
 
 	modules.rounds.getActiveDelegates(function (err, activeDelegates) {
 		if (err) {
-			return setImmediate(cb, err);
+			return cb(err);
 		}
 
 		var currentSlot = slots.getSlotNumber(currentBlock.timestamp);
@@ -838,14 +783,14 @@ shared.getNextForgers = function (req, cb) {
 				nextForgers.push (activeDelegates[(currentSlot + i) % slots.delegates]);
 			}
 		}
-		return setImmediate(cb, null, {currentBlock: currentBlock.height, currentSlot: currentSlot, delegates: nextForgers});
+		return cb(null, {currentBlock: currentBlock.height, currentSlot: currentSlot, delegates: nextForgers});
 	});
 };
 
 shared.search = function (req, cb) {
 	library.schema.validate(req.body, schema.search, function (err) {
 		if (err) {
-			return setImmediate(cb, err[0].message);
+			return cb(err[0].message);
 		}
 
 		var orderBy = OrderBy(
@@ -856,7 +801,7 @@ shared.search = function (req, cb) {
 		);
 
 		if (orderBy.error) {
-			return setImmediate(cb, orderBy.error);
+			return cb(orderBy.error);
 		}
 
 		library.db.query(sql.search({
@@ -865,27 +810,27 @@ shared.search = function (req, cb) {
 			sortField: orderBy.sortField,
 			sortMethod: orderBy.sortMethod
 		})).then(function (rows) {
-			return setImmediate(cb, null, {delegates: rows});
+			return cb(null, {delegates: rows});
 		}).catch(function (err) {
 			library.logger.error("stack", err.stack);
-			return setImmediate(cb, 'Database search failed');
+			return cb('Database search failed');
 		});
 	});
 };
 
 shared.count = function (req, cb) {
 	library.db.one(sql.count).then(function (row) {
-		return setImmediate(cb, null, { count: row.count });
+		return cb(null, { count: row.count });
 	}).catch(function (err) {
 		library.logger.error("stack", err.stack);
-		return setImmediate(cb, 'Failed to count delegates');
+		return cb('Failed to count delegates');
 	});
 };
 
 shared.getVoters = function (req, cb) {
 	library.schema.validate(req.body, schema.getVoters, function (err) {
 		if (err) {
-			return setImmediate(cb, err[0].message);
+			return cb(err[0].message);
 		}
 
 		library.db.one(sql.getVoters, { publicKey: req.body.publicKey }).then(function (row) {
@@ -896,14 +841,14 @@ shared.getVoters = function (req, cb) {
 				sort: 'balance'
 			}, ['address', 'balance', 'username', 'publicKey'], function (err, rows) {
 				if (err) {
-					return setImmediate(cb, err);
+					return cb(err);
 				}
 
-				return setImmediate(cb, null, {accounts: rows});
+				return cb(null, {accounts: rows});
 			});
 		}).catch(function (err) {
 			library.logger.error("stack", err.stack);
-			return setImmediate(cb, 'Failed to get voters for delegate: ' + req.body.publicKey);
+			return cb('Failed to get voters for delegate: ' + req.body.publicKey);
 		});
 	});
 };
@@ -911,12 +856,12 @@ shared.getVoters = function (req, cb) {
 shared.getDelegates = function (req, cb) {
 	library.schema.validate(req.body, schema.getDelegates, function (err) {
 		if (err) {
-			return setImmediate(cb, err[0].message);
+			return cb(err[0].message);
 		}
 
 		modules.delegates.getDelegates(req.body, function (err, data) {
 			if (err) {
-				return setImmediate(cb, err);
+				return cb(err);
 			}
 
 			function compareNumber (a, b) {
@@ -945,13 +890,13 @@ shared.getDelegates = function (req, cb) {
 				} else if (['username', 'address', 'publicKey'].indexOf(data.sortField) > -1) {
 					data.delegates = data.delegates.sort(compareString);
 				} else {
-					return setImmediate(cb, 'Invalid sort field');
+					return cb('Invalid sort field');
 				}
 			}
 
 			var delegates = data.delegates.slice(data.offset, data.limit);
 
-			return setImmediate(cb, null, {delegates: delegates, totalCount: data.count});
+			return cb(null, {delegates: delegates, totalCount: data.count});
 		});
 	});
 };
@@ -963,15 +908,15 @@ shared.getFee = function (req, cb) {
 shared.getForgedByAccount = function (req, cb) {
 	library.schema.validate(req.body, schema.getForgedByAccount, function (err) {
 		if (err) {
-			return setImmediate(cb, err[0].message);
+			return cb(err[0].message);
 		}
 
 		modules.accounts.getAccount({publicKey: req.body.generatorPublicKey}, ['fees', 'rewards'], function (err, account) {
 			if (err || !account) {
-				return setImmediate(cb, err || 'Account not found');
+				return cb(err || 'Account not found');
 			}
 			var forged = bignum(account.fees).plus(bignum(account.rewards)).toString();
-			return setImmediate(cb, null, {fees: account.fees, rewards: account.rewards, forged: forged});
+			return cb(null, {fees: account.fees, rewards: account.rewards, forged: forged});
 		});
 	});
 };
@@ -979,14 +924,14 @@ shared.getForgedByAccount = function (req, cb) {
 shared.addDelegate = function (req, cb) {
 	library.schema.validate(req.body, schema.addDelegate, function (err) {
 		if (err) {
-			return setImmediate(cb, err[0].message);
+			return cb(err[0].message);
 		}
 
 		var keypair = library.ed.makeKeypair(req.body.secret);
 
 		if (req.body.publicKey) {
 			if (keypair.publicKey.toString('hex') !== req.body.publicKey) {
-				return setImmediate(cb, 'Invalid passphrase');
+				return cb('Invalid passphrase');
 			}
 		}
 
@@ -994,36 +939,36 @@ shared.addDelegate = function (req, cb) {
 			if (req.body.multisigAccountPublicKey && req.body.multisigAccountPublicKey !== keypair.publicKey.toString('hex')) {
 				modules.accounts.getAccount({publicKey: req.body.multisigAccountPublicKey}, function (err, account) {
 					if (err) {
-						return setImmediate(cb, err);
+						return cb(err);
 					}
 
 					if (!account || !account.publicKey) {
-						return setImmediate(cb, 'Multisignature account not found');
+						return cb('Multisignature account not found');
 					}
 
 					if (!account.multisignatures || !account.multisignatures) {
-						return setImmediate(cb, 'Account does not have multisignatures enabled');
+						return cb('Account does not have multisignatures enabled');
 					}
 
 					if (account.multisignatures.indexOf(keypair.publicKey.toString('hex')) < 0) {
-						return setImmediate(cb, 'Account does not belong to multisignature group');
+						return cb('Account does not belong to multisignature group');
 					}
 
 					modules.accounts.getAccount({publicKey: keypair.publicKey}, function (err, requester) {
 						if (err) {
-							return setImmediate(cb, err);
+							return cb(err);
 						}
 
 						if (!requester || !requester.publicKey) {
-							return setImmediate(cb, 'Requester not found');
+							return cb('Requester not found');
 						}
 
 						if (requester.secondSignature && !req.body.secondSecret) {
-							return setImmediate(cb, 'Missing requester second passphrase');
+							return cb('Missing requester second passphrase');
 						}
 
 						if (requester.publicKey === account.publicKey) {
-							return setImmediate(cb, 'Invalid requester public key');
+							return cb('Invalid requester public key');
 						}
 
 						var secondKeypair = null;
@@ -1044,7 +989,7 @@ shared.addDelegate = function (req, cb) {
 								requester: keypair
 							});
 						} catch (e) {
-							return setImmediate(cb, e.toString());
+							return cb(e.toString());
 						}
 
 						library.bus.message("transactionsReceived", [transaction], "api", cb);
@@ -1053,15 +998,15 @@ shared.addDelegate = function (req, cb) {
 			} else {
 				modules.accounts.setAccountAndGet({publicKey: keypair.publicKey.toString('hex')}, function (err, account) {
 					if (err) {
-						return setImmediate(cb, err);
+						return cb(err);
 					}
 
 					if (!account || !account.publicKey) {
-						return setImmediate(cb, 'Account not found');
+						return cb('Account not found');
 					}
 
 					if (account.secondSignature && !req.body.secondSecret) {
-						return setImmediate(cb, 'Invalid second passphrase');
+						return cb('Invalid second passphrase');
 					}
 
 					var secondKeypair = null;
@@ -1081,7 +1026,7 @@ shared.addDelegate = function (req, cb) {
 							secondKeypair: secondKeypair
 						});
 					} catch (e) {
-						return setImmediate(cb, e.toString());
+						return cb(e.toString());
 					}
 
 					library.bus.message("transactionsReceived", [transaction], "api", cb);
@@ -1089,10 +1034,10 @@ shared.addDelegate = function (req, cb) {
 			}
 		}, function (err, transaction) {
 			if (err) {
-				return setImmediate(cb, err);
+				return cb(err);
 			}
 
-			return setImmediate(cb, null, {transaction: transaction[0]});
+			return cb(null, {transaction: transaction[0]});
 		});
 	});
 };

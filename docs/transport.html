@@ -82,11 +82,6 @@
                 </a>
               
                 
-                <a class="source" href="server.html">
-                  server.js
-                </a>
-              
-                
                 <a class="source" href="signatures.html">
                   signatures.js
                 </a>
@@ -197,7 +192,7 @@ __private.broadcastTransactions = [];</pre></div></div>
 		}
 	}, <span class="hljs-number">3000</span>);
 
-	setImmediate(cb, <span class="hljs-literal">null</span>, self);
+	cb(<span class="hljs-literal">null</span>, self);
 }</pre></div></div>
             
         </li>
@@ -468,7 +463,7 @@ __private.broadcastTransactions = [];</pre></div></div>
 				<span class="hljs-attr">limit</span>: limit
 			}).then(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">rows</span>) </span>{
 				res.status(<span class="hljs-number">200</span>);
-				
+
 				res.json({<span class="hljs-attr">blocks</span>: rows});
 			}).catch(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 				library.logger.error(<span class="hljs-string">"Error getting blocks from DB"</span>, err);
@@ -488,7 +483,7 @@ __private.broadcastTransactions = [];</pre></div></div>
 				<span class="hljs-attr">id</span>: query.id
 			}).then(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">rows</span>) </span>{
 				res.status(<span class="hljs-number">200</span>);
-				
+
 				res.json(rows[<span class="hljs-number">0</span>]);
 			}).catch(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 				library.logger.error(<span class="hljs-string">"Error getting block from DB"</span>, err);
@@ -1019,7 +1014,7 @@ if(config.bloomfilter){
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>			
+            <div class="content"><div class='highlight'><pre>
 			__private.removePeer({<span class="hljs-attr">peer</span>: peer, <span class="hljs-attr">code</span>: <span class="hljs-string">'ERESPONSE '</span> + res.status, <span class="hljs-attr">req</span>: req});
 
 			<span class="hljs-keyword">return</span> cb([<span class="hljs-string">'Received bad response code'</span>, res.status, req.method, req.url].join(<span class="hljs-string">' '</span>));
@@ -1405,7 +1400,7 @@ else {
 	}
 	<span class="hljs-keyword">if</span>(block.numberOfTransactions&gt;<span class="hljs-number">0</span>){<span class="hljs-comment">//i send only ids, because nodes likely have already transactions in mempool.</span>
 		blockheaders.transactionIds=block.transactions.map(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">t</span>)</span>{<span class="hljs-keyword">return</span> t.id});
-		
+
 	}
 
 	self.broadcast({<span class="hljs-attr">all</span>: block.forged, <span class="hljs-attr">limit</span>: limitbroadcast}, {<span class="hljs-attr">api</span>: <span class="hljs-string">'/blocks'</span>, <span class="hljs-attr">data</span>: {<span class="hljs-attr">block</span>: blockheaders}, <span class="hljs-attr">method</span>: <span class="hljs-string">'POST'</span>});
@@ -1441,7 +1436,7 @@ else {
             </div>
             
             <div class="content"><div class='highlight'><pre>Transport.prototype.cleanup = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">cb</span>) </span>{
-	<span class="hljs-keyword">return</span> setImmediate(cb);
+	<span class="hljs-keyword">return</span> cb();
 };</pre></div></div>
             
         </li>

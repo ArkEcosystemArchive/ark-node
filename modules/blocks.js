@@ -826,7 +826,7 @@ Blocks.prototype.removeLastBlock = function(cb){
 //
 //__API__ `loadLastBlock`
 
-//
+// get the last block from the db
 Blocks.prototype.loadLastBlock = function (cb) {
 	library.dbSequence.add(function (cb) {
 		library.db.query(sql.loadLastBlock).then(function (rows) {
@@ -1169,7 +1169,6 @@ __private.applyBlock = function (block, cb) {
 						err = ['Failed to apply transaction:', transaction.id, '-', err].join(' ');
 						library.logger.error("error:",err);
 						library.logger.error('Transaction', transaction);
-						// TODO: Send a numbered signal to be caught by forever to trigger a rebuild.
 						return eachSeriesCb(err);
 					}
 					appliedTransactions[transaction.id] = transaction;

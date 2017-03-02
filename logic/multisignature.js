@@ -53,27 +53,27 @@ Multisignature.prototype.calculateFee = function (trs) {
 //
 Multisignature.prototype.verify = function (trs, sender, cb) {
 	if (!trs.asset || !trs.asset.multisignature) {
-		return setImmediate(cb, 'Invalid transaction asset');
+		return cb('Invalid transaction asset');
 	}
 
 	if (!Array.isArray(trs.asset.multisignature.keysgroup)) {
-		return setImmediate(cb, 'Invalid multisignature keysgroup. Must be an array');
+		return cb('Invalid multisignature keysgroup. Must be an array');
 	}
 
 	if (trs.asset.multisignature.keysgroup.length === 0) {
-		return setImmediate(cb, 'Invalid multisignature keysgroup. Must not be empty');
+		return cb('Invalid multisignature keysgroup. Must not be empty');
 	}
 
 	if (trs.asset.multisignature.min <= 1 || trs.asset.multisignature.min > 16) {
-		return setImmediate(cb, 'Invalid multisignature min. Must be between 1 and 16');
+		return cb('Invalid multisignature min. Must be between 1 and 16');
 	}
 
 	if (trs.asset.multisignature.min > trs.asset.multisignature.keysgroup.length) {
-		return setImmediate(cb, 'Invalid multisignature min. Must be less than keysgroup size');
+		return cb('Invalid multisignature min. Must be less than keysgroup size');
 	}
 
 	if (trs.asset.multisignature.lifetime < 1 || trs.asset.multisignature.lifetime > 72) {
-		return setImmediate(cb, 'Invalid multisignature lifetime. Must be between 1 and 72');
+		return cb('Invalid multisignature lifetime. Must be between 1 and 72');
 	}
 
 	if (this.ready(trs, sender)) {
@@ -92,41 +92,41 @@ Multisignature.prototype.verify = function (trs, sender, cb) {
 				}
 
 				if (!valid) {
-					return setImmediate(cb, 'Failed to verify signature in multisignature keysgroup');
+					return cb('Failed to verify signature in multisignature keysgroup');
 				}
 			}
 		} catch (e) {
 			library.logger.error("stack", e.stack);
-			return setImmediate(cb, 'Failed to verify signature in multisignature keysgroup');
+			return cb('Failed to verify signature in multisignature keysgroup');
 		}
 	}
 
 	if (trs.asset.multisignature.keysgroup.indexOf('+' + sender.publicKey) !== -1) {
-		return setImmediate(cb, 'Invalid multisignature keysgroup. Can not contain sender');
+		return cb('Invalid multisignature keysgroup. Can not contain sender');
 	}
 
-	async.eachSeries(trs.asset.multisignature.keysgroup, function (key, cb) {
+	async.eachSeries(trs.asset.multisignature.keysgroup, function (key, eachSeriesCb) {
 		var math = key[0];
 		var publicKey = key.slice(1);
 
 		if (math !== '+') {
-			return setImmediate(cb, 'Invalid math operator in multisignature keysgroup');
+			return eachSeriesCb('Invalid math operator in multisignature keysgroup');
 		}
 
 		try {
 			var b = new Buffer(publicKey, 'hex');
 			if (b.length !== 33) {
-				return setImmediate(cb, 'Invalid public key in multisignature keysgroup');
+				return eachSeriesCb('Invalid public key in multisignature keysgroup');
 			}
 		} catch (e) {
 			library.logger.error("stack", e.stack);
-			return setImmediate(cb, 'Invalid public key in multisignature keysgroup');
+			return eachSeriesCb('Invalid public key in multisignature keysgroup');
 		}
 
-		return setImmediate(cb);
+		return eachSeriesCb();
 	}, function (err) {
 		if (err) {
-			return setImmediate(cb, err);
+			return cb(err);
 		}
 
 		var keysgroup = trs.asset.multisignature.keysgroup.reduce(function (p, c) {
@@ -135,10 +135,10 @@ Multisignature.prototype.verify = function (trs, sender, cb) {
 		}, []);
 
 		if (keysgroup.length !== trs.asset.multisignature.keysgroup.length) {
-			return setImmediate(cb, 'Encountered duplicate public key in multisignature keysgroup');
+			return cb('Encountered duplicate public key in multisignature keysgroup');
 		}
 
-		return setImmediate(cb, null, trs);
+		return cb(null, trs);
 	});
 };
 
@@ -147,7 +147,7 @@ Multisignature.prototype.verify = function (trs, sender, cb) {
 
 //
 Multisignature.prototype.process = function (trs, sender, cb) {
-	return setImmediate(cb, null, trs);
+	return cb(null, trs);
 };
 
 //
@@ -183,11 +183,11 @@ Multisignature.prototype.apply = function (trs, block, sender, cb) {
 		round: modules.rounds.getRoundFromHeight(block.height)
 	}, function (err) {
 		if (err) {
-			return setImmediate(cb, err);
+			return cb(err);
 		}
 
 		// Get public keys
-		async.eachSeries(trs.asset.multisignature.keysgroup, function (transaction, cb) {
+		async.eachSeries(trs.asset.multisignature.keysgroup, function (transaction, eachSeriesCb) {
 			var key = transaction.substring(1);
 			var address = modules.accounts.generateAddressByPublicKey(key);
 
@@ -196,7 +196,7 @@ Multisignature.prototype.apply = function (trs, block, sender, cb) {
 				address: address,
 				publicKey: key
 			}, function (err) {
-				return setImmediate(cb, err);
+				return eachSeriesCb(err);
 			});
 		}, cb);
 	});
@@ -217,9 +217,7 @@ Multisignature.prototype.undo = function (trs, block, sender, cb) {
 		multilifetime: -trs.asset.multisignature.lifetime,
 		blockId: block.id,
 		round: modules.rounds.getRoundFromHeight(block.height)
-	}, function (err) {
-		return setImmediate(cb, err);
-	});
+	}, cb);
 };
 
 //
@@ -228,11 +226,11 @@ Multisignature.prototype.undo = function (trs, block, sender, cb) {
 //
 Multisignature.prototype.applyUnconfirmed = function (trs, sender, cb) {
 	if (__private.unconfirmedSignatures[sender.address]) {
-		return setImmediate(cb, 'Signature on this account is pending confirmation');
+		return cb('Signature on this account is pending confirmation');
 	}
 
 	if (Array.isArray(sender.multisignatures) && sender.multisignatures.length) {
-		return setImmediate(cb, 'Account already has multisignatures enabled');
+		return cb('Account already has multisignatures enabled');
 	}
 
 	__private.unconfirmedSignatures[sender.address] = true;
@@ -241,9 +239,7 @@ Multisignature.prototype.applyUnconfirmed = function (trs, sender, cb) {
 		u_multisignatures: trs.asset.multisignature.keysgroup,
 		u_multimin: trs.asset.multisignature.min,
 		u_multilifetime: trs.asset.multisignature.lifetime
-	}, function (err) {
-		return setImmediate(cb);
-	});
+	}, cb);
 };
 
 //
@@ -259,9 +255,7 @@ Multisignature.prototype.undoUnconfirmed = function (trs, sender, cb) {
 		u_multisignatures: multiInvert,
 		u_multimin: -trs.asset.multisignature.min,
 		u_multilifetime: -trs.asset.multisignature.lifetime
-	}, function (err) {
-		return setImmediate(cb, err);
-	});
+	}, cb);
 };
 
 Multisignature.prototype.schema = {
@@ -357,8 +351,7 @@ Multisignature.prototype.dbSave = function (trs) {
 
 //
 Multisignature.prototype.afterSave = function (trs, cb) {
-	library.network.io.sockets.emit('multisignatures/change', {});
-	return setImmediate(cb);
+	return cb();
 };
 
 //
@@ -366,8 +359,8 @@ Multisignature.prototype.afterSave = function (trs, cb) {
 
 //
 Multisignature.prototype.ready = function (trs, sender) {
-	
-	
+
+
 	if (!Array.isArray(trs.signatures)) {
 		return false;
 	}

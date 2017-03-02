@@ -15,9 +15,7 @@ var __private = {}, genesisblock = null;
 function Block (scope, cb) {
 	this.scope = scope;
 	genesisblock = this.scope.genesisblock;
-	if (cb) {
-		return setImmediate(cb, null, this);
-	}
+	return cb && cb(null, this);
 }
 
 // Private methods
@@ -178,7 +176,7 @@ Block.prototype.verifySignature = function (block) {
 		var hash = crypto.createHash('sha256').update(data).digest();
 		var blockSignatureBuffer = new Buffer(block.blockSignature, 'hex');
 		var generatorPublicKeyBuffer = new Buffer(block.generatorPublicKey, 'hex');
-		
+
 		res = this.scope.ed.verify(hash, blockSignatureBuffer || ' ', generatorPublicKeyBuffer || ' ');
 	} catch (e) {
 		throw e;

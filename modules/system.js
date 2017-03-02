@@ -15,7 +15,7 @@ function System (cb, scope) {
 	__private.nethash = library.config.nethash;
 	__private.osName = os.platform() + os.release();
 
-	setImmediate(cb, null, self);
+	return cb(null, self);
 }
 
 // Private methods
