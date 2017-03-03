@@ -19,20 +19,15 @@ function Server (cb, scope) {
 __private.attachApi = function () {
 	var router = new Router();
 
-	router.use(function (req, res, next) {
-		if (modules) { return next(); }
-		res.status(500).send({success: false, error: 'Blockchain is loading'});
-	});
-
 	router.get('/', function (req, res) {
-		res.render('./example.pug', {nethash: library.config.nethash, lastBlock: modules.blockchain.getLastBlock()});
+		res.render('./example.pug', {nethash: library.config.nethash});
 	});
 
-	router.use(function (req, res, next) {
-		if (req.url.indexOf('/api/') === -1 && req.url.indexOf('/peer/') === -1) {
-			return res.redirect('/');
-		}
-		next();
+	router.get('/getStats', function (req, res) {
+		res.status(200).send({
+			lastBlock: modules.blockchain.getLastBlock(),
+			transactionPool: modules.transactionPool.getMempoolSize()
+		});
 	});
 
 	library.network.app.engine('pug', require('pug').__express);

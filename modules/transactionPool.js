@@ -392,7 +392,7 @@ TransactionPool.prototype.queueTransaction = function (transaction, cb) {
 
   if (transaction.type === transactionTypes.MULTI || Array.isArray(transaction.signatures)) {
 		if (self.countMultisignature() >= constants.maxTxsPerQueue) {
-			return cb('Multisignature Ttansaction pool is full');
+			return cb('Multisignature Transaction pool is full');
 		} else if (!self.multisignature[transaction.id]) {
 			self.multisignature[transaction.id] = transaction;
 		}
