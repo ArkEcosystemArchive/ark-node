@@ -87,6 +87,13 @@ __private.updatePeersList = function (cb) {
 
 			// Removing nodes not behaving well
 			library.logger.debug('Removed peers: ' + __private.removed.length);
+			// Drop one random peer from removed array to give them a chance.
+			// To fine tune: decreasing random value threshold -> reduce noise.
+			if (Math.random() < 0.5) { // Every 60/0.5 = 120s on average
+				// Remove the first element,
+				// i.e. the one that have been placed first.
+				__private.removed.shift();
+			}
 			var peers = res.body.peers.filter(function (peer) {
 					return __private.removed.indexOf(peer.ip+":"+peer.port);
 			});
@@ -97,17 +104,6 @@ __private.updatePeersList = function (cb) {
 			var maxUpdatePeers = Math.floor(library.config.peers.options.maxUpdatePeers) || 50;
 			if (peers.length > maxUpdatePeers) {
 				peers = peers.slice(0, maxUpdatePeers);
-			}
-
-			// Drop one random peer from removed array to give them a chance.
-			// This mitigates the issue that a node could be removed forever if it was offline for long.
-			// This is not harmful for the node, but prevents network from shrinking, increasing noise.
-			// To fine tune: decreasing random value threshold -> reduce noise.
-			if (Math.random() < 0.5) { // Every 60/0.5 = 120s
-				// Remove the first element,
-				// i.e. the one that have been placed first.
-				__private.removed.shift();
-				__private.removed.pop();
 			}
 
 			library.logger.debug(['Picked', peers.length, 'of', res.body.peers.length, 'peers'].join(' '));
@@ -275,27 +271,9 @@ Peers.prototype.list = function (options, cb) {
 	  return array;
 	}
 
-	list = shuffle(list).sort(function(a, b){
-		if(a.blockheader){
-			return -1;
-		}
-		else if(b.blockheader){
-			return 1;
-		}
-		else {
-			return 10000;
-		}
-	});
+	list = shuffle(list);
 
 	return cb(null, list);
-	// options.limit = options.limit || 100;
-	//
-	// library.db.query(sql.randomList(options), options).then(function (rows) {
-	// 	return cb(null, rows);
-	// }).catch(function (err) {
-	// 	library.logger.error("stack", err.stack);
-	// 	return cb('Peers#list error');
-	// });
 };
 
 //
