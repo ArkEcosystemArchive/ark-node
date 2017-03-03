@@ -129,7 +129,7 @@ html(lang='en')
 
       var lastTpool=0;
       function updateData(){
-        $.get("./getStats", function(res){
+        $.get("/app/getStats", function(res){
           res.tps=(res.transactionPool - lastTpool)/updateTime;
           lastTpool=res.transactionPool;
           for(var type in node){

@@ -13,28 +13,29 @@ var sql = require('../sql/peers.js');
 var util = require('util');
 
 // Private fields
-var modules, library, self, __private = {}, shared = {};
+var modules, library, self, shared = {};
 
-// List of peers not behaving well
-// reset when we restart
-var removed = [];
+var __private = {
+	// prevents from looking too much around at coldstart
+	lastPeersUpdate: new Date().getTime(),
+
+	// not banning at the start of nodes
+	coldstart: new Date().getTime(),
+
+	// hold the peer list
+	peers: {},
+
+	// hold the list of peers that should not be put again in __private.peers
+	removed: [],
+
+	// peers that have timeout, so there are not used for time sensitive actions
+	timeoutPeers: {}
+};
 
 // Constructor
 function Peers (cb, scope) {
 	library = scope;
 	self = this;
-
-	//prevents from looking too much around at coldstart
-	__private.lastPeersUpdate = new Date().getTime();
-
-	//not banning at the start of nodes
-	__private.coldstart = new Date().getTime();
-
-	//hold the peer list
-	__private.peers = {};
-
-	// peers that have timeout, so there are not used for time sensitive acctions
-	__private.timeoutPeers = {};
 
 	return cb(null, self);
 }
@@ -85,9 +86,9 @@ __private.updatePeersList = function (cb) {
 			}
 
 			// Removing nodes not behaving well
-			library.logger.debug('Removed peers: ' + removed.length);
+			library.logger.debug('Removed peers: ' + __private.removed.length);
 			var peers = res.body.peers.filter(function (peer) {
-					return removed.indexOf(peer.ip+":"+peer.port);
+					return __private.removed.indexOf(peer.ip+":"+peer.port);
 			});
 
 			// Update only a subset of the peers to decrease the noise on the network.
@@ -105,13 +106,13 @@ __private.updatePeersList = function (cb) {
 			if (Math.random() < 0.5) { // Every 60/0.5 = 120s
 				// Remove the first element,
 				// i.e. the one that have been placed first.
-				removed.shift();
-				removed.pop();
+				__private.removed.shift();
+				__private.removed.pop();
 			}
 
 			library.logger.debug(['Picked', peers.length, 'of', res.body.peers.length, 'peers'].join(' '));
 
-			async.eachLimit(peers, 2, function (peer, eachLimitCb) {
+			async.each(peers, function (peer, eachCb) {
 				peer = self.inspect(peer);
 
 				library.schema.validate(peer, schema.updatePeersList.peer, function (err) {
@@ -120,10 +121,10 @@ __private.updatePeersList = function (cb) {
 							library.logger.error(['Rejecting invalid peer:', peer.ip, e.path, e.message].join(' '));
 						});
 
-						return eachLimitCb();
+						return eachCb();
 					} else {
 						__private.peers[peer.ip+":"+peer.port] = peer;
-						return eachLimitCb();
+						return eachCb();
 					}
 				});
 			}, cb);
@@ -375,8 +376,8 @@ Peers.prototype.remove = function (pip, port) {
 	}
 
 	// to prevent from reappearing too often it is added to "removed"
-	if(removed.indexOf(pip+":"+port) == -1){
-		removed.push(pip+":"+port);
+	if(__private.removed.indexOf(pip+":"+port) == -1){
+		__private.removed.push(pip+":"+port);
 	}
 	delete __private.peers[pip+":"+port];
 	return true;
@@ -394,22 +395,7 @@ Peers.prototype.remove = function (pip, port) {
 
 //
 Peers.prototype.update = function (peer) {
-	// var params = {
-	// 	ip: peer.ip,
-	// 	port: peer.port,
-	// 	os: peer.os || null,
-	// 	version: peer.version || null,
-	// 	state: 1
-	// };
-
-	// var query;
-	// if (peer.state !== undefined) {
-	// 	params.state = peer.state;
-	// 	query = sql.upsertWithState;
-	// } else {
-	// 	query = sql.upsertWithoutState;
-	// }
-	if(removed.indexOf(peer.ip+":"+peer.port) > -1){
+	if(__private.removed.indexOf(peer.ip+":"+peer.port) > -1){
 		return;
 	}
 	if(__private.peers[(peer.ip+":"+peer.port)]){
@@ -431,14 +417,6 @@ Peers.prototype.update = function (peer) {
 		__private.peers[(peer.ip+":"+peer.port)] = peer;
 		library.logger.debug("New peer added", peer);
 	}
-
-	// library.db.query(query, params).then(function () {
-	// 	library.logger.debug('Upserted peer', params);
-	// 	return cb();
-	// }).catch(function (err) {
-	// 	library.logger.error("stack", err.stack);
-	// 	return cb('Peers#update error');
-	// });
 };
 
 //
@@ -463,7 +441,7 @@ Peers.prototype.onBind = function (scope) {
 	setImmediate(function nextUpdate () {
 		__private.updatePeersList(function (err) {
 			if (err) {
-				library.logger.error('Error while updating the list of peers:', err);
+				library.logger.error('Error while updating the list of peers', err);
 			}
 			setTimeout(nextUpdate, 60 * 1000);
 		});
