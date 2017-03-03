@@ -373,9 +373,6 @@ Peers.prototype.remove = function (pip, port) {
 
 //
 Peers.prototype.update = function (peer) {
-	if(__private.removed.indexOf(peer.ip+":"+peer.port) > -1){
-		return;
-	}
 	if(__private.peers[(peer.ip+":"+peer.port)]){
 		if(peer.blockheader){
 			var lastBlock = modules.blockchain.getLastBlock()
@@ -390,6 +387,9 @@ Peers.prototype.update = function (peer) {
 		else if(peer.height){
 			__private.peers[(peer.ip+":"+peer.port)].height = peer.height
 		}
+	}
+	else if(__private.removed.indexOf(peer.ip+":"+peer.port) > -1){
+		return;
 	}
 	else if(peer.port && parseInt(peer.port)!=1 && !__private.timeoutPeers[peer.ip+":"+peer.port]){
 		__private.peers[(peer.ip+":"+peer.port)] = peer;

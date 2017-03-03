@@ -128,10 +128,11 @@ html(lang='en')
         }, obj || self)
       }
 
-      var lastTpool=0;
+      var lastTpool;
       function updateData(){
         $.get("/app/getStats", function(res){
           res.tps=(res.transactionPool - lastTpool)/updateTime;
+          if(!res.tps || res.tps<0) res.tps=0;
           lastTpool=res.transactionPool;
           for(var type in node){
             updateChart(type, resolve(node[type].path, res));
