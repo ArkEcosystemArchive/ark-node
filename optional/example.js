@@ -1,11 +1,9 @@
 'use strict';
 
-var async = require('async');
-var path = require('path');
 var Router = require('../helpers/router.js');
 
 // Private fields
-var modules, library, self, __private = {}, shared = {};
+var modules, library, self, __private = {};
 
 // Constructor
 function Server (cb, scope) {
@@ -32,14 +30,8 @@ __private.attachApi = function () {
 
 	library.network.app.engine('pug', require('pug').__express);
 
-	library.network.app.use('/', router);
+	library.network.app.use('/app', router);
 };
-
-// Public methods
-
-// Events
-//
-//__EVENT__ `onBind`
 
 //
 Server.prototype.onBind = function (scope) {
@@ -47,15 +39,10 @@ Server.prototype.onBind = function (scope) {
 };
 
 //
-//__EVENT__ `onAttachPublicApi`
-
-//
 Server.prototype.onAttachPublicApi = function () {
  	__private.attachApi();
 };
 
-//
-//__API__ `cleanup`
 
 //
 Server.prototype.cleanup = function (cb) {
