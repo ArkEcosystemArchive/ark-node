@@ -93,18 +93,27 @@ html(lang='en')
             date:new Date().getTime(),
             value:res.lastBlock.height
           });
+          if(heightdata.length>50){
+            heightdata.shift();
+          }
           heightchart.setData(heightdata);
 
           txdata.push({
             date:new Date().getTime(),
             value:res.lastBlock.numberOfTransactions
           });
+          if(txdata.length>100){
+            txdata.shift();
+          }
           txchart.setData(txdata);
 
           tpooldata.push({
             date:new Date().getTime(),
             value:res.transactionPool
           });
+          if(tpooldata.length>50){
+            tpooldata.shift();
+          }
           tpoolchart.setData(tpooldata);
 
 
@@ -116,6 +125,7 @@ html(lang='en')
 
         data: [
         ],
+        pointSize:0,
         xkey: 'date',
         ykeys: ['value'],
         ymin: 'auto',
@@ -127,6 +137,7 @@ html(lang='en')
 
         data: [
         ],
+        pointSize:0,
         xkey: 'date',
         ykeys: ['value'],
         ymin: 'auto',
@@ -138,6 +149,7 @@ html(lang='en')
 
         data: [
         ],
+        pointSize:0,
         xkey: 'date',
         ykeys: ['value'],
         ymin: 'auto',
