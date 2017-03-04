@@ -98,21 +98,23 @@ function Peer(ip, port, version, os){
 
 	Peer.prototype.updateStatus = function(){
 		var that = this;
+		this.get('/api/blocks/getHeight', function(err, body){
+			that.publicapi = !!err;
+		});
 		this.get('/peer/height', function(err, res){
 			if(!err){
 				that.height = res.body.height;
 				that.headers = res.body.header;
 				var lastBlock = modules.blockchain.getLastBlock();
 				if(that.height > lastBlock.height && res.body.header.timestamp > lastBlock.timestamp){
-					that.status="EFORK";
+					that.status="FORK";
+				} else{
+					that.status="OK";
 				}
 			}
 			else{
 				library.logger.trace(err);
 			}
-		});
-		this.get('/api/blocks/getHeight', function(err, body){
-			that.publicapi = !!err;
 		});
 	};
 
@@ -157,7 +159,9 @@ function Peer(ip, port, version, os){
 
 				if (!report) {
 					// no valid transport header, considering a public API call
-					that.status = "OK";
+					if(that.status!="FORK"){
+						that.status = "OK";
+					}
 					return cb(null, {body: res.body, peer: that.toObject()});
 				}
 
@@ -172,7 +176,9 @@ function Peer(ip, port, version, os){
 					return cb(['Peer is not on the same network', header.nethash, req.method, req.url].join(' '));
 				}
 
-				that.status = "OK";
+				if(that.status!="FORK"){
+					that.status = "OK";
+				}
 
 				return cb(null, {body: res.body, peer: that.toObject()});
 			}
@@ -203,7 +209,7 @@ Peers.prototype.accept = function(peer){
 		return __private.peers[peer.ip+":"+peer.port];
 	}
 	else {
-		__private.peers[peer.ip+":"+peer.port] = new Peer(peer.ip, peer.port, peer.os, peer.version);
+		__private.peers[peer.ip+":"+peer.port] = new Peer(peer.ip, peer.port, peer.version, peer.os);
 		return __private.peers[peer.ip+":"+peer.port];
 	}
 }
@@ -261,13 +267,14 @@ __private.updatePeersList = function (cb) {
 				library.schema.validate(peer, schema.updatePeersList.peer, function (err) {
 					if (err) {
 						err.forEach(function (e) {
+							console.log(peer);
 							library.logger.error(['Rejecting invalid peer:', peer.ip, e.path, e.message].join(' '));
 						});
 
 						return eachCb();
 					} else {
 						if(!__private.peers[peer.ip+":"+peer.port]){
-							__private.peers[peer.ip+":"+peer.port] = new Peer(peer.ip, peer.port, peer.os, peer.version);
+							__private.peers[peer.ip+":"+peer.port] = new Peer(peer.ip, peer.port, peer.version, peer.os);
 						};
 						return eachCb();
 					}
