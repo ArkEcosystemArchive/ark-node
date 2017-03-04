@@ -628,7 +628,6 @@ Loader.prototype.getNetwork = function (force, cb) {
 				var peerIsValid = library.schema.validate(modules.peers.inspect(peer), schema.getNetwork.peer);
 
 				if (peerIsValid) {
-					peer = modules.peers.accept(peer);
 					modules.transport.getFromPeer(peer, {
 						api: '/height',
 						method: 'GET',

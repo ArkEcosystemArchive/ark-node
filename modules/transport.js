@@ -452,6 +452,7 @@ Transport.prototype.getFromRandomPeer = function (config, options, cb) {
 //
 Transport.prototype.getFromPeer = function (peer, options, cb) {
 	var url;
+	peer = modules.peers.accept(peer);
 	library.logger.trace("getFromPeer", peer.toObject());
 
 	if (options.api) {
