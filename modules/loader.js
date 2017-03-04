@@ -373,7 +373,6 @@ __private.loadBlocksFromNetwork = function (cb) {
 						}
 						else if (!result.common) {
 							tryCount++;
-							modules.peers.remove(peer.ip, peer.port);
 							return seriesCb("Detected forked chain, no common block with " + peer.string);
 						}
 						else{
@@ -545,7 +544,7 @@ __private.findGoodPeers = function (heights) {
 	}).map(function (item) {
 		item.peer.height = item.height;
 		item.peer.blockheader = item.header;
-		modules.peers.update(item.peer);
+		modules.peers.accept(item.peer);
 		return item.peer;
 	});
 	return {height: height, peers: peers};
@@ -603,11 +602,10 @@ Loader.prototype.getNetwork = function (force, cb) {
 	}
 
 	// Fetch a list of 100 random peers
-	//modules.peers.list({limit:100}, function (err, peers) {
-	 modules.transport.getFromRandomPeer({
+	modules.transport.getFromRandomPeer({
 	 	api: '/list',
 	 	method: 'GET'
-	 }, function (err, res) {
+	}, function (err, res) {
 		if (err) {
 			library.logger.info('Failed to connect properly with network', err);
 			return cb(err);
@@ -630,6 +628,7 @@ Loader.prototype.getNetwork = function (force, cb) {
 				var peerIsValid = library.schema.validate(modules.peers.inspect(peer), schema.getNetwork.peer);
 
 				if (peerIsValid) {
+					peer = modules.peers.accept(peer);
 					modules.transport.getFromPeer(peer, {
 						api: '/height',
 						method: 'GET',
@@ -659,12 +658,11 @@ Loader.prototype.getNetwork = function (force, cb) {
 							library.logger.warn('# Received invalid block header from peer. Can be a tentative to attack the network!');
 							library.logger.warn(peer.string + " sent header",res.body.header);
 							library.logger.warn("errors", verification);
-							modules.peers.remove(peer.ip, peer.port);
 
 							return cb();
 						}
 						else{
-							library.logger.debug(['Received height:', res.body.header.height, ', block_id: ', res.body.header.id,'from peer'].join(' '), peer.string);
+							library.logger.debug(['Received height:', res.body.header.height, ', block_id: ', res.body.header.id,'from peer'].join(' '), peer.toString());
 							return cb(null, {peer: peer, height: res.body.header.height, header:res.body.header});
 						}
 					});

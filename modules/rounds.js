@@ -152,6 +152,36 @@ Rounds.prototype.backwardTick = function(block, cb){
 // Changing round on next block
 __private.changeRoundForward = function(block, cb){
 	var nextround = __private.current + 1;
+	// var _fullactivedelegates;
+	//
+	// async.waterfall([
+	// 	function(seriesCb){
+	// 		return __private.updateTotalVotesOnDatabase(seriesCb)
+	// 	},
+	// 	function(data, seriesCb){
+	// 		return __private.generateDelegateList(nextround, seriesCb);
+	// 	},
+	// 	function(fullactivedelegates, seriesCb){
+	// 		_fullactivedelegates=fullactivedelegates;
+	// 		__private.collectedfees[nextround] = 0;
+	// 		__private.forgers[nextround] = [];
+	// 		__private.activedelegates[nextround] = fullactivedelegates.map(function(ad){return ad.publicKey});
+	// 		return __private.updateActiveDelegatesStats(seriesCb);
+	// 	},
+	// 	function(data, seriesCb){
+	// 		return __private.saveActiveDelegatesOnDatabase(_fullactivedelegates, nextround, seriesCb);
+	// 	}
+	// ], function(err){
+	// 	if(err){
+	// 		return cb(err, block);
+	// 	}
+	// 	else{
+	// 		// we are good to go, let's move to the new round
+	// 		__private.current = nextround;
+	// 		return cb(null, block);
+	// 	}
+	// });
+
 	__private.updateTotalVotesOnDatabase(function(err){
 		if(err){
 			return cb(err, block);

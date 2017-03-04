@@ -85,7 +85,6 @@ __private.attachApi = function () {
 				return res.status(200).send({success: false, message: 'Request is made on the wrong network', expected: library.config.nethash, received: headers.nethash});
 			}
 
-			req.peer.state = 2;
 			req.peer.os = headers.os;
 			req.peer.version = headers.version;
 
@@ -95,7 +94,7 @@ __private.attachApi = function () {
 			// 	}
 			// }
 
-			modules.peers.update(req.peer);
+			modules.peers.accept(req.peer);
 
 			return next();
 		});
@@ -105,6 +104,7 @@ __private.attachApi = function () {
 	router.get('/list', function (req, res) {
 		res.set(__private.headers);
 		modules.peers.list({limit: 100}, function (err, peers) {
+			peers=peers.map(function(peer){return peer.toObject()});
 			return res.status(200).json({peers: !err ? peers : []});
 		});
 	});
@@ -212,7 +212,7 @@ __private.attachApi = function () {
 			return res.status(200).json({success: false, error: e.toString()});
 		}
 
-		modules.peers.update(req.peer);
+		modules.peers.accept(req.peer);
 
 
 		library.bus.message('blockReceived', block, req.peer, function(error, data){
@@ -366,14 +366,11 @@ __private.hashsum = function (obj) {
 };
 
 __private.banPeer = function (options) {
-	modules.peers.state(options.peer.ip, options.peer.port, 0, options.clock, function (err) {
-		library.logger.warn([options.code, ['Ban', options.peer.string, (options.clock / 60), 'minutes'].join(' '), options.req.method, options.req.url].join(' '));
-	});
+	//TODO
 };
 
 __private.removePeer = function (options) {
-	library.logger.warn([options.code, 'Removing peer', options.peer.string, options.req.method, options.req.url].join(' '));
-	modules.peers.remove(options.peer.ip, options.peer.port);
+	//TODO
 };
 
 // Public methods
@@ -403,7 +400,7 @@ Transport.prototype.broadcast = function (config, options, cb) {
 			// 	block.bloomfilter=config.bloomfilter.exportData().toString();
 			// }
 			async.eachLimit(peers, 3, function (peer, cb) {
-				if(!modules.system.isMyself(peer)){
+				if(!modules.system.isMyself(peer.toObject())){
 					return self.getFromPeer(peer, options, cb);
 				}
 				else{
@@ -411,7 +408,7 @@ Transport.prototype.broadcast = function (config, options, cb) {
 				}
 			}, function (err) {
 				if (cb) {
-					return cb(err, {body: null, peer: peers});
+					return cb(err);
 				}
 			});
 		} else if (cb) {
@@ -435,12 +432,6 @@ Transport.prototype.getFromRandomPeer = function (config, options, cb) {
 	}
 	config.limit = 1;
 
-	// modules.loader.getNetwork(false, function (err, network) {
-	// 	if (err) {
-	// 		return setImmediate(cb, err);
-	// 	}
-	// 	return self.getFromPeer(network.peers[0], options, cb);
-
 	async.retry(20, function (cb) {
 		modules.peers.list(config, function (err, peers) {
 			if (!err && peers.length) {
@@ -461,8 +452,7 @@ Transport.prototype.getFromRandomPeer = function (config, options, cb) {
 //
 Transport.prototype.getFromPeer = function (peer, options, cb) {
 	var url;
-
-	library.logger.trace("getFromPeer", peer);
+	library.logger.trace("getFromPeer", peer.toObject());
 
 	if (options.api) {
 		url = '/peer' + options.api;
@@ -470,76 +460,7 @@ Transport.prototype.getFromPeer = function (peer, options, cb) {
 		url = options.url;
 	}
 
-	peer = modules.peers.inspect(peer);
-
-	//update headers to notify peer state
-	var lastBlock = modules.blockchain.getLastBlock();
-
-	__private.headers.height = lastBlock.height;
-
-	var req = {
-		url: 'http://' + peer.ip + ':' + peer.port + url,
-		method: options.method,
-		headers: _.extend({}, __private.headers, options.headers),
-		timeout: options.timeout || library.config.peers.options.timeout
-	};
-
-	if (options.data) {
-		req.body = options.data;
-	}
-
-	var request = popsicle.request(req);
-
-	request.use(popsicle.plugins.parse(['json'], false))
-	.then(function (res) {
-		if (res.status !== 200) {
-			// Remove peer
-
-			__private.removePeer({peer: peer, code: 'ERESPONSE ' + res.status, req: req});
-
-			return cb(['Received bad response code', res.status, req.method, req.url].join(' '));
-		} else {
-			var headers      = res.headers;
-			    headers.ip   = peer.ip;
-			    headers.port = peer.port;
-
-			var report = library.schema.validate(headers, schema.headers);
-			if (!report) {
-				// Remove peer
-				__private.removePeer({peer: peer, code: 'EHEADERS', req: req});
-
-				return cb(['Invalid response headers', JSON.stringify(headers), req.method, req.url].join(' '));
-			}
-
-			if (headers.nethash !== library.config.nethash) {
-				// Remove peer
-				__private.removePeer({peer: peer, code: 'ENETHASH', req: req});
-
-				return cb(['Peer is not on the same network', headers.nethash, req.method, req.url].join(' '));
-			}
-
-			// update the saved list of peers
-			modules.peers.update({
-				ip: peer.ip,
-				height: peer.height,
-				blockheader: headers.blockheader,
-				port: headers.port,
-				state: 2
-			});
-
-
-			return cb(null, {body: res.body, peer: peer});
-		}
-	})
-	.catch(function (err) {
-		if (peer) {
-			if (err.code === 'EUNAVAILABLE' || err.code === 'ETIMEOUT') {
-				modules.peers.timeoutPeer(peer);
-			}
-		}
-
-		return cb([err.code, 'Request failed', req.method, req.url].join(' '));
-	});
+	return peer.request(url, options, cb);
 };
 
 // Events
