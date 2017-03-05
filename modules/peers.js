@@ -5,13 +5,10 @@ var async = require('async');
 var extend = require('extend');
 var fs = require('fs');
 var ip = require('ip');
-var popsicle = require('popsicle');
-var OrderBy = require('../helpers/orderBy.js');
 var path = require('path');
 var Router = require('../helpers/router.js');
+var Peer = require('../logic/peer.js');
 var schema = require('../schema/peers.js');
-var sql = require('../sql/peers.js');
-var util = require('util');
 
 // Private fields
 var modules, library, self, shared = {};
@@ -37,179 +34,6 @@ function Peers (cb, scope) {
 	self = this;
 
 	return cb(null, self);
-}
-
-// single Peer object
-function Peer(ip, port, version, os){
-	this.ip = ip;
-	this.port = port;
-	this.version = version;
-	this.os = os;
-	this.protocol = (port%1000)==443?"https":"http";
-	this.liteclient = port < 80;
-	this.status = "NEW";
-	this.publicapi = false;
-	this.headers;
-
-	this.requests = 0;
-	this.delay = 10000;
-	this.lastchecked = 0;
-
-	Peer.prototype.toObject = function(){
-		return {
-			ip: this.ip,
-			port: this.port,
-			version: this.version,
-			os: this.os,
-			height: this.height,
-			status: this.status,
-			delay: this.delay
-		};
-	};
-
-	Peer.prototype.toString = function(){
-		return this.protocol+"://"+this.ip+":"+this.port;
-	};
-
-	Peer.prototype.normalizeHeader = function(header){
-		var result = {
-			height: parseInt(header.height),
-			port: parseInt(header.port),
-			os: header.os,
-			version: header.version,
-			nethash: header.nethash
-		};
-		if(header.blockheader){
-			result.blockheader = {
-				id: header.blockheader.id,
-				timestamp: header.blockheader.timestamp,
-				signature: header.blockheader.signature,
-				generatorPublicKey: header.blockheader.generatorPublicKey,
-				version: header.blockheader.version,
-				height: header.blockheader.height,
-				numberOfTransactions: header.blockheader.numberOfTransactions,
-				previousBlock: header.blockheader.previousBlock,
-				totalAmount: header.blockheader.totalAmount,
-				totalFee: header.blockheader.totalFee,
-				reward: header.blockheader.reward,
-				payloadLength: header.blockheader.payloadLength,
-				payloadHash: header.blockheader.payloadHash
-			};
-		}
-		return result;
-	};
-
-	Peer.prototype.updateStatus = function(){
-		var that = this;
-		this.get('/peer/height', function(err, res){
-			if(!err){
-				that.height = res.body.height;
-				that.headers = res.body.header;
-				var lastBlock = modules.blockchain.getLastBlock();
-				if(that.height > lastBlock.height && that.headers.timestamp < lastBlock.timestamp){
-					that.status="FORK";
-				} else{
-					that.status="OK";
-				}
-			}
-			else{
-				library.logger.trace(err);
-			}
-		});
-		this.get('/api/blocks/getHeight', function(err, body){
-			that.publicapi = !!err;
-		});
-	};
-
-	Peer.prototype.accept = function(){
-		this.lastchecked=new Date().getTime();
-		return true;
-	};
-
-	Peer.prototype.get = function(api, cb){
-		return this.request(api, {method:'GET'}, cb);
-	};
-
-	Peer.prototype.post = function(api, payload, cb){
-		return this.request(api, {method:'POST', data:payload}, cb);
-	};
-
-	Peer.prototype.request = function(api, options, cb){
-		library.logger.trace("request", api);
-
-		var req = {
-			url: this.protocol+'://' + this.ip + ':' + this.port + api,
-			method: options.method,
-			headers: _.extend({}, __private.headers, options.headers),
-			timeout: options.timeout || library.config.peers.options.timeout
-		};
-
-		if (options.data) {
-			req.body = options.data;
-		}
-
-		if(options.method == "POST"){
-			library.logger.debug("POST request", req);
-		}
-
-		var request = popsicle.request(req);
-		this.lastchecked=new Date().getTime();
-		var that = this;
-		request.use(popsicle.plugins.parse(['json'], false)).then(function (res) {
-			that.delay=new Date().getTime()-that.lastchecked;
-			if (res.status !== 200) {
-				that.status="ERESPONSE";
-				return cb(['Received bad response code', res.status, req.method, req.url].join(' '));
-			} else {
-
-				var header = that.normalizeHeader(res.headers);
-				var report = library.schema.validate(header, schema.headers);
-
-				if (!report) {
-					// no valid transport header, considering a public API call
-					if(that.status!="FORK"){
-						that.status = "OK";
-					}
-					return cb(null, {body: res.body, peer: that.toObject()});
-				}
-
-				that.headers = header.blockheader;
-				that.os = header.os;
-				that.version = header.version;
-				that.height = header.height;
-				that.nethash = header.nethash;
-
-				if (header.nethash !== library.config.nethash) {
-					that.status="ENETHASH";
-					return cb(['Peer is not on the same network', header.nethash, req.method, req.url].join(' '));
-				}
-
-				if(that.status!="FORK"){
-					that.status = "OK";
-				}
-
-				return cb(null, {body: res.body, peer: that.toObject()});
-			}
-		})
-		.catch(function (err) {
-			if (err.code === 'EUNAVAILABLE' || err.code === 'ETIMEOUT') {
-				that.status=err.code;
-			}
-
-			return cb([err.code, 'Request failed', req.method, req.url].join(' '));
-		});
-	};
-
-	if(!this.liteclient){
-		this.updateStatus();
-		var that = this;
-		this.intervalId = setInterval(
-			function(){
-				if(new Date().getTime() - that.lastchecked > 60000){
-					that.updateStatus();
-				}
-			}, 60000);
-	}
 }
 
 // Public methods
@@ -403,19 +227,14 @@ Peers.prototype.listBroadcastPeers = function() {
 //
 Peers.prototype.onBind = function (scope) {
 	modules = scope;
+	Peer.bind({modules: modules, library: library});
+
 	for(var i=0;i<library.config.peers.list.length;i++){
 		var peer = library.config.peers.list[i];
 		peer = self.accept(peer);
 		peer.status = "OK";
 		peer.delay = 0;
 	}
-
-	__private.headers = {
-		os: modules.system.getOS(),
-		version: modules.system.getVersion(),
-		port: modules.system.getPort(),
-		nethash: modules.system.getNethash()
-	};
 
 	setImmediate(function nextUpdate () {
 		__private.updatePeersList(function (err) {

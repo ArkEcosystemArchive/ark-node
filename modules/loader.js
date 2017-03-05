@@ -356,6 +356,7 @@ __private.loadBlocksFromNetwork = function (cb) {
 
 			async.waterfall([
 				function getCommonBlock (seriesCb) {
+					console.log(peer.toString());
 					if (lastBlock.height === 1){
 						return seriesCb();
 					}
@@ -601,87 +602,53 @@ Loader.prototype.getNetwork = function (force, cb) {
 		return cb(null, __private.network);
 	}
 
-	// Fetch a list of 100 random peers
-	modules.transport.requestFromRandomPeer({
-	 	api: '/list',
-	 	method: 'GET'
-	}, function (err, res) {
-		if (err) {
-			library.logger.info('Failed to connect properly with network', err);
-			return cb(err);
-		}
+	var peers = modules.peers.listBroadcastPeers();
 
-
-		var peers = res.body.peers;
-
-		library.schema.validate({peers:peers}, schema.getNetwork.peers, function (err) {
+	// Validate each peer and then attempt to get its height
+	async.map(peers, function (peer, cb) {
+		peer.fetchHeight(function (err, res) {
 			if (err) {
-				return cb(err);
+				library.logger.warn('Failed to get height from peer', peer.toString());
+				library.logger.warn("Error",err);
+				return cb();
 			}
 
-			peers = __private.shuffle(peers);
+			var verification = {
+				verified: false
+			};
 
-			library.logger.debug(['Received', peers.length, 'peers from'].join(' '), res.peer.toString());
-
-			// Validate each peer and then attempt to get its height
-			async.map(peers, function (peer, cb) {
-				var peerIsValid = library.schema.validate(modules.peers.inspect(peer), schema.getNetwork.peer);
-
-				if (peerIsValid) {
-					modules.transport.requestFromPeer(peer, {
-						api: '/height',
-						method: 'GET',
-						timeout: 2000
-					}, function (err, res) {
-						if (err) {
-
-							library.logger.warn('Failed to get height from peer', peer.toString());
-							library.logger.warn("Error",err);
-							return cb();
-						}
-
-						var verification = false;
-
-						try {
-							// TODO: also check that the delegate was legit to forge the block ?
-							// likely too much work since in the end we use only a few peers of the list
-							// or maybe only the ones claiming height > current node height
-							verification = modules.blocks.verifyBlockHeader(res.body.header);
-						} catch (e) {
-							library.logger.warn('Failed verifiy block header from', peer.toString());
-							library.logger.warn("Error", e);
-						}
+			try {
+				// TODO: also check that the delegate was legit to forge the block ?
+				// likely too much work since in the end we use only a few peers of the list
+				// or maybe only the ones claiming height > current node height
+				verification = modules.blocks.verifyBlockHeader(res.body.header);
+			} catch (e) {
+				verification.errors = [e];
+			}
 
 
-						if(!verification.verified){
-							library.logger.warn('# Received invalid block header from peer. Can be a tentative to attack the network!');
-							library.logger.warn(peer.toString() + " sent header",res.body.header);
-							library.logger.warn("errors", verification);
-
-							return cb();
-						}
-						else{
-							library.logger.debug(['Received height: ', res.body.header.height, ', block_id: ', res.body.header.id,' from peer'].join(''), peer.toString());
-							return cb(null, {peer: peer, height: res.body.header.height, header:res.body.header});
-						}
-					});
-				} else {
-					library.logger.warn('Failed to validate peer', peer.toString());
-					return cb();
-				}
-			}, function (err, heights) {
-				__private.network = __private.findGoodPeers(heights);
-
-				if (err) {
-					return cb(err);
-				} else if (!__private.network.peers.length) {
-					return cb('Failed to find enough good peers to sync with');
-				} else {
-
-					return cb(null, __private.network);
-				}
-			});
+			if(!verification.verified){
+				library.logger.warn('Received invalid block header from peer!');
+				library.logger.trace(peer.toString() + " sent header", res.body.header);
+				library.logger.warn("errors", verification.errors);
+				return cb();
+			}
+			else{
+				library.logger.debug(['Received height: ', res.body.header.height, ', block_id: ', res.body.header.id,' from peer'].join(''), peer.toString());
+				return cb(null, {peer: peer, height: res.body.header.height, header:res.body.header});
+			}
 		});
+	}, function (err, heights) {
+		__private.network = __private.findGoodPeers(heights);
+
+		if (err) {
+			return cb(err);
+		} else if (!__private.network.peers.length) {
+			return cb('Failed to find enough good peers to sync with');
+		} else {
+
+			return cb(null, __private.network);
+		}
 	});
 };
 
