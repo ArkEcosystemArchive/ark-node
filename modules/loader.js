@@ -360,7 +360,7 @@ __private.loadBlocksFromNetwork = function (cb) {
 						return seriesCb();
 					}
 					__private.blocksToSync = peer.height - lastBlock.height;
-					library.logger.debug('Looking for common block with: ' + peer.string);
+					library.logger.debug('Looking for common block with: ' + peer.toString());
 					modules.blocks.getCommonBlock(peer, lastBlock.height, function (err, result) {
 						if (err) {
 							tryCount++;
@@ -369,14 +369,14 @@ __private.loadBlocksFromNetwork = function (cb) {
 						}
 						else if (result.lastBlockHeight && result.lastBlockHeight <= lastBlock.height){
 							tryCount++;
-							return seriesCb("No new block from " + peer.string);
+							return seriesCb("No new block from " + peer.toString());
 						}
 						else if (!result.common) {
 							tryCount++;
-							return seriesCb("Detected forked chain, no common block with " + peer.string);
+							return seriesCb("Detected forked chain, no common block with " + peer.toString());
 						}
 						else{
-							library.logger.info(['Found common block ', result.common.height, 'with', peer.string].join(' '));
+							library.logger.info(['Found common block ', result.common.height, 'with', peer.toString()].join(' '));
 							return seriesCb();
 						}
 					});
@@ -387,13 +387,13 @@ __private.loadBlocksFromNetwork = function (cb) {
 			], function (err, lastBlock) {
 				if(!lastBlock){
 					tryCount++;
-					library.logger.info("No new block received from " + peer.string);
+					library.logger.info("No new block received from " + peer.toString());
 				}
 				else{
 					if(err){
 						library.logger.error(err, lastBlock);
 					}
-					library.logger.info("Processsed blocks to height " + lastBlock.height + " from " + peer.string);
+					library.logger.info("Processsed blocks to height " + lastBlock.height + " from " + peer.toString());
 				}
 
 
@@ -621,7 +621,7 @@ Loader.prototype.getNetwork = function (force, cb) {
 
 			peers = __private.shuffle(peers);
 
-			library.logger.debug(['Received', peers.length, 'peers from'].join(' '), res.peer.string);
+			library.logger.debug(['Received', peers.length, 'peers from'].join(' '), res.peer.toString());
 
 			// Validate each peer and then attempt to get its height
 			async.map(peers, function (peer, cb) {
@@ -635,7 +635,7 @@ Loader.prototype.getNetwork = function (force, cb) {
 					}, function (err, res) {
 						if (err) {
 
-							library.logger.warn('Failed to get height from peer', peer.string);
+							library.logger.warn('Failed to get height from peer', peer.toString());
 							library.logger.warn("Error",err);
 							return cb();
 						}
@@ -648,25 +648,25 @@ Loader.prototype.getNetwork = function (force, cb) {
 							// or maybe only the ones claiming height > current node height
 							verification = modules.blocks.verifyBlockHeader(res.body.header);
 						} catch (e) {
-							library.logger.warn('Failed verifiy block header from', peer.string);
+							library.logger.warn('Failed verifiy block header from', peer.toString());
 							library.logger.warn("Error", e);
 						}
 
 
 						if(!verification.verified){
 							library.logger.warn('# Received invalid block header from peer. Can be a tentative to attack the network!');
-							library.logger.warn(peer.string + " sent header",res.body.header);
+							library.logger.warn(peer.toString() + " sent header",res.body.header);
 							library.logger.warn("errors", verification);
 
 							return cb();
 						}
 						else{
-							library.logger.debug(['Received height:', res.body.header.height, ', block_id: ', res.body.header.id,'from peer'].join(' '), peer.toString());
+							library.logger.debug(['Received height: ', res.body.header.height, ', block_id: ', res.body.header.id,' from peer'].join(''), peer.toString());
 							return cb(null, {peer: peer, height: res.body.header.height, header:res.body.header});
 						}
 					});
 				} else {
-					library.logger.warn('Failed to validate peer', peer);
+					library.logger.warn('Failed to validate peer', peer.toString());
 					return cb();
 				}
 			}, function (err, heights) {

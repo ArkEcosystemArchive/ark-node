@@ -68,7 +68,7 @@ function Peer(ip, port, version, os){
 	};
 
 	Peer.prototype.toString = function(){
-		return this.ip+":"+this.port;
+		return this.protocol+"://"+this.ip+":"+this.port;
 	};
 
 	Peer.prototype.normalizeHeader = function(header){
@@ -136,6 +136,7 @@ function Peer(ip, port, version, os){
 
 	Peer.prototype.request = function(api, options, cb){
 		library.logger.trace("request", api);
+
 		var req = {
 			url: this.protocol+'://' + this.ip + ':' + this.port + api,
 			method: options.method,
@@ -145,6 +146,10 @@ function Peer(ip, port, version, os){
 
 		if (options.data) {
 			req.body = options.data;
+		}
+
+		if(options.method == "POST"){
+			library.logger.debug("POST request", req);
 		}
 
 		var request = popsicle.request(req);
