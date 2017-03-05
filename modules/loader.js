@@ -329,7 +329,7 @@ __private.loadBlocksFromNetwork = function (cb) {
 
 	var peers=__private.shuffle(network.peers).sort(function(p1, p2){
 		if(p1.height==p2.height){
-			return p1.blockheader.id<p2.blockheader.id;
+			return p1.blockheader.timestamp - p2.blockheader.timestamp;
 		}
 		else{
 			return p1.height<p2.height;
