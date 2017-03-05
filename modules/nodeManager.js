@@ -256,7 +256,7 @@ __private.prepareBlock = function(block, peer, cb){
 			}
 			// lets download the missing ones from the peer that sent the block.
 			else{
-				modules.transport.getFromPeer(peer, {
+				modules.transport.requestFromPeer(peer, {
 					 method: 'GET',
 					api: '/transactionsFromIds?blockid=' + block.id + "&ids='"+missingTransactionIds.join(",")+"'"
 				}, function (err, res) {

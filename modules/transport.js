@@ -103,10 +103,9 @@ __private.attachApi = function () {
 
 	router.get('/list', function (req, res) {
 		res.set(__private.headers);
-		modules.peers.list({limit: 100}, function (err, peers) {
-			peers=peers.map(function(peer){return peer.toObject()});
-			return res.status(200).json({peers: !err ? peers : []});
-		});
+		var peers = modules.peers.listBroadcastPeers();
+		peers = peers.map(function(peer){return peer.toObject()});
+		return res.status(200).json({peers: peers});
 	});
 
 	router.get('/blocks/common', function (req, res, next) {
@@ -382,49 +381,49 @@ Transport.prototype.broadcast = function (config, options, cb) {
 	library.logger.debug('Broadcast', ["API:", options.api, "METHOD:", options.method, "DATA:", Object.keys(options.data).join(",")].join(" "));
 
 	config.limit = config.limit || 1;
-	modules.peers.list(config, function (err, peers) {
-		if (!config.all && peers.length > config.limit) {
-			peers = peers.slice(0,config.limit);
-		}
-		if (!err) {
-			// TODO: use a good bloom filter lib
-			// filtering out the peers likely already reached
-			// if(config.bloomfilter){
-			// 	peers=peers.filter(function(peer){
-			// 		if(!options.bloomfilter.checkEntry(peer.string)){
-			// 			options.bloomfilter.addEntry(peer.string);
-			// 			return true;
-			// 		}
-			// 		return false;
-			// 	});
-			// 	block.bloomfilter=config.bloomfilter.exportData().toString();
-			// }
-			async.eachLimit(peers, 3, function (peer, cb) {
-				if(!modules.system.isMyself(peer.toObject())){
-					return self.getFromPeer(peer, options, cb);
-				}
-				else{
-					cb();
-				}
-			}, function (err) {
-				if (cb) {
-					return cb(err);
-				}
-			});
-		} else if (cb) {
-			return cb(err);
-		}
-		else{
-			library.logger.error("Error broadcasting", err);
-		}
-	});
+
+	var peers = modules.peers.listBroadcastPeers()
+	if (!config.all && peers.length > config.limit) {
+		peers = peers.slice(0,config.limit);
+	}
+	if (!err) {
+		// TODO: use a good bloom filter lib
+		// filtering out the peers likely already reached
+		// if(config.bloomfilter){
+		// 	peers=peers.filter(function(peer){
+		// 		if(!options.bloomfilter.checkEntry(peer.string)){
+		// 			options.bloomfilter.addEntry(peer.string);
+		// 			return true;
+		// 		}
+		// 		return false;
+		// 	});
+		// 	block.bloomfilter=config.bloomfilter.exportData().toString();
+		// }
+		async.each(peers, function (peer, cb) {
+			if(!modules.system.isMyself(peer)){
+				return self.requestFromPeer(peer, options, cb);
+			}
+			else{
+				cb();
+			}
+		}, function (err) {
+			if (cb) {
+				return cb(err);
+			}
+		});
+	} else if (cb) {
+		return cb(err);
+	}
+	else{
+		library.logger.error("Error broadcasting", err);
+	}
 };
 
 //
-//__API__ `getFromRandomPeer`
+//__API__ `requestFromRandomPeer`
 
 //
-Transport.prototype.getFromRandomPeer = function (config, options, cb) {
+Transport.prototype.requestFromRandomPeer = function (config, options, cb) {
 	if (typeof options === 'function') {
 		cb = options;
 		options = config;
@@ -433,27 +432,25 @@ Transport.prototype.getFromRandomPeer = function (config, options, cb) {
 	config.limit = 1;
 
 	async.retry(20, function (cb) {
-		modules.peers.list(config, function (err, peers) {
-			if (!err && peers.length) {
-
-				return self.getFromPeer(peers[0], options, cb);
-			} else {
-				return cb(err || 'No reachable peers in db');
-			}
-		});
+		var peers = modules.peers.listGoodPeers();
+		if (peers.length) {
+			return self.requestFromPeer(peers[0], options, cb);
+		} else {
+			return cb('No peers stored');
+		}
 	}, function (err, results) {
 		return cb(err, results);
 	});
 };
 
 //
-//__API__ `getFromPeer`
+//__API__ `requestFromPeer`
 
 //
-Transport.prototype.getFromPeer = function (peer, options, cb) {
+Transport.prototype.requestFromPeer = function (peer, options, cb) {
 	var url;
 	peer = modules.peers.accept(peer);
-	library.logger.trace("getFromPeer", peer.toObject());
+	library.logger.trace("requestFromPeer", peer.toObject());
 
 	if (options.api) {
 		url = '/peer' + options.api;

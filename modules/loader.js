@@ -79,7 +79,7 @@ __private.syncFromNetworkTrigger = function (turnOn) {
 };
 //
 // __private.loadSignatures = function (cb) {
-// 	modules.transport.getFromRandomPeer({
+// 	modules.transport.requestFromRandomPeer({
 // 		api: '/signatures',
 // 		method: 'GET'
 // 	}, function (err, res) {
@@ -109,7 +109,7 @@ __private.syncFromNetworkTrigger = function (turnOn) {
 // };
 
 __private.loadUnconfirmedTransactions = function (cb) {
-	modules.transport.getFromRandomPeer({
+	modules.transport.requestFromRandomPeer({
 		api: '/transactions',
 		method: 'GET'
 	}, function (err, res) {
@@ -602,7 +602,7 @@ Loader.prototype.getNetwork = function (force, cb) {
 	}
 
 	// Fetch a list of 100 random peers
-	modules.transport.getFromRandomPeer({
+	modules.transport.requestFromRandomPeer({
 	 	api: '/list',
 	 	method: 'GET'
 	}, function (err, res) {
@@ -628,7 +628,7 @@ Loader.prototype.getNetwork = function (force, cb) {
 				var peerIsValid = library.schema.validate(modules.peers.inspect(peer), schema.getNetwork.peer);
 
 				if (peerIsValid) {
-					modules.transport.getFromPeer(peer, {
+					modules.transport.requestFromPeer(peer, {
 						api: '/height',
 						method: 'GET',
 						timeout: 2000

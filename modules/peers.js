@@ -23,7 +23,8 @@ var __private = {
 	// not banning at the start of nodes
 	coldstart: new Date().getTime(),
 
-	// hold the peer list
+	// hold the Peer list
+	// By default one peer by IP is accepted.
 	peers: {},
 
 	// headers to send to peers
@@ -98,15 +99,12 @@ function Peer(ip, port, version, os){
 
 	Peer.prototype.updateStatus = function(){
 		var that = this;
-		this.get('/api/blocks/getHeight', function(err, body){
-			that.publicapi = !!err;
-		});
 		this.get('/peer/height', function(err, res){
 			if(!err){
 				that.height = res.body.height;
 				that.headers = res.body.header;
 				var lastBlock = modules.blockchain.getLastBlock();
-				if(that.height > lastBlock.height && res.body.header.timestamp > lastBlock.timestamp){
+				if(that.height > lastBlock.height && that.headers.timestamp < lastBlock.timestamp){
 					that.status="FORK";
 				} else{
 					that.status="OK";
@@ -115,6 +113,9 @@ function Peer(ip, port, version, os){
 			else{
 				library.logger.trace(err);
 			}
+		});
+		this.get('/api/blocks/getHeight', function(err, body){
+			that.publicapi = !!err;
 		});
 	};
 
@@ -204,14 +205,26 @@ function Peer(ip, port, version, os){
 	}
 }
 
+// Public methods
+//
+//__API__ `inspect`
+
+// Return a Peer object, trying to sort out with lite clients
+// By default one Peer by IP is accepted.
 Peers.prototype.accept = function(peer){
-	if(__private.peers[peer.ip+":"+peer.port]){
-		return __private.peers[peer.ip+":"+peer.port];
+	var candidate;
+	if(__private.peers[peer.ip]){
+		 candidate = __private.peers[peer.ip];
+		if(candidate.liteclient && peer.port>79){
+			candidate = new Peer(peer.ip, peer.port, peer.version, peer.os);
+			__private.peers[peer.ip] = candidate;
+		}
 	}
 	else {
-		__private.peers[peer.ip+":"+peer.port] = new Peer(peer.ip, peer.port, peer.version, peer.os);
-		return __private.peers[peer.ip+":"+peer.port];
+		candidate = new Peer(peer.ip, peer.port, peer.version, peer.os);
+		__private.peers[peer.ip] = candidate;
 	}
+	return candidate;
 }
 
 // Private methods
@@ -244,7 +257,7 @@ __private.attachApi = function () {
 __private.updatePeersList = function (cb) {
 	library.logger.debug('updating Peers List...');
 	__private.lastPeersUpdate = new Date().getTime();
-	modules.transport.getFromRandomPeer({
+	modules.transport.requestFromRandomPeer({
 		api: '/list',
 		method: 'GET'
 	}, function (err, res) {
@@ -273,9 +286,7 @@ __private.updatePeersList = function (cb) {
 
 						return eachCb();
 					} else {
-						if(!__private.peers[peer.ip+":"+peer.port]){
-							__private.peers[peer.ip+":"+peer.port] = new Peer(peer.ip, peer.port, peer.version, peer.os);
-						};
+						self.accept(peer);
 						return eachCb();
 					}
 				});
@@ -296,64 +307,6 @@ __private.banManager = function (cb) {
 	// 	library.logger.error("stack", err.stack);
 	// 	return cb('Peers#banManager error');
 	// });
-};
-
-__private.getByFilter = function (filter, cb) {
-	var where = [];
-	var params = {};
-
-	if (filter.state) {
-		where.push('"state" = ${state}');
-		params.state = filter.state;
-	}
-
-	if (filter.os) {
-		where.push('"os" = ${os}');
-		params.os = filter.os;
-	}
-
-	if (filter.version) {
-		where.push('"version" = ${version}');
-		params.version = filter.version;
-	}
-
-	if (filter.ip) {
-		where.push('"ip" = ${ip}');
-		params.ip = filter.ip;
-	}
-
-	if (filter.port) {
-		where.push('"port" = ${port}');
-		params.port = filter.port;
-	}
-
-	if (!filter.limit) {
-		params.limit = 100;
-	} else {
-		params.limit = Math.abs(filter.limit);
-	}
-
-	if (!filter.offset) {
-		params.offset = 0;
-	} else {
-		params.offset = Math.abs(filter.offset);
-	}
-
-	if (params.limit > 100) {
-		return cb('Invalid limit. Maximum is 100');
-	}
-
-	var orderBy = OrderBy(
-		filter.orderBy, {
-			sortFields: sql.sortFields
-		}
-	);
-
-	if (orderBy.error) {
-		return cb(orderBy.error);
-	}
-
-	return self.list({},cb);
 };
 
 // Public methods
@@ -384,19 +337,36 @@ Peers.prototype.inspect = function (peer) {
 	return peer;
 };
 
+
+//
+//__API__ `listGoodPeers`
+
+// send peers, with in priority peers that seems to be in same chain and with good response time
+Peers.prototype.listGoodPeers = function() {
+
+	var peers = Object.values(__private.peers);
+
+	var list = peers.filter(function(peer){
+		return peer.status=="OK";
+	}).sort(function(a,b){
+		return a.delay - b.delay;
+	});
+
+	return list;
+};
+
+
+
+//
+//__API__ `listBroadcastPeers`
+
 // send peers, with in priority peers that seems to be in same chain
-//
-//__API__ `list`
+Peers.prototype.listBroadcastPeers = function() {
 
-//
-Peers.prototype.list = function (options, cb) {
+	var peers = Object.values(__private.peers);
 
-	var peers=Object.keys(__private.peers);
-
-	var list = peers.map(function (key) {
-    return __private.peers[key];
-	}).filter(function(peer){
-		return peer.status[0]!="OK";
+	var list = peers.filter(function(peer){
+		return peer.status!="FORK";
 	});
 
 	function shuffle(array) {
@@ -418,9 +388,7 @@ Peers.prototype.list = function (options, cb) {
 	  return array;
 	}
 
-	list = shuffle(list);
-
-	return cb(null, list);
+	return shuffle(list);
 };
 
 
@@ -433,7 +401,8 @@ Peers.prototype.onBind = function (scope) {
 	modules = scope;
 	for(var i=0;i<library.config.peers.list.length;i++){
 		var peer = library.config.peers.list[i];
-		__private.peers[peer.ip+":"+peer.port] = new Peer(peer.ip, peer.port);
+		peer = self.accept(peer);
+		peer.status = "OK";
 	}
 
 	__private.headers = {
@@ -503,13 +472,9 @@ shared.getPeers = function (req, cb) {
 			return cb('Invalid limit. Maximum is 100');
 		}
 
-		__private.getByFilter(req.body, function (err, peers) {
-			if (err) {
-				return cb('Failed to get peers');
-			}
-			peers=peers.map(function(peer){return peer.toObject()});
-			return cb(null, {peers: peers});
-		});
+		var peers = self.listBroadcastPeers();
+		peers = peers.map(function(peer){return peer.toObject()});
+		return cb(null, {peers: peers});
 	});
 };
 
@@ -519,26 +484,13 @@ shared.getPeer = function (req, cb) {
 			return cb(err[0].message);
 		}
 
-		var peer = __private.peers[req.body.ip+":"+req.body.port];
+		var peer = __private.peers[req.body.ip];
 		if (peer) {
 			return cb(null, {success: true, peer: peer.toObject()});
 		} else {
 			return cb(null, {success: false, error: 'Peer not found'});
 		}
-		// __private.getByFilter({
-		// 	ip: req.body.ip,
-		// 	port: req.body.port
-		// }, function (err, peers) {
-		// 	if (err) {
-		// 		return cb('Failed to get peer');
-		// 	}
-		//
-		// 	if (peers.length) {
-		// 		return cb(null, {success: true, peer: peers[0]});
-		// 	} else {
-		// 		return cb(null, {success: false, error: 'Peer not found'});
-		// 	}
-		// });
+
 	});
 };
 

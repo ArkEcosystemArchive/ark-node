@@ -565,7 +565,7 @@ Blocks.prototype.getCommonBlock = function (peer, height, cb) {
 		function (res, waterCb) {
 			var ids = res.ids;
 
-			modules.transport.getFromPeer(peer, {
+			modules.transport.requestFromPeer(peer, {
 				api: '/blocks/common?ids=' + ids,
 				method: 'GET'
 			}, function (err, res) {
@@ -1404,7 +1404,7 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, cb) {
 	library.logger.info('Loading blocks from: ' + peer.string);
 
 	// we increase timeout as it can be a big payload
-	modules.transport.getFromPeer(peer, {
+	modules.transport.requestFromPeer(peer, {
 		method: 'GET',
 		api: '/blocks?lastBlockHeight=' + lastValidBlock.height,
 		timeout: 60000
