@@ -61,7 +61,9 @@ function Peer(ip, port, version, os){
 			port: this.port,
 			version: this.version,
 			os: this.os,
-			height: this.height
+			height: this.height,
+			status: this.status,
+			delay: this.delay
 		};
 	};
 
@@ -359,13 +361,13 @@ function shuffle(array) {
 //
 //__API__ `listGoodPeers`
 
-// send peers, with in priority peers that seems to be in same chain
+// send peers, with in priority peers that have good response time
 Peers.prototype.listGoodPeers = function() {
 
 	var peers = Object.values(__private.peers);
 
 	var list = peers.filter(function(peer){
-		return peer.status=="OK";
+		return peer.delay < 2000;
 	});
 
 	return shuffle(list);
@@ -400,6 +402,7 @@ Peers.prototype.onBind = function (scope) {
 		var peer = library.config.peers.list[i];
 		peer = self.accept(peer);
 		peer.status = "OK";
+		peer.delay = 0;
 	}
 
 	__private.headers = {
