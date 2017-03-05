@@ -337,22 +337,38 @@ Peers.prototype.inspect = function (peer) {
 	return peer;
 };
 
+function shuffle(array) {
+	var currentIndex = array.length, temporaryValue, randomIndex;
+
+	// While there remain elements to shuffle...
+	while (0 !== currentIndex) {
+
+		// Pick a remaining element...
+		randomIndex = Math.floor(Math.random() * currentIndex);
+		currentIndex -= 1;
+
+		// And swap it with the current element.
+		temporaryValue = array[currentIndex];
+		array[currentIndex] = array[randomIndex];
+		array[randomIndex] = temporaryValue;
+	}
+
+	return array;
+}
 
 //
 //__API__ `listGoodPeers`
 
-// send peers, with in priority peers that seems to be in same chain and with good response time
+// send peers, with in priority peers that seems to be in same chain
 Peers.prototype.listGoodPeers = function() {
 
 	var peers = Object.values(__private.peers);
 
 	var list = peers.filter(function(peer){
 		return peer.status=="OK";
-	}).sort(function(a,b){
-		return a.delay - b.delay;
 	});
 
-	return list;
+	return shuffle(list);
 };
 
 
@@ -368,25 +384,6 @@ Peers.prototype.listBroadcastPeers = function() {
 	var list = peers.filter(function(peer){
 		return peer.status!="FORK";
 	});
-
-	function shuffle(array) {
-	  var currentIndex = array.length, temporaryValue, randomIndex;
-
-	  // While there remain elements to shuffle...
-	  while (0 !== currentIndex) {
-
-	    // Pick a remaining element...
-	    randomIndex = Math.floor(Math.random() * currentIndex);
-	    currentIndex -= 1;
-
-	    // And swap it with the current element.
-	    temporaryValue = array[currentIndex];
-	    array[currentIndex] = array[randomIndex];
-	    array[randomIndex] = temporaryValue;
-	  }
-
-	  return array;
-	}
 
 	return shuffle(list);
 };
