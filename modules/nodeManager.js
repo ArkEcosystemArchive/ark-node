@@ -205,6 +205,9 @@ NodeManager.prototype.onRebuildBlockchain = function(blocksToRemove, state, cb) 
 			else if(network.height > lastBlock.height){
 				library.logger.info("Observed network height is higher", {network: network.height, node:lastBlock.height});
 				library.logger.info("Rebuilding from network");
+				if(network.height - lastBlock.height > 51){
+					blocksToRemove = 200;
+				}
 				return modules.blocks.removeSomeBlocks(blocksToRemove, mSequence);
 			}
 			else{
