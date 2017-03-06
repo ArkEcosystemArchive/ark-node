@@ -178,7 +178,7 @@ NodeManager.prototype.onBlocksReceived = function(blocks, peer, cb) {
 
 		}, function(err){
 			if(err){
-				library.logger.error(err, currentBlock);
+				library.logger.error(err, currentBlock.id);
 				modules.blockchain.removeBlock(currentBlock);
 			}
 
