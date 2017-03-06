@@ -519,9 +519,8 @@ function startInteractiveMode(scope){
 			});
 			self.log("Forging:", scope.modules.delegates.isForging());
 			self.log("Active Delegate:", scope.modules.delegates.isActiveDelegate());
-			scope.modules.peers.list(null, function(err, peers){
-				self.log("Connected Peers:", peers.length);
-			});
+			var peers = scope.modules.peers.listBroadcastPeers();
+			self.log("Connected Peers:", peers.length);
 			self.log("Mempool size:", scope.modules.transactionPool.getMempoolSize());
 
 	  });

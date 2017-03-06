@@ -225,7 +225,7 @@ Peers.prototype.listBroadcastPeers = function() {
 	var peers = Object.values(__private.peers);
 
 	var list = peers.filter(function(peer){
-		return peer.status!="FORK";
+		return peer.status!="FORK" && !peer.liteclient;
 	});
 
 	return shuffle(list);

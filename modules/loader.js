@@ -356,7 +356,6 @@ __private.loadBlocksFromNetwork = function (cb) {
 
 			async.waterfall([
 				function getCommonBlock (seriesCb) {
-					console.log(peer.toString());
 					if (lastBlock.height === 1){
 						return seriesCb();
 					}
