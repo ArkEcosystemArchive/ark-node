@@ -232,6 +232,68 @@ NodeManager.prototype.onRebuildBlockchain = function(blocksToRemove, state, cb) 
 	}, cb);
 };
 
+//
+//__API__ `performSPVFix`
+
+//
+NodeManager.prototype.performSPVFix = function (cb) {
+	library.managementSequence.add(function(mSequence){
+		var fixedAccounts = [];
+		library.db.query('select address, "publicKey", balance from mem_accounts').then(function(rows){
+			async.eachSeries(rows, function(row, eachCb){
+				var publicKey=row.publicKey;
+				if(publicKey){
+					publicKey=publicKey.toString("hex");
+				}
+				var receivedSQL='select sum(amount) as total, count(amount) as count from transactions where amount > 0 and "recipientId" = \''+row.address+'\';'
+				var spentSQL='select sum(amount+fee) as total, count(amount) as count from transactions where "senderPublicKey" = \'\\x'+publicKey+'\';'
+				var rewardsSQL='select sum(reward+"totalFee") as total, count(reward) as count from blocks where "generatorPublicKey" = \'\\x'+publicKey+'\';'
+
+				var series = {
+					received: function(cb){
+						library.db.query(receivedSQL).then(function(rows){
+							cb(null, rows[0]);
+						});
+					}
+				};
+
+				if(publicKey){
+					series.spent = function(cb){
+						library.db.query(spentSQL).then(function(rows){
+							cb(null, rows[0]);
+						});
+					};
+					series.rewards = function(cb){
+						library.db.query(rewardsSQL).then(function(rows){
+							cb(null, rows[0]);
+						});
+					};
+				}
+
+				async.series(series, function(err, result){
+					if(publicKey){
+						result.balance = parseInt(result.received.total||0) - parseInt(result.spent.total||0) + parseInt(result.rewards.total||0);
+					}
+					else {
+						result.balance = parseInt(result.received.total||0);
+					}
+
+					if(result.balance != row.balance){
+						fixedAccounts.push(row);
+						var diff = result.balance - row.balance;
+						library.db.none("update mem_accounts set balance = balance + "+diff+", u_balance = u_balance + "+diff+" where address = '"+row.address+"';");
+					}
+					return eachCb();
+
+				});
+			}, function(error){
+				mSequence(error, fixedAccounts);
+			});
+		});
+	}, cb);
+
+};
+
 
 
 //make sure the block transaction list is complete, otherwise try to find transactions

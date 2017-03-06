@@ -617,6 +617,19 @@ function startInteractiveMode(scope){
 	    this.log(account[command]);
 			callback();
 	  });
+
+		vorpal
+		  .command('spv fix', 'fix database using SPV on all accounts')
+		  .action(function(args, callback) {
+				var self = this;
+		    scope.modules.nodeManager.performSPVFix(function(err, results){
+					if(err) self.log(colors.red(err));
+					else self.log("Fixed "+results.length+" accounts");
+					callback();
+				});
+
+		  });
+
 	vorpal
 	  .command('spv <address>', 'Perform Simple Payment Verification against the blockchain')
 	  .action(function(args, callback) {
