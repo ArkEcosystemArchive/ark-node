@@ -201,7 +201,20 @@ Peers.prototype.listGoodPeers = function() {
 	return shuffle(list);
 };
 
+//
+//__API__ `listPBFTPeers`
 
+// send peers, with in priority peers that have good response time and on same chain
+Peers.prototype.listPBFTPeers = function() {
+
+	var peers = Object.values(__private.peers);
+
+	var list = peers.filter(function(peer){
+		return peer.status!="FORK" && peer.delay < 2000;
+	});
+
+	return shuffle(list);
+};
 
 //
 //__API__ `listBroadcastPeers`

@@ -602,7 +602,7 @@ Loader.prototype.getNetwork = function (force, cb) {
 		return cb(null, __private.network);
 	}
 
-	var peers = modules.peers.listBroadcastPeers();
+	var peers = modules.peers.listPBFTPeers();
 
 	// Validate each peer and then attempt to get its height
 	async.map(peers, function (peer, cb) {
