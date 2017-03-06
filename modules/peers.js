@@ -111,7 +111,6 @@ __private.updatePeersList = function (cb) {
 				library.schema.validate(peer, schema.updatePeersList.peer, function (err) {
 					if (err) {
 						err.forEach(function (e) {
-							console.log(peer);
 							library.logger.error(['Rejecting invalid peer:', peer.ip, e.path, e.message].join(' '));
 						});
 

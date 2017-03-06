@@ -382,41 +382,21 @@ Transport.prototype.broadcast = function (config, options, cb) {
 
 	config.limit = config.limit || 1;
 
-	var peers = modules.peers.listBroadcastPeers()
+	var peers = modules.peers.listBroadcastPeers();
+
 	if (!config.all && peers.length > config.limit) {
 		peers = peers.slice(0,config.limit);
 	}
-	if (!err) {
-		// TODO: use a good bloom filter lib
-		// filtering out the peers likely already reached
-		// if(config.bloomfilter){
-		// 	peers=peers.filter(function(peer){
-		// 		if(!options.bloomfilter.checkEntry(peer.string)){
-		// 			options.bloomfilter.addEntry(peer.string);
-		// 			return true;
-		// 		}
-		// 		return false;
-		// 	});
-		// 	block.bloomfilter=config.bloomfilter.exportData().toString();
-		// }
-		async.each(peers, function (peer, cb) {
-			if(!modules.system.isMyself(peer)){
-				return self.requestFromPeer(peer, options, cb);
-			}
-			else{
-				cb();
-			}
-		}, function (err) {
-			if (cb) {
-				return cb(err);
-			}
-		});
-	} else if (cb) {
-		return cb(err);
-	}
-	else{
-		library.logger.error("Error broadcasting", err);
-	}
+	// TODO: use a good bloom filter lib
+	// filtering out the peers likely already reached
+	async.each(peers, function (peer, cb) {
+		if(!modules.system.isMyself(peer)){
+			return self.requestFromPeer(peer, options, cb);
+		}
+		else{
+			return cb();
+		}
+	}, cb);
 };
 
 //
