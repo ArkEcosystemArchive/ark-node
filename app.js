@@ -450,7 +450,7 @@ d.run(function () {
 		}]
 	}, function (err, scope) {
 		if (err) {
-			logger.fatal(err);
+			scope.logger.fatal(err);
 		} else {
 
 			scope.logger.info('Modules ready and launched');
@@ -622,12 +622,11 @@ function startInteractiveMode(scope){
 		  .command('spv fix', 'fix database using SPV on all accounts')
 		  .action(function(args, callback) {
 				var self = this;
-		    scope.modules.nodeManager.performSPVFix(function(err, results){
+				scope.managementSequence.add(scope.modules.nodeManager.performSPVFix, function(err, results){
 					if(err) self.log(colors.red(err));
 					else self.log("Fixed "+results.length+" accounts");
 					callback();
 				});
-
 		  });
 
 	vorpal
