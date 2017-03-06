@@ -344,9 +344,6 @@ __private.loadBlocksFromNetwork = function (cb) {
 	// should be separated because the strategies are different.
 	async.whilst(
 		function () {
-
-
-			//return !loaded && (tryCount < 5) && (peers.length > tryCount);
 			return modules.blockchain.isMissingNewBlock() && (tryCount < 3) && (peers.length > tryCount);
 		},
 		function (next) {
@@ -384,16 +381,17 @@ __private.loadBlocksFromNetwork = function (cb) {
 				function loadBlocks (seriesCb) {
 					modules.blocks.loadBlocksFromPeer(peer, seriesCb);
 				}
-			], function (err, lastBlock) {
-				if(!lastBlock){
+			], function (err, block) {
+				// no new block processed
+				if(!block || block.height == lastBlock.height){
 					tryCount++;
-					library.logger.info("No new block received from " + peer.toString());
+					library.logger.info("No new block processed from " + peer.toString());
 				}
 				else{
 					if(err){
 						library.logger.error(err);
 					}
-					library.logger.info("Processsed blocks to height " + lastBlock.height + " from " + peer.toString());
+					library.logger.info("Processsed blocks to height " + block.height + " from " + peer.toString());
 				}
 
 

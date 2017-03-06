@@ -148,7 +148,7 @@ NodeManager.prototype.onNetworkObserved = function(network){
 //
 NodeManager.prototype.onBlocksReceived = function(blocks, peer, cb) {
 	// we had to pull several blocks from network? means we are not in sync anymore
-	if(blocks.length > 0){
+	if(blocks.length > 1){
 		__private.blockchainReady = false;
 	}
 
@@ -161,6 +161,7 @@ NodeManager.prototype.onBlocksReceived = function(blocks, peer, cb) {
 			block.totalFee = parseInt(block.totalFee);
 			block.verified = false;
 		  block.processed = false;
+      // looks like the last block pulled, let's broadcast it
 			block.broadcast = blocks.length == 1;
 
 			// rationale: onBlocksReceived received is called within another thread than onBlockReceived
@@ -183,7 +184,7 @@ NodeManager.prototype.onBlocksReceived = function(blocks, peer, cb) {
 			}
 
 			// we don't deal with download management, just return to say "blocks processed, go ahead"
-			return mSequence && mSequence(err, currentBlock);
+			return mSequence(err, currentBlock);
 
 		});
 
