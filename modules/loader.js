@@ -383,7 +383,7 @@ __private.loadBlocksFromNetwork = function (cb) {
 				}
 			], function (err, block) {
 				// no new block processed
-				if(!block || block.height == lastBlock.height){
+				if(!block || block.height == lastBlock.height + 1){
 					tryCount++;
 					library.logger.info("No new block processed from " + peer.toString());
 				}
