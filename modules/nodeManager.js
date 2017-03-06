@@ -197,39 +197,46 @@ NodeManager.prototype.onBlocksReceived = function(blocks, peer, cb) {
 //
 NodeManager.prototype.onRebuildBlockchain = function(blocksToRemove, state, cb) {
 	library.managementSequence.add(function (mSequence) {
-		modules.loader.getNetwork(true, function(err, network){
-			var lastBlock = modules.blockchain.getLastBlock();
-			if(!network || !network.height){
-				return mSequence && mSequence("Can't find peers to sync with...");
+		self.performSPVFix(function(err, results){
+			if(results && results.length > 0){
+				library.logger.warn("Fixed + "+results.length+" accounts", results);
+				blocksToRemove = 200;
 			}
-			else if(network.height > lastBlock.height){
-				library.logger.info("Observed network height is higher", {network: network.height, node:lastBlock.height});
-				library.logger.info("Rebuilding from network");
-				if(network.height - lastBlock.height > 51){
-					blocksToRemove = 200;
+			modules.loader.getNetwork(true, function(err, network){
+				var lastBlock = modules.blockchain.getLastBlock();
+				if(!network || !network.height){
+					return mSequence && mSequence("Can't find peers to sync with...");
 				}
-				return modules.blocks.removeSomeBlocks(blocksToRemove, mSequence);
-			}
-			else{
-				var bestBlock = modules.loader.getNetworkSmallestBlock();
-				// network.height is some kind of "conservative" estimation, so some peers can have bigger height
-				if(bestBlock && bestBlock.height > lastBlock.height){
-					library.logger.info("Observed network is on same height, but some peers with bigger height", {network: {id: bestBlock.id, height:bestBlock.height}, node:{id: lastBlock.id, height:lastBlock.height}});
+				else if(network.height > lastBlock.height){
+					library.logger.info("Observed network height is higher", {network: network.height, node:lastBlock.height});
 					library.logger.info("Rebuilding from network");
-					return modules.blocks.removeSomeBlocks(blocksToRemove, mSequence);
-				}
-				else if(bestBlock && bestBlock.height == lastBlock.height && bestBlock.timestamp < lastBlock.timestamp){
-					library.logger.info("Observed network is on same height, but found a block with smaller timestamp", {network: {id: bestBlock.id, height:bestBlock.height}, node:{id: lastBlock.id, height:lastBlock.height}});
-					library.logger.info("Rebuilding from network");
+					if(network.height - lastBlock.height > 51){
+						blocksToRemove = 200;
+					}
 					return modules.blocks.removeSomeBlocks(blocksToRemove, mSequence);
 				}
 				else{
-					library.logger.info("Observed network is on same height, and same block timestamp", {network: network.height, node:lastBlock.height});
-					return modules.blocks.removeSomeBlocks(1, mSequence);
+					var bestBlock = modules.loader.getNetworkSmallestBlock();
+					// network.height is some kind of "conservative" estimation, so some peers can have bigger height
+					if(bestBlock && bestBlock.height > lastBlock.height){
+						library.logger.info("Observed network is on same height, but some peers with bigger height", {network: {id: bestBlock.id, height:bestBlock.height}, node:{id: lastBlock.id, height:lastBlock.height}});
+						library.logger.info("Rebuilding from network");
+						return modules.blocks.removeSomeBlocks(blocksToRemove, mSequence);
+					}
+					else if(bestBlock && bestBlock.height == lastBlock.height && bestBlock.timestamp < lastBlock.timestamp){
+						library.logger.info("Observed network is on same height, but found a block with smaller timestamp", {network: {id: bestBlock.id, height:bestBlock.height}, node:{id: lastBlock.id, height:lastBlock.height}});
+						library.logger.info("Rebuilding from network");
+						return modules.blocks.removeSomeBlocks(blocksToRemove, mSequence);
+					}
+					else{
+						library.logger.info("Observed network is on same height, and same block timestamp", {network: network.height, node:lastBlock.height});
+						return modules.blocks.removeSomeBlocks(1, mSequence);
+					}
 				}
-			}
-		});
-	}, cb);
+			});
+		}, cb);
+	});
+
 };
 
 //
@@ -237,61 +244,58 @@ NodeManager.prototype.onRebuildBlockchain = function(blocksToRemove, state, cb) 
 
 //
 NodeManager.prototype.performSPVFix = function (cb) {
-	library.managementSequence.add(function(mSequence){
-		var fixedAccounts = [];
-		library.db.query('select address, "publicKey", balance from mem_accounts').then(function(rows){
-			async.eachSeries(rows, function(row, eachCb){
-				var publicKey=row.publicKey;
-				if(publicKey){
-					publicKey=publicKey.toString("hex");
-				}
-				var receivedSQL='select sum(amount) as total, count(amount) as count from transactions where amount > 0 and "recipientId" = \''+row.address+'\';'
-				var spentSQL='select sum(amount+fee) as total, count(amount) as count from transactions where "senderPublicKey" = \'\\x'+publicKey+'\';'
-				var rewardsSQL='select sum(reward+"totalFee") as total, count(reward) as count from blocks where "generatorPublicKey" = \'\\x'+publicKey+'\';'
+	var fixedAccounts = [];
+	library.db.query('select address, "publicKey", balance from mem_accounts').then(function(rows){
+		async.eachSeries(rows, function(row, eachCb){
+			var publicKey=row.publicKey;
+			if(publicKey){
+				publicKey=publicKey.toString("hex");
+			}
+			var receivedSQL='select sum(amount) as total, count(amount) as count from transactions where amount > 0 and "recipientId" = \''+row.address+'\';'
+			var spentSQL='select sum(amount+fee) as total, count(amount) as count from transactions where "senderPublicKey" = \'\\x'+publicKey+'\';'
+			var rewardsSQL='select sum(reward+"totalFee") as total, count(reward) as count from blocks where "generatorPublicKey" = \'\\x'+publicKey+'\';'
 
-				var series = {
-					received: function(cb){
-						library.db.query(receivedSQL).then(function(rows){
-							cb(null, rows[0]);
-						});
-					}
+			var series = {
+				received: function(cb){
+					library.db.query(receivedSQL).then(function(rows){
+						cb(null, rows[0]);
+					});
+				}
+			};
+
+			if(publicKey){
+				series.spent = function(cb){
+					library.db.query(spentSQL).then(function(rows){
+						cb(null, rows[0]);
+					});
 				};
+				series.rewards = function(cb){
+					library.db.query(rewardsSQL).then(function(rows){
+						cb(null, rows[0]);
+					});
+				};
+			}
 
+			async.series(series, function(err, result){
 				if(publicKey){
-					series.spent = function(cb){
-						library.db.query(spentSQL).then(function(rows){
-							cb(null, rows[0]);
-						});
-					};
-					series.rewards = function(cb){
-						library.db.query(rewardsSQL).then(function(rows){
-							cb(null, rows[0]);
-						});
-					};
+					result.balance = parseInt(result.received.total||0) - parseInt(result.spent.total||0) + parseInt(result.rewards.total||0);
+				}
+				else {
+					result.balance = parseInt(result.received.total||0);
 				}
 
-				async.series(series, function(err, result){
-					if(publicKey){
-						result.balance = parseInt(result.received.total||0) - parseInt(result.spent.total||0) + parseInt(result.rewards.total||0);
-					}
-					else {
-						result.balance = parseInt(result.received.total||0);
-					}
+				if(result.balance != row.balance){
+					fixedAccounts.push(row);
+					var diff = result.balance - row.balance;
+					library.db.none("update mem_accounts set balance = balance + "+diff+", u_balance = u_balance + "+diff+" where address = '"+row.address+"';");
+				}
+				return eachCb();
 
-					if(result.balance != row.balance){
-						fixedAccounts.push(row);
-						var diff = result.balance - row.balance;
-						library.db.none("update mem_accounts set balance = balance + "+diff+", u_balance = u_balance + "+diff+" where address = '"+row.address+"';");
-					}
-					return eachCb();
-
-				});
-			}, function(error){
-				mSequence(error, fixedAccounts);
 			});
+		}, function(error){
+			cb(error, fixedAccounts);
 		});
-	}, cb);
-
+	}).catch(cb);
 };
 
 

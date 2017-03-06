@@ -622,7 +622,7 @@ function startInteractiveMode(scope){
 		  .command('spv fix', 'fix database using SPV on all accounts')
 		  .action(function(args, callback) {
 				var self = this;
-				scope.managementSequence.add(scope.modules.nodeManager.performSPVFix, function(err, results){
+				scope.modules.nodeManager.performSPVFix(function(err, results){
 					if(err) self.log(colors.red(err));
 					else self.log("Fixed "+results.length+" accounts");
 					callback();
