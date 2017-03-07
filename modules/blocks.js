@@ -1203,7 +1203,16 @@ __private.applyBlock = function (block, cb) {
 		// Prevents memory leak during synchronisation.
 		keptTransactions = appliedTransactions = appliedUnconfirmedTransactions = removedTransactionsIds = block = null;
 
-		return cb(err);
+		if(err){
+			modules.nodeManager.performSPVFix(function(error, results){
+				if(results){
+					library.logger.warn("Performed SPV fix after block error", err);
+					library.logger.warn("Fixed "+results.length+" accounts",results);
+				}
+				return cb(err);
+			});
+		}
+		else return cb();
 	});
 };
 
