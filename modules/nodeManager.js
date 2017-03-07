@@ -205,7 +205,7 @@ NodeManager.prototype.onRebuildBlockchain = function(blocksToRemove, state, cb) 
 			modules.loader.getNetwork(true, function(err, network){
 				var lastBlock = modules.blockchain.getLastBlock();
 				if(!network || !network.height){
-					return mSequence && mSequence("Can't find peers to sync with...");
+					return mSequence("Can't find peers to sync with...");
 				}
 				else if(network.height > lastBlock.height){
 					library.logger.info("Observed network height is higher", {network: network.height, node:lastBlock.height});
@@ -234,9 +234,8 @@ NodeManager.prototype.onRebuildBlockchain = function(blocksToRemove, state, cb) 
 					}
 				}
 			});
-		}, cb);
-	});
-
+		});
+	}, cb);
 };
 
 //
