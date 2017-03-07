@@ -6,7 +6,7 @@
     "start": "node app.js",
     "doc": "docco -t docs/template/arkio.jst -c docs/template/arkio.css modules/* app.js README.md",
     "start:testnet": "node app.js --genesis genesisBlock.testnet.json --config config.testnet.json -i",
-    "start:devnet": "node app.js --genesis genesisBlock.devnet.json --config config.devnet.json -i",
+    "start:devnet": "node app.js --genesis genesisBlock.devnet.json --config config.devnet.json",
     "start:test": "node app.js --genesis test/genesisBlock.json --config test/config.json",
     "start:newtest": "node app.js --genesis tasks/genesisBlock.json --config tasks/config.json",
     "test": "./node_modules/.bin/mocha",
