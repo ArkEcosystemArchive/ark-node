@@ -199,7 +199,7 @@ NodeManager.prototype.onRebuildBlockchain = function(blocksToRemove, state, cb) 
 	library.managementSequence.add(function (mSequence) {
 		self.performSPVFix(function(err, results){
 			if(results && results.length > 0){
-				library.logger.warn("Fixed + "+results.length+" accounts", results);
+				library.logger.warn("Fixed "+results.length+" accounts", results);
 				blocksToRemove = 200;
 			}
 			modules.loader.getNetwork(true, function(err, network){
