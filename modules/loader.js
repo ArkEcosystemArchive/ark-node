@@ -191,7 +191,7 @@ __private.loadBlockChain = function () {
 	}
 
 	// Reset unconfirmed columns in mem_accounts
-	library.db.none(sql.updateMemAccounts);
+	library.db.none(sql.resetMemAccounts);
 
 	// Count the number of blocks in database. Start build if only 1.
 	// Otherwise try to get some blocks from

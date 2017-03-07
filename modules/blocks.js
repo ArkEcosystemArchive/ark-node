@@ -1283,12 +1283,13 @@ Blocks.prototype.processBlock = function (block, cb) {
 				async.eachSeries(block.transactions, function (transaction, cb) {
 					async.waterfall([
 						function (waterfallCb) {
-							// Removed LOC because it makes no sense
 							transaction.blockId = block.id;
 							// Check if transaction is already in database, otherwise fork 2.
 							// TODO: Uncle forging: Double inclusion is allowed.
 							// DATABASE: read only
-
+							// TODO: keep a special mem pools of recently applied transactions:
+							// - never apply old transactions (ie timestamp > blocktimestamp + 72 hours)
+							// - keep in mem pool all tx younger than 73 hours.
 							library.db.query(sql.getTransactionId, { id: transaction.id }).then(function (rows) {
 								if (rows.length > 0) {
 									library.bus.message("fork",block, 0);
@@ -1306,7 +1307,7 @@ Blocks.prototype.processBlock = function (block, cb) {
 						function (sender, waterfallCb) {
 							// Check if transaction id valid against database state (mem_* tables).
 							// DATABASE: read only
-
+							// TODO: remove this check and create a processGenesisBlock instead
 							if(block.height!=1){
 								library.logic.transaction.verify(transaction, sender, waterfallCb);
 							}

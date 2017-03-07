@@ -559,7 +559,6 @@ Account.prototype.set = function (address, fields, cb) {
 };
 
 
-//TODO: to simplify with the new delegate listing algo
 //
 //__API__ `merge`
 
