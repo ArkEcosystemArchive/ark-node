@@ -387,18 +387,23 @@ __private.prepareBlock = function(block, peer, cb){
 
 //
 NodeManager.prototype.swapLastBlockWith = function(block, peer, cb){
-	async.waterfall([
+	async.series([
+		function(seriesCb){
+			var check = modules.blocks.verifyBlockHeader(block);
+			return seriesCb(check.verified ? null : check.errors.join(" - "));
+		},
 		function(seriesCb){
 			modules.delegates.validateBlockSlot(block, seriesCb);
 		},
-		function(data, seriesCb){
+		function(seriesCb){
 			__private.prepareBlock(block, peer, seriesCb);
 		},
-		function(data, seriesCb){
+		function(seriesCb){
 			return modules.blocks.removeLastBlock(seriesCb);
 		},
-		function(data, seriesCb){
+		function(seriesCb){
 			delete block.orphaned;
+			block.ready = true;
 			block.verified = false;
 			block.processed = false;
 			block.broadcast = true;
@@ -407,9 +412,10 @@ NodeManager.prototype.swapLastBlockWith = function(block, peer, cb){
 		}
 	], function(err){
 		if(err){
+			library.logger.error("error swaping block", err);
 			modules.blockchain.removeBlock(block);
 		}
-		return cb && cb(err, block);
+		return cb(err, block);
 	});
 };
 
@@ -437,12 +443,12 @@ NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 				else {
 					// no swap
 					library.logger.info("Orphaned block has a bigger timestamp or bigger id, block disregarded", {id: block.id, height:block.height});
-					return mSequence && mSequence(null, block);
+					return mSequence(null, block);
 				}
 			}
 			else {
 				library.logger.debug("Block disregarded", {id: block.id, height:block.height});
-				return mSequence && mSequence(null, block);
+				return mSequence(null, block);
 			}
 		}
 		else {
@@ -461,7 +467,7 @@ NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 			__private.prepareBlock(block, peer, function(err, block){
 				if(err){
 					modules.blockchain.removeBlock(block);
-					return mSequence && mSequence(err, block);
+					return mSequence(err, block);
 				}
 				modules.blockchain.upsertBlock(block);
 				library.logger.debug("processing block with "+block.transactions.length+" transactions", block.height);
@@ -470,7 +476,7 @@ NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 						library.logger.error("Error processing block at height", block.height);
 						modules.blockchain.removeBlock(block);
 					}
-					return mSequence && mSequence(err, block);
+					return mSequence(err, block);
 				});
 			});
 		}

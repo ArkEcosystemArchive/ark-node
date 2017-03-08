@@ -811,7 +811,7 @@ Blocks.prototype.removeLastBlock = function(cb){
 					library.logger.error('Error deleting last block', block);
 					library.logger.error('Error deleting last block', err);
 				}
-				return seriesCb(err);
+				return seriesCb(err, newLastBlock);
 			});
    	}
 	}, function (err) {
@@ -819,7 +819,7 @@ Blocks.prototype.removeLastBlock = function(cb){
 		self.lastReceipt(new Date());
 		// Allow shutdown, database writes are finished.
 		__private.noShutdownRequired = false;
-		return cb(err);
+		return cb(err, modules.blockchain.getLastBlock());
 	});
 }
 
@@ -883,7 +883,8 @@ Blocks.prototype.onVerifyBlock = function (block, cb) {
 //
 //__API__ `verifyBlockHeader`
 
-//
+// TODO: verify transactions if transactionIds is present
+// should be equivalent to full verification
 Blocks.prototype.verifyBlockHeader = function (block) {
 	var result = { verified: false, errors: [] };
 	if(!block.transactions){
@@ -908,8 +909,10 @@ Blocks.prototype.verifyBlockHeader = function (block) {
 
 	var lastBlock = modules.blockchain.getLastBlock();
 
+	// TODO: make extrapolation for a refined check:
+	// if (block.timestamp - lastBlock.timestamp)/(block.height-lastBlock.height) < blocktime (here 8s)
 	if( block.height > lastBlock.height && block.timestamp < lastBlock.timestamp){
-		result.errors.push('Invalid block timestamp, likely from another chain');
+		result.errors.push('Invalid block timestamp, block forged on another chain');
 	}
 
 	var valid;
