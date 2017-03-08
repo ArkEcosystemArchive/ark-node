@@ -64,18 +64,18 @@ TransactionPool.prototype.onStartTransactionPool = function () {
 	__private.mempool = {};
 	__private.active = true;
 
-	setImmediate(function fillPool () {
-		async.series([
-			self.fillPool
-		], function (err) {
-			if (err) {
-				library.logger.log('fillPool transaction timer', err);
-			}
-			if(__private.active){
-				return setTimeout(fillPool, 1000);
-			}
-		});
-	});
+	// setImmediate(function fillPool () {
+	// 	async.series([
+	// 		self.fillPool
+	// 	], function (err) {
+	// 		if (err) {
+	// 			library.logger.log('fillPool transaction timer', err);
+	// 		}
+	// 		if(__private.active){
+	// 			return setTimeout(fillPool, 1000);
+	// 		}
+	// 	});
+	// });
 
 	// Transaction expiry timer
 	// TODO: to remove
@@ -495,11 +495,11 @@ TransactionPool.prototype.cleanup = function (cb) {
 //__API__ `fillPool`
 
 //
-TransactionPool.prototype.fillPool = function (cb) {
+TransactionPool.prototype.fillPool = function (maxtx, cb) {
 
 	var unconfirmedCount = self.countUnconfirmed();
 
-	if (unconfirmedCount >= constants.maxTxsPerBlock) {
+	if (unconfirmedCount >= maxtx) {
 		return cb();
 	} else {
 		var spare = 0, spareMulti;

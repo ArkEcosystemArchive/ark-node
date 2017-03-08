@@ -246,110 +246,112 @@ __private.forge = function (cb) {
 
 		var coldstart = library.config.forging.coldstart ? library.config.forging.coldstart : 60;
 		if ((slots.getSlotNumber(currentBlockData.time) === slots.getSlotNumber()) && (new Date().getTime()-__private.coldstart > coldstart*1000)) {
-			// Using PBFT observation: if a good quorum is at the same height with same blockid -> let's forge
-			// TODO: we should pre ask network quorum if i can send this forged block, sending node publicKey, a timestamp and a signature of the timestamp.
-			// This is to prevent from delegate multiple forging on several servers.
-			modules.loader.getNetwork(true, function (err, network) {
-				var minimumNetworkReach=library.config.peers.minimumNetworkReach;
-				if(!minimumNetworkReach){
-					minimumNetworkReach = 20;
-				}
+			modules.transactionPool.fillPool(constants.maxTxsPerBlock, function(err){
+				// Using PBFT observation: if a good quorum is at the same height with same blockid -> let's forge
+				// TODO: we should pre ask network quorum if i can send this forged block, sending node publicKey, a timestamp and a signature of the timestamp.
+				// This is to prevent from delegate multiple forging on several servers.
+				modules.loader.getNetwork(true, function (err, network) {
+					var minimumNetworkReach=library.config.peers.minimumNetworkReach;
+					if(!minimumNetworkReach){
+						minimumNetworkReach = 20;
+					}
 
-				if (err) {
-					return cb(err);
-				}
-				else if(network.peers.length < minimumNetworkReach){
-					library.logger.info("Network reach is not sufficient to get quorum",[
-						"network # of reached peers:", network.peers.length,
-						"last block id:", lastBlock.id
-					].join(' '));
-					return cb();
-				}
-				else {
-					var quorum = 0;
-					var noquorum = 0;
-					var maxheight = lastBlock.height;
-					var overheightquorum = 0;
-					var overheightblock = null;
-					var letsforge = false;
-					for(var i in network.peers){
-						var peer = network.peers[i];
-						if(peer.height == lastBlock.height){
-							if(peer.blockheader.id == lastBlock.id && peer.currentSlot == currentSlot && peer.forgingAllowed){
-								quorum = quorum + 1;
+					if (err) {
+						return cb(err);
+					}
+					else if(network.peers.length < minimumNetworkReach){
+						library.logger.info("Network reach is not sufficient to get quorum",[
+							"network # of reached peers:", network.peers.length,
+							"last block id:", lastBlock.id
+						].join(' '));
+						return cb();
+					}
+					else {
+						var quorum = 0;
+						var noquorum = 0;
+						var maxheight = lastBlock.height;
+						var overheightquorum = 0;
+						var overheightblock = null;
+						var letsforge = false;
+						for(var i in network.peers){
+							var peer = network.peers[i];
+							if(peer.height == lastBlock.height){
+								if(peer.blockheader.id == lastBlock.id && peer.currentSlot == currentSlot && peer.forgingAllowed){
+									quorum = quorum + 1;
+								}
+								else{
+									noquorum = noquorum + 1;
+								}
 							}
-							else{
+							// I don't have the last block out there ?
+							else if(peer.height > lastBlock.height){
+								maxheight = peer.height;
+								overheightquorum = overheightquorum + 1;
+								overheightblock = peer.blockheader;
+							}
+							// suppose the max network elasticity accross 3 blocks
+							else if(lastBlock.height - peer.height < 3){
 								noquorum = noquorum + 1;
 							}
 						}
-						// I don't have the last block out there ?
-						else if(peer.height > lastBlock.height){
-							maxheight = peer.height;
-							overheightquorum = overheightquorum + 1;
-							overheightblock = peer.blockheader;
-						}
-						// suppose the max network elasticity accross 3 blocks
-						else if(lastBlock.height - peer.height < 3){
-							noquorum = noquorum + 1;
-						}
-					}
 
-					//if a node has a height > lastBlock.height, let's wait before forging.
-					if(overheightquorum > 0){
-						//TODO: we should check if the "over height" block is legit:
-						// # if delegate = myself -> legit -> letsforge = false (multiple node forging same delegate)
-						if(overheightblock.generatorPublicKey == currentBlockData.keypair.publicKey){
+						//if a node has a height > lastBlock.height, let's wait before forging.
+						if(overheightquorum > 0){
+							//TODO: we should check if the "over height" block is legit:
+							// # if delegate = myself -> legit -> letsforge = false (multiple node forging same delegate)
+							if(overheightblock.generatorPublicKey == currentBlockData.keypair.publicKey){
+								return cb();
+							}
+							// # if delegate != myself and blockslot = my slot -> attack or forked from them.
+
+							// # if blockslot < my slot -> legit (otherwise uncle forging) -> letsforge = false
+
+							// # if blockslot > my slot
+							//   -> if delegate is legit for the blockslot -> too late -> letsforge = false (otherwise the node will fork 1)
+							//   -> if delegate is not legit -> attack -> letsforge = true
+
 							return cb();
 						}
-						// # if delegate != myself and blockslot = my slot -> attack or forked from them.
+						// PBFT: most nodes are on same branch, no other block have been forged
+						if(quorum/(quorum+noquorum) > 0.66){
+							letsforge = true;
+						}
+						else{
+							//We are forked!
+							library.logger.debug("Forked from network",[
+								"network:", JSON.stringify(network.height),
+								"quorum:", quorum/(quorum+noquorum),
+								"last block id:", lastBlock.id
+							].join(' '));
+							library.bus.message("fork",lastBlock, 6);
+							return cb("Fork 6 - Not enough quorum to forge next block: " + quorum/(quorum+noquorum));
+						}
 
-						// # if blockslot < my slot -> legit (otherwise uncle forging) -> letsforge = false
-
-						// # if blockslot > my slot
-						//   -> if delegate is legit for the blockslot -> too late -> letsforge = false (otherwise the node will fork 1)
-						//   -> if delegate is not legit -> attack -> letsforge = true
-
-						return cb();
+						if(letsforge){
+							library.logger.info("Enough quorum from network",[
+								"quorum:", quorum/(quorum+noquorum),
+								"last block id:", lastBlock.id
+							].join(' '));
+							modules.blocks.generateBlock(currentBlockData.keypair, currentBlockData.time, function (err, b) {
+								if(!err){
+									library.logger.info([
+										'Forged new block id:', b.id,
+										'height:', b.height,
+										'round:', modules.rounds.getRoundFromHeight(b.height),
+										'slot:', slots.getSlotNumber(currentBlockData.time),
+										'reward:' + b.reward,
+										'transactions:' + b.numberOfTransactions
+									].join(' '));
+									library.bus.message('blockForged', b, cb);
+								}
+								else{
+									library.logger.error('Failed generate block within delegate slot', err);
+									return cb(err);
+								}
+							});
+						}
 					}
-					// PBFT: most nodes are on same branch, no other block have been forged
-					if(quorum/(quorum+noquorum) > 0.66){
-						letsforge = true;
-					}
-					else{
-						//We are forked!
-						library.logger.debug("Forked from network",[
-							"network:", JSON.stringify(network.height),
-							"quorum:", quorum/(quorum+noquorum),
-							"last block id:", lastBlock.id
-						].join(' '));
-						library.bus.message("fork",lastBlock, 6);
-						return cb("Fork 6 - Not enough quorum to forge next block: " + quorum/(quorum+noquorum));
-					}
-
-					if(letsforge){
-						library.logger.info("Enough quorum from network",[
-							"quorum:", quorum/(quorum+noquorum),
-							"last block id:", lastBlock.id
-						].join(' '));
-						modules.blocks.generateBlock(currentBlockData.keypair, currentBlockData.time, function (err, b) {
-							if(!err){
-								library.logger.info([
-									'Forged new block id:', b.id,
-									'height:', b.height,
-									'round:', modules.rounds.getRoundFromHeight(b.height),
-									'slot:', slots.getSlotNumber(currentBlockData.time),
-									'reward:' + b.reward,
-									'transactions:' + b.numberOfTransactions
-								].join(' '));
-								library.bus.message('blockForged', b, cb);
-							}
-							else{
-								library.logger.error('Failed generate block within delegate slot', err);
-								return cb(err);
-							}
-						});
-					}
-				}
+				});
 			});
 		} else {
 			library.logger.debug('Delegate slot', slots.getSlotNumber());
