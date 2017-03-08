@@ -286,8 +286,9 @@ __private.forge = function (cb) {
 							// I don't have the last block out there ?
 							else if(peer.height > lastBlock.height){
 								maxheight = peer.height;
-								overheightquorum = overheightquorum + 1;
-								overheightblock = peer.blockheader;
+								noquorum = noquorum + 1;
+								// overheightquorum = overheightquorum + 1;
+								// overheightblock = peer.blockheader;
 							}
 							// suppose the max network elasticity accross 3 blocks
 							else if(lastBlock.height - peer.height < 3){
