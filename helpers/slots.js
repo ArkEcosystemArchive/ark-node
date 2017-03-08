@@ -52,6 +52,15 @@ module.exports = {
 		return Math.floor(epochTime / this.interval);
 	},
 
+	// Forging is allowed only during the first half of blocktime
+	isForgingAllowed: function (epochTime) {
+		if (epochTime === undefined) {
+			epochTime = this.getTime();
+		}
+
+		return Math.floor(epochTime / this.interval) == Math.floor((epochTime + this.interval / 2) / this.interval);
+	},
+
 	getSlotTime: function (slot) {
 		return slot * this.interval;
 	},

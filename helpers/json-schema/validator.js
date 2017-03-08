@@ -35,6 +35,8 @@ JsonSchema.addRule('type', {
 				return value === null;
 			case 'integer':
 				return typeof value === 'number';
+			case 'boolean':
+			  return typeof value === 'boolean';
 			default:
 				return typeof value === accept;
 		}

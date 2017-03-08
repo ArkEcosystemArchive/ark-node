@@ -116,6 +116,7 @@ Blockchain.prototype.upsertBlock = function(block, cb){
   var error = null;
   if(!__private.blockchain[block.height]){
     __private.blockchain[block.height]=block;
+		delete __private.orphanedBlocks[block.id];
   } else if(__private.blockchain[block.height].id!=block.id){
 		__private.orphanedBlocks[block.id]=block;
     error = "upsertBlock - Orphaned Block has been added in the blockchain";
@@ -186,6 +187,8 @@ Blockchain.prototype.addBlock = function(block, cb){
   var error = null;
   if(!__private.blockchain[block.height]){
     __private.blockchain[block.height]=block;
+		// if it was previously an orphaned Block, remove it
+		delete __private.orphanedBlocks[block.id];
   }
   else if(__private.blockchain[block.height].id != block.id){
 		__private.orphanedBlocks[block.id]=block;
@@ -235,6 +238,7 @@ Blockchain.prototype.removeBlock = function(block, cb){
   }
   return cb && cb(error, block);
 };
+
 
 //
 //__API__ `getBlockAtHeight`

@@ -275,7 +275,7 @@ __private.forge = function (cb) {
 					for(var i in network.peers){
 						var peer = network.peers[i];
 						if(peer.height == lastBlock.height){
-							if(peer.blockheader.id == lastBlock.id){
+							if(peer.blockheader.id == lastBlock.id && peer.currentSlot == currentSlot && peer.forgingAllowed){
 								quorum = quorum + 1;
 							}
 							else{
@@ -293,6 +293,7 @@ __private.forge = function (cb) {
 							noquorum = noquorum + 1;
 						}
 					}
+
 					//if a node has a height > lastBlock.height, let's wait before forging.
 					if(overheightquorum > 0){
 						//TODO: we should check if the "over height" block is legit:
@@ -310,7 +311,6 @@ __private.forge = function (cb) {
 
 						return cb();
 					}
-
 					// PBFT: most nodes are on same branch, no other block have been forged
 					if(quorum/(quorum+noquorum) > 0.66){
 						letsforge = true;
@@ -318,7 +318,7 @@ __private.forge = function (cb) {
 					else{
 						//We are forked!
 						library.logger.debug("Forked from network",[
-							"network:", JSON.stringify(network),
+							"network:", JSON.stringify(network.height),
 							"quorum:", quorum/(quorum+noquorum),
 							"last block id:", lastBlock.id
 						].join(' '));
@@ -564,15 +564,15 @@ Delegates.prototype.checkUnconfirmedDelegates = function (publicKey, votes, cb) 
 
 //
 Delegates.prototype.validateBlockSlot = function (block, cb) {
-	modules.rounds.getActiveDelegates(function (err, activeDelegates) {
+	var round = modules.rounds.getRoundFromHeight(block.height);
+
+	modules.rounds.getActiveDelegatesFromRound(round, function (err, activeDelegates) {
 		if (err) {
 			return cb(err);
 		}
 
 		var currentSlot = slots.getSlotNumber(block.timestamp);
 		var delegate_id = activeDelegates[currentSlot % slots.delegates];
-		// var nextDelegate_id = activeDelegates[(currentSlot + 1) % slots.delegates];
-		// var previousDelegate_id = activeDelegates[(currentSlot - 1) % slots.delegates];
 
 		if (delegate_id && block.generatorPublicKey === delegate_id) {
 			return cb(null, block);
@@ -676,12 +676,19 @@ Delegates.prototype.isActiveDelegate = function(){
 //__API__ `updateActiveDelegate`
 
 //
-Delegates.prototype.updateActiveDelegate = function(activeDelegatesKeys){
+Delegates.prototype.updateActiveDelegate = function(activeDelegates){
 	var registeredDelegatesPublicKeys = Object.keys(__private.keypairs);
 	var isActive = false;
 
-	for(var i in activeDelegatesKeys){
-		isActive |= registeredDelegatesPublicKeys.indexOf(activeDelegatesKeys[i]) > -1;
+	for(var i in activeDelegates){
+		isActive |= registeredDelegatesPublicKeys.indexOf(activeDelegates[i].publicKey) > -1;
+	}
+
+	if(!__private.isActiveDelegate && isActive){
+		library.logger.info('# Congratulations! This node is now an active delegate');
+	}
+	else if(__private.isActiveDelegate && !isActive){
+		library.logger.info('# Oh snap! This node is not active delegate anymore');
 	}
 
 	__private.isActiveDelegate = isActive;

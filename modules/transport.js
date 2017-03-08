@@ -8,6 +8,7 @@ var extend = require('extend');
 var ip = require('ip');
 var popsicle = require('popsicle');
 var Router = require('../helpers/router.js');
+var slots = require('../helpers/slots.js');
 var schema = require('../schema/transport.js');
 var sql = require('../sql/transport.js');
 var zlib = require('zlib');
@@ -105,7 +106,7 @@ __private.attachApi = function () {
 		res.set(__private.headers);
 		var peers = modules.peers.listBroadcastPeers();
 		peers = peers.map(function(peer){return peer.toObject()});
-		return res.status(200).json({peers: peers});
+		return res.status(200).json({success:true, peers: peers});
 	});
 
 	router.get('/blocks/common', function (req, res, next) {
@@ -161,11 +162,11 @@ __private.attachApi = function () {
 				limit: limit
 			}).then(function (rows) {
 				res.status(200);
-
-				res.json({blocks: rows});
+				res.json({success:true, blocks: rows});
 			}).catch(function (err) {
 				library.logger.error("Error getting blocks from DB", err);
-				return res.json({blocks: []});
+				res.status(500);
+				return res.json({success:false, blocks: []});
 			});
 		});
 	});
@@ -336,6 +337,33 @@ __private.attachApi = function () {
 		res.status(200).json({
 			success: true,
 			height: block.height,
+			header: blockheader
+		});
+	});
+
+	router.get('/status', function (req, res) {
+		res.set(__private.headers);
+		var block = modules.blockchain.getLastBlock();
+		var blockheader={
+			id: block.id,
+			height: block.height,
+			version: block.version,
+			totalAmount: block.totalAmount,
+			totalFee: block.totalFee,
+			reward: block.reward,
+			payloadHash: block.payloadHash,
+			payloadLength: block.payloadLength,
+			timestamp: block.timestamp,
+			numberOfTransactions: block.numberOfTransactions,
+			previousBlock: block.previousBlock,
+			generatorPublicKey: block.generatorPublicKey,
+			blockSignature: block.blockSignature
+		}
+		res.status(200).json({
+			success: true,
+			height: block.height,
+			forgingAllowed: slots.isForgingAllowed(),
+			currentSlot: slots.getSlotNumber(),
 			header: blockheader
 		});
 	});

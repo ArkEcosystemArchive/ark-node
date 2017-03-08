@@ -3,6 +3,8 @@
 var _ = require('lodash');
 var popsicle = require('popsicle');
 var schema = require('../schema/peers.js');
+var __schemas = require('../schema/api.peer.js');
+_.extend(__schemas, require('../schema/api.public.js'));
 
 // Private fields
 var modules, library;
@@ -36,10 +38,13 @@ function Peer(ip, port, version, os){
   this.websocketapi = false;
 	this.status = "NEW";
 	this.publicapi = false;
-	this.headers;
+	this.blockheader;
 	this.requests = 0;
 	this.delay = 10000;
 	this.lastchecked = 0;
+
+  this.forgingAllowed = false;
+	this.currentSlot = 0;
 
 	if(!this.liteclient){
 		this.updateStatus();
@@ -71,7 +76,6 @@ Peer.prototype.toString = function(){
 
 Peer.prototype.normalizeHeader = function(header){
   var result = {
-    height: parseInt(header.height),
     port: parseInt(header.port),
     os: header.os,
     version: header.version,
@@ -93,32 +97,14 @@ Peer.prototype.normalizeHeader = function(header){
       payloadLength: header.blockheader.payloadLength,
       payloadHash: header.blockheader.payloadHash
     };
+		result.height= parseInt(header.blockheader.height);
   }
   return result;
 };
 
 Peer.prototype.updateStatus = function(){
   var that = this;
-  this.get('/peer/height', function(err, res){
-    if(!err){
-      that.height = res.body.height;
-      that.headers = res.body.header;
-      try {
-        // TODO: also check that the delegate was legit to forge the block ?
-        // likely too much work since in the end we use only a few peers of the list
-        // or maybe only the ones claiming height > current node height
-        verification = modules.blocks.verifyBlockHeader(res.body.header);
-      } catch (e) {
-        library.logger.warn('Failed verifiy block header from', peer.toString());
-        library.logger.warn("Error", e);
-      }
-      if(verification){
-        that.status="FORK";
-      } else{
-        that.status="OK";
-      }
-    }
-  });
+  this.fetchStatus();
   this.get('/api/blocks/getHeight', function(err, body){
     that.publicapi = !!err;
   });
@@ -126,6 +112,47 @@ Peer.prototype.updateStatus = function(){
 
 Peer.prototype.fetchHeight = function(cb){
   this.get('/peer/height', cb);
+}
+
+Peer.prototype.fetchStatus = function(cb){
+	var that = this;
+  this.get('/peer/status', function(err, res){
+		if(!err){
+			that.height = res.body.height;
+			that.blockheader = res.body.header;
+			that.forgingAllowed = res.body.forgingAllowed;
+			that.currentSlot = res.body.currentSlot;
+			var verification = {
+				verified: false
+			};
+			try {
+				verification = modules.blocks.verifyBlockHeader(res.body.header);
+			} catch (e) {
+				verification.errors = [e];
+			}
+			if(!verification.verified){
+				that.status="FORK";
+				library.logger.trace(that + " sent header", res.body.header);
+				return cb('Received invalid block header from peer!', res);
+			}
+			else {
+        that.status = "OK";
+      }
+		}
+		return cb && cb(err, res);
+	});
+}
+
+Peer.prototype.fetchPeers = function(cb){
+  this.get('/peer/list', cb);
+}
+
+Peer.prototype.postTransactions = function(transactions, cb){
+	this.post('/peer/transactions',{transactions: transactions}, cb);
+}
+
+Peer.prototype.getTransactionFromIds = function(transactionIds, cb){
+	this.get('/peer/transactionsFromIds?ids='+transactionIds.join(","), cb);s
 }
 
 Peer.prototype.accept = function(){
@@ -163,24 +190,46 @@ Peer.prototype.request = function(api, options, cb){
       return cb(['Received bad response code', res.status, req.method, req.url].join(' '));
     } else {
 
+			// if there is a schema in options, validate the answer with this schema
+			// otherwise try to grab the one predefined in __schemas
+			var apihandle = api.split("?")[0];
+			var report = true;
+			var apischema = options.schema || __schemas[options.method +":"+apihandle];
+			if(apischema){
+				report = library.schema.validate(res.body, apischema);
+			}
+			else {
+				library.logger.warn("No schema provided to validate answer for "+options.method +":"+apihandle);
+			}
+
+			if(!report){
+				that.status = "EAPI";
+				console.log(options.method +":"+apihandle);
+				console.log(Object.keys(res.body));
+				return cb("Returned data does not match API requirement for " + options.method +":"+apihandle);
+			}
+
       var header = that.normalizeHeader(res.headers);
-      var report = library.schema.validate(header, schema.headers);
+			report = library.schema.validate(header, schema.headers);
 
       if (!report) {
         // no valid transport header, considering a public API call
         if(that.status!="FORK"){
           that.status = "OK";
         }
-        return cb(null, {body: res.body, peer: that.toObject()});
+        return cb(null, {body: res.body, peer: that});
       }
 
-      that.headers = header.blockheader;
+      if(header.blockheader){
+				that.blockheader = header.blockheader;
+	      that.height = header.blockheader.height;
+			}
+
       that.os = header.os;
       that.version = header.version;
-      that.height = header.height;
       that.nethash = header.nethash;
 
-      if (header.nethash !== library.config.nethash) {
+      if(header.nethash !== library.config.nethash) {
         that.status="ENETHASH";
         return cb(['Peer is not on the same network', header.nethash, req.method, req.url].join(' '));
       }
@@ -189,14 +238,13 @@ Peer.prototype.request = function(api, options, cb){
         that.status = "OK";
       }
 
-      return cb(null, {body: res.body, peer: that.toObject()});
+      return cb(null, {body: res.body, peer: that});
     }
   })
   .catch(function (err) {
-    if (err.code === 'EUNAVAILABLE' || err.code === 'ETIMEOUT') {
-      that.status=err.code;
-    }
-
+    if(err.code){
+			that.status = err.code;
+		}
     return cb([err.code, 'Request failed', req.method, req.url].join(' '));
   });
 };
