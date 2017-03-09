@@ -373,9 +373,9 @@ __private.popLastBlock = function (oldLastBlock, cb) {
 			async.eachSeries(oldLastBlock.transactions.reverse(), function (transaction, eachSeriesCb) {
 				async.series([
 					function (seriesCb) {
-						modules.transactions.undo(transaction, oldLastBlock, cb);
+						modules.transactions.undo(transaction, oldLastBlock, seriesCb);
 					}, function (seriesCb) {
-						modules.transactions.undoUnconfirmed(transaction, cb);
+						modules.transactions.undoUnconfirmed(transaction, seriesCb);
 					}
 				], eachSeriesCb);
 			}, function (err) {

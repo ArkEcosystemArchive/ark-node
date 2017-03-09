@@ -239,7 +239,7 @@ __private.forge = function (cb) {
 
 	__private.getBlockSlotData(currentSlot, lastBlock.height + 1, function (err, currentBlockData) {
 		if (err || currentBlockData === null) {
-			err = 'Skipping delegate slot';
+			err = err || 'Skipping delegate slot';
 			return cb(err);
 		}
 
