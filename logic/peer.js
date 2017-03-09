@@ -41,6 +41,7 @@ function Peer(ip, port, version, os){
 	this.requests = 0;
 	this.delay = 10000;
 	this.lastchecked = 0;
+	this.counterror = 0;
 
   this.forgingAllowed = false;
 	this.currentSlot = 0;
@@ -129,13 +130,18 @@ Peer.prototype.fetchStatus = function(cb){
 			}
 			if(!check.verified){
 				that.status="FORK";
+				that.counterror++;
 				library.logger.trace(that + " sent header", res.body.header);
 				library.logger.debug(that + " header errors", check.errors);
 				return cb && cb('Received invalid block header from peer '+that, res);
 			}
 			else {
+				that.counterror = 0;
         that.status = "OK";
       }
+		}
+		else {
+			that.counterror++;
 		}
 		return cb && cb(err, res);
 	});
@@ -185,6 +191,7 @@ Peer.prototype.request = function(api, options, cb){
     that.delay=new Date().getTime()-that.lastchecked;
     if (res.status !== 200) {
       that.status="ERESPONSE";
+			that.counterror++;
       return cb(['Received bad response code', res.status, req.method, req.url].join(' '));
     } else {
 
@@ -202,6 +209,7 @@ Peer.prototype.request = function(api, options, cb){
 
 			if(!report){
 				that.status = "EAPI";
+				that.counterror++;
 				console.log(options.method +":"+apihandle);
 				console.log(Object.keys(res.body));
 				return cb("Returned data does not match API requirement for " + options.method +":"+apihandle);
@@ -229,6 +237,7 @@ Peer.prototype.request = function(api, options, cb){
 
       if(header.nethash !== library.config.nethash) {
         that.status="ENETHASH";
+				that.counterror++;
         return cb(['Peer is not on the same network', header.nethash, req.method, req.url].join(' '));
       }
 
@@ -243,6 +252,7 @@ Peer.prototype.request = function(api, options, cb){
     if(err.code){
 			that.status = err.code;
 		}
+		that.counterror++;
     return cb([err.code, 'Request failed', req.method, req.url].join(' '));
   });
 };

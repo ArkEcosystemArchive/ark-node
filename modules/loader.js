@@ -555,6 +555,16 @@ Loader.prototype.triggerBlockRemoval = function(number){
 	__private.forceRemoveBlocks = number;
 };
 
+//
+//__API__ `resetMemAccounts`
+
+//
+Loader.prototype.resetMemAccounts = function(cb){
+	library.db.none(sql.resetMemAccounts).then(function(){
+		return cb();
+	}).catch(cb);
+};
+
 
 // get the smallest block timestamp at the higjest height from network
 //

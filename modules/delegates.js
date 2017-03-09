@@ -319,7 +319,7 @@ __private.forge = function (cb) {
 						}
 						else{
 							//We are forked!
-							library.logger.debug("Forked from network",[
+							library.logger.info("Forked from network",[
 								"network:", JSON.stringify(network.height),
 								"quorum:", quorum/(quorum+noquorum),
 								"last block id:", lastBlock.id

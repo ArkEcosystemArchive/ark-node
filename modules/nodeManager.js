@@ -297,6 +297,19 @@ NodeManager.prototype.performSPVFix = function (cb) {
 	}).catch(cb);
 };
 
+//
+//__API__ `fixDatabase`
+
+//
+NodeManager.prototype.fixDatabase = function(cb){
+	async.series([
+		function(eachCb){
+			modules.transactionPool.undoUnconfirmedList([], eachCb);
+		},
+		modules.loader.resetMemAccounts,
+		self.performSPVFix
+	], cb);
+}
 
 
 //make sure the block transaction list is complete, otherwise try to find transactions
