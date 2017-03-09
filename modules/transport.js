@@ -46,7 +46,7 @@ __private.attachApi = function () {
 	var router = new Router();
 
 	router.use(function (req, res, next) {
-		if (modules) { return next(); }
+		if(modules) { return next(); }
 		res.status(500).send({success: false, error: 'Blockchain is loading'});
 	});
 
@@ -59,11 +59,7 @@ __private.attachApi = function () {
 				}
 			);
 		} catch (e) {
-			// Remove peer
-			__private.removePeer({peer: req.peer, code: 'EHEADERS', req: req});
-
-			library.logger.debug(e.toString());
-			return res.status(406).send({success: false, error: 'Invalid request headers'});
+			return res.status(500).send({success: false, error: 'Invalid request headers'});
 		}
 
 		var headers      = req.headers;
@@ -71,35 +67,23 @@ __private.attachApi = function () {
 		    headers.port = req.peer.port;
 
 		req.sanitize(headers, schema.headers, function (err, report) {
-			if (err) { return next(err); }
-			if (!report.isValid) {
-				// Remove peer
-				__private.removePeer({peer: req.peer, code: 'EHEADERS', req: req});
-
+			if(err) { return next(err); }
+			if(!report.isValid) {
 				return res.status(500).send({status: false, error: report.issues});
 			}
 
-			if (headers.nethash !== library.config.nethash) {
-				// Remove peer
+			if(headers.nethash !== library.config.nethash) {
 				__private.removePeer({peer: req.peer, code: 'ENETHASH', req: req});
-
-				return res.status(200).send({success: false, message: 'Request is made on the wrong network', expected: library.config.nethash, received: headers.nethash});
+				return res.status(500).send({success: false, message: 'Request is made on the wrong network', expected: library.config.nethash, received: headers.nethash});
 			}
 
 			req.peer.os = headers.os;
 			req.peer.version = headers.version;
 
-			// if ((req.peer.version === library.config.version) && (headers.nethash === library.config.nethash)) {
-			// 	if (!modules.blocks.lastReceipt()) {
-			// 		modules.delegates.enableForging();
-			// 	}
-			// }
-
 			modules.peers.accept(req.peer);
 
 			return next();
 		});
-
 	});
 
 	router.get('/list', function (req, res) {
@@ -344,7 +328,7 @@ __private.attachApi = function () {
 	router.get('/status', function (req, res) {
 		res.set(__private.headers);
 		var block = modules.blockchain.getLastBlock();
-		var blockheader={
+		var blockheader = {
 			id: block.id,
 			height: block.height,
 			version: block.version,

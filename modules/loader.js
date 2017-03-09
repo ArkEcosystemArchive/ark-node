@@ -123,8 +123,6 @@ __private.loadUnconfirmedTransactions = function (cb) {
 			return cb("Transactions list is not conform");
 		}
 
-		var peer = modules.peers.inspect(res.peer);
-
 		var transactions = res.body.transactions;
 
 		library.bus.message("transactionsReceived", transactions, "network", cb);

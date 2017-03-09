@@ -48,7 +48,17 @@ module.exports = {
 	},
 	'GET:/peer/transactions':{
 		id: 'GET:/peer/transactions',
-		type: 'object'
+		type: 'object',
+		properties: {
+			success: {
+				type: 'boolean'
+			},
+			transactions: {
+				type: 'array',
+				uniqueItems: true
+			}
+		},
+		required: ['transactions']
 	},
 	'GET:/peer/transactionsFromIds':{
 		id: 'POST:/peer/transactionsFromIds',

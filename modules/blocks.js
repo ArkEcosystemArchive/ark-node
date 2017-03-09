@@ -1413,8 +1413,7 @@ Blocks.prototype.simpleDeleteAfterBlock = function (blockId, cb) {
 Blocks.prototype.loadBlocksFromPeer = function (peer, cb) {
 	var lastValidBlock = modules.blockchain.getLastBlock();
 
-	peer = modules.peers.inspect(peer);
-	library.logger.info('Loading blocks from: ' + peer.string);
+	library.logger.info('Loading blocks from: ' + peer);
 
 	// we increase timeout as it can be a big payload
 	modules.transport.requestFromPeer(peer, {
