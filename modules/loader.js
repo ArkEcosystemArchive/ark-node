@@ -565,6 +565,64 @@ Loader.prototype.resetMemAccounts = function(cb){
 	}).catch(cb);
 };
 
+//
+//__API__ `cleanMemAccounts`
+
+//
+Loader.prototype.cleanMemAccounts = function(cb){
+	library.db.none(sql.cleanMemAccounts).then(function(){
+		return cb();
+	}).catch(cb);
+};
+
+//
+//__API__ `rebuildBalance`
+
+//
+Loader.prototype.rebuildBalance = function(cb){
+	var accounts = {};
+	var addressesSQL='select distinct("recipientId") as address from transactions group by "recipientId"'
+	var publicKeysSQL='select distinct("senderPublicKey") as publicKey from transactions group by "senderPublicKey"';
+	async.series([
+		function(seriesCb){
+			library.db.query(addressesSQL).then(function(addresses){
+				addresses.forEach(function(address){
+					accounts[address] = {address: address};
+				});
+				return seriesCb();
+			}).catch(seriesCb);
+		},
+		function(seriesCb){
+			library.db.query(publicKeysSQL).then(function(pks){
+				pks.forEach(function(pk){
+					accounts[arkjs.crypto.getAddress(address)].publicKey = pk;
+				});
+				return seriesCb();
+			}).catch(seriesCb);
+		},
+		function(seriesCb){
+			for(var address in accounts){
+				var account = accounts[address];
+				if(account.publicKey){
+					
+				}
+			}
+		}
+	],function(error){
+
+	});
+};
+
+//
+//__API__ `rebuildVotes`
+
+//
+Loader.prototype.rebuildVotes = function(cb){
+	library.db.none(sql.rebuildVotes).then(function(){
+		return cb();
+	}).catch(cb);
+};
+
 
 // get the smallest block timestamp at the higjest height from network
 //

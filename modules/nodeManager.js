@@ -29,8 +29,6 @@ function NodeManager (cb, scope) {
 	return cb(null, self);
 }
 
-
-
 //
 //__EVENT__ `onBind`
 
@@ -261,7 +259,6 @@ NodeManager.prototype.performSPVFix = function (cb) {
 					});
 				}
 			};
-
 			if(publicKey){
 				series.spent = function(cb){
 					library.db.query(spentSQL).then(function(rows){
@@ -303,12 +300,28 @@ NodeManager.prototype.performSPVFix = function (cb) {
 //
 NodeManager.prototype.fixDatabase = function(cb){
 	async.series([
-		function(eachCb){
-			modules.transactionPool.undoUnconfirmedList([], eachCb);
+		function(seriesCb){
+			modules.transactionPool.undoUnconfirmedList([], seriesCb);
 		},
 		modules.loader.resetMemAccounts,
 		self.performSPVFix
 	], cb);
+}
+
+
+//
+//__API__ `SPVRebuild`
+
+//
+NodeManager.prototype.SPVRebuild = function(cb){
+	library.managementSequence.add(function(mSequence){
+		async.series([
+			modules.loader.cleanMemAccount,
+			modules.loader.rebuildBalance,
+			modules.loader.rebuildVotes,
+			modules.rounds.rebuildMemDelegates
+		], mSequence);
+	}, cb);
 }
 
 
@@ -339,13 +352,13 @@ __private.prepareBlock = function(block, peer, cb){
 			// lets download the missing ones from the peer that sent the block.
 			else{
 				modules.transport.requestFromPeer(peer, {
-					 method: 'GET',
+					method: 'GET',
 					api: '/transactionsFromIds?blockid=' + block.id + "&ids='"+missingTransactionIds.join(",")+"'"
 				}, function (err, res) {
-					library.logger.debug("called "+res.peer.ip+":"+res.peer.port+"/peer/transactionsFromIds");
+					library.logger.debug("called "+peer.ip+":"+peer.port+"/peer/transactionsFromIds");
 					 if (err) {
 						 library.logger.debug('Cannot get transactions for block', block.id);
-						 return cb && cb(null, block);
+						 return cb && cb(err, block);
 					 }
 
 					 var receivedTransactions = res.body.transactions;

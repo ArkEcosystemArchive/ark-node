@@ -622,9 +622,9 @@ function startInteractiveMode(scope){
 		  .command('spv fix', 'fix database using SPV on all accounts')
 		  .action(function(args, callback) {
 				var self = this;
-				scope.modules.nodeManager.performSPVFix(function(err, results){
+				scope.modules.nodeManager.fixDatabase(function(err, results){
 					if(err) self.log(colors.red(err));
-					else self.log("Fixed "+results.length+" accounts");
+					else self.log("Fixed "+results[3].length+" accounts");
 					callback();
 				});
 		  });

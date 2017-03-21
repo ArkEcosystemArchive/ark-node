@@ -639,13 +639,13 @@ __private.applyUnconfirmedList = function (transactions, cb) {
 
 		__private.processVerifyTransaction(transaction, function (err, sender) {
 			if (err) {
-				library.logger.error('Failed to process / verify unconfirmed transaction: ' + transaction.id, err);
+				library.logger.debug('Failed to process / verify unconfirmed transaction: ' + transaction.id, err);
 				self.removeUnconfirmedTransaction(transaction.id);
 				return eachSeriesCb();
 			}
 			modules.transactions.applyUnconfirmed(transaction, function (err) {
 				if (err) {
-					library.logger.error('Failed to apply unconfirmed transaction: ' + transaction.id, err);
+					library.logger.debug('Failed to apply unconfirmed transaction: ' + transaction.id, err);
 					self.removeUnconfirmedTransaction(transaction.id);
 				}
 				return eachSeriesCb();

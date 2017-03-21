@@ -5,16 +5,16 @@
   "scripts": {
     "start": "node app.js",
     "doc": "docco -t docs/template/arkio.jst -c docs/template/arkio.css modules/* app.js README.md",
-    "start:testnet": "node app.js --genesis genesisBlock.testnet.json --config config.testnet.json",
-    "start:devnet": "node app.js --genesis genesisBlock.devnet.json --config config.devnet.json",
+    "start:testnet": "node app.js --genesis genesisBlock.testnet.json --config config.testnet.json -i",
+    "start:devnet": "node app.js --genesis genesisBlock.devnet.json --config config.devnet.json -i",
+    "start:mainnet": "node app.js --genesis genesisBlock.mainnet.json --config config.mainnet.json -i",
     "start:test": "node app.js --genesis test/genesisBlock.json --config test/config.json",
-    "start:newtest": "node app.js --genesis tasks/genesisBlock.json --config tasks/config.json",
     "test": "./node_modules/.bin/mocha",
     "cov": "./node_modules/.bin/mocha --require blanket -R html-cov test/helpers test/logic > tmp/coverage.html"
   },
   "author": "Boris Povod <boris@crypti.me>, Pavel Nekrasov <landgraf.paul@gmail.com>, Oliver Beddows <oliver@lisk.io>, FX Thoorens <fx.thoorens@ark.io>",
   "dependencies": {
-    "arkjs": "https://github.com/arkecosystem/ark-js#newtestnet",
+    "arkjs": "https://github.com/arkecosystem/ark-js#mainnet",
     "async": "=2.0.1",
     "bip39": "^2.2.0",
     "body-parser": "=1.15.2",

@@ -159,7 +159,6 @@ Blockchain.prototype.isForked = function(block){
 
 // Check if block is already in blockchain (ie same id) or already found as orphaned
 Blockchain.prototype.isPresent = function(block){
-
 	return (__private.blockchain[block.height] && __private.blockchain[block.height].id == block.id) || __private.orphanedBlocks[block.id];
 }
 

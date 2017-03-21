@@ -29,7 +29,7 @@ var TransactionsSql = {
   list: function (params) {
     // Need to fix 'or' or 'and' in query
     return [
-      'SELECT t.id, "blockId", type, t.timestamp, amount, fee, "vendorField", "senderId", "recipientId", encode("senderPublicKey", \'hex\') as "senderPublicKey", encode("requesterPublicKey", \'hex\') as "requesterPublicKey",  encode("signature", \'hex\') as "signature", encode("signSignature", \'hex\') as "signSignature", signatures::json as signatures, rawasset::json as asset, (SELECT MAX(height) + 1 FROM blocks) - b.height AS confirmations FROM transactions t, blocks b WHERE b.id = t."blockId"',
+      'SELECT t.id, b.id as "blockId", type, t.timestamp, amount, fee, "vendorField", "senderId", "recipientId", encode("senderPublicKey", \'hex\') as "senderPublicKey", encode("requesterPublicKey", \'hex\') as "requesterPublicKey",  encode("signature", \'hex\') as "signature", encode("signSignature", \'hex\') as "signSignature", signatures::json as signatures, rawasset::json as asset, (SELECT MAX(height) + 1 FROM blocks) - b.height AS confirmations FROM transactions t, blocks b WHERE b.id = t."blockId"',
       (params.where.length || params.owner ? 'AND' : ''),
       (params.where.length ? '(' + params.where.join(' OR ') + ')' : ''),
       (params.where.length && params.owner ? ' AND ' + params.owner : params.owner),
@@ -38,7 +38,7 @@ var TransactionsSql = {
     ].filter(Boolean).join(' ');
   },
 
-  getById: 'SELECT t.id, "blockId", type, t.timestamp, amount, fee, "vendorField", "senderId", "recipientId", encode("senderPublicKey", \'hex\') as "senderPublicKey", encode("requesterPublicKey", \'hex\') as "requesterPublicKey",  encode("signature", \'hex\') as "signature", encode("signSignature", \'hex\') as "signSignature", signatures::json as signatures, rawasset::json as asset, (SELECT MAX(height) + 1 FROM blocks) - b.height AS confirmations FROM transactions t, blocks b WHERE b.id = t."blockId" AND t.id = ${id}',
+  getById: 'SELECT t.id, b.id as "blockId", b.height, type, t.timestamp, amount, fee, "vendorField", "senderId", "recipientId", encode("senderPublicKey", \'hex\') as "senderPublicKey", encode("requesterPublicKey", \'hex\') as "requesterPublicKey",  encode("signature", \'hex\') as "signature", encode("signSignature", \'hex\') as "signSignature", signatures::json as signatures, rawasset::json as asset, (SELECT MAX(height) + 1 FROM blocks) - b.height AS confirmations FROM transactions t, blocks b WHERE b.id = t."blockId" AND t.id = ${id}',
 
   getVotesById: 'SELECT * FROM votes WHERE "transactionId" = ${id}'
 
