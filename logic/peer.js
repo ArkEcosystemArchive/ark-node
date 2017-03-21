@@ -210,8 +210,7 @@ Peer.prototype.request = function(api, options, cb){
 			if(!report){
 				that.status = "EAPI";
 				that.counterror++;
-				console.log(options.method +":"+apihandle);
-				console.log(Object.keys(res.body));
+				library.logger.debug(options.method +":"+apihandle, res.body);
 				return cb("Returned data does not match API requirement for " + options.method +":"+apihandle);
 			}
 
