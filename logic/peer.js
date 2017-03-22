@@ -28,7 +28,7 @@ Peer.bind = function (scope) {
 
 // single Peer object
 function Peer(ip, port, version, os){
-	this.ip = ip;
+	this.ip = ip.trim();
 	this.port = port;
 	this.version = version;
 	this.os = os;
