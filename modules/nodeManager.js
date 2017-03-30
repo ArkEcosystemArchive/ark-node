@@ -312,7 +312,7 @@ NodeManager.prototype.fixDatabase = function(cb){
 //
 //__API__ `SPVRebuild`
 
-//
+//TODO: NOT READY, DO NOT USE
 NodeManager.prototype.SPVRebuild = function(cb){
 	library.managementSequence.add(function(mSequence){
 		async.series([
@@ -455,6 +455,10 @@ NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 			if(block.orphaned){
 				// this lastBlock is processed because of managementSequence.
 				var lastBlock = modules.blockchain.getLastBlock();
+				if(lastBlock.height > block.height){
+					library.logger.info("Orphaned block arrived over one block time too late, block disregarded", {id: block.id, height:block.height, publicKey:block.generatorPublicKey});
+					return mSequence(null, block);
+				}
 				// all right we are at the beginning of a fork, let's swap asap if needed
 				if(lastBlock && block.timestamp < lastBlock.timestamp){
 					// lowest timestamp win: likely more spread

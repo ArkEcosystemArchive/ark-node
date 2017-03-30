@@ -345,7 +345,8 @@ Blockchain.prototype.onBlockReceived = function(block, peer) {
 
 	if(self.isOrphaned(block)){
 		__private.orphanedBlocks[block.id]=block;
-		block.orphaned=true;
+		// if the forger has a clock drift over a block time, just ignore it
+		block.orphaned = block.height==__private.lastBlock.height;
 		library.logger.info("Orphaned block received", {id: block.id, height:block.height, peer:peer.string});
 		return;
 	}
