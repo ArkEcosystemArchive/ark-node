@@ -2,6 +2,7 @@
 
 var ip = require('ip');
 var z_schema = require('z-schema');
+var bs58check = require('bs58check');
 
 z_schema.registerFormat('hex', function (str) {
   try {
@@ -25,6 +26,21 @@ z_schema.registerFormat('publicKey', function (str) {
     return false;
   }
 });
+
+z_schema.registerFormat('address', function (str) {
+  if (str.length === 0) {
+    return true;
+  }
+
+  var version = 0x17;
+	try {
+		var decode = bs58check.decode(str);
+		return decode[0] == version;
+	} catch(e){
+		return false;
+	}
+});
+
 
 z_schema.registerFormat('vendorField', function (str) {
   if (str.length === 0) {

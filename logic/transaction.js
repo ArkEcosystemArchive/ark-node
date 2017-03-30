@@ -71,6 +71,20 @@ Transaction.prototype.create = function (data) {
 };
 
 //
+//__API__ `validateAddress`
+
+//
+Transaction.prototype.validateAddress = function(address){
+	var version = 0x17;
+	try {
+		var decode = bs58check.decode(address);
+		return decode[0] == version;
+	} catch(e){
+		return false;
+	}
+}
+
+//
 //__API__ `attachAssetType`
 
 //
@@ -443,6 +457,10 @@ Transaction.prototype.verify = function (trs, sender, requester, cb) {
 	}
 	if (trs.senderId !== sender.address) {
 		return cb('Invalid sender address');
+	}
+
+	if(trs.recipientId && !self.validateAddress(trs.recipientId)) {
+		return cb('Invalid recipient address');
 	}
 
 	// Determine multisignatures from sender or transaction asset

@@ -51,9 +51,9 @@ node.eAccount = {
 
 // Genesis account, initially holding 125M total supply
 node.gAccount = {
-	address: 'AbfQq8iRSf9TFQRzQWo33dHYU7HFMS17Zd',
-	publicKey: '02def27da9336e7fbf63131b8d7e5c9f45b296235db035f1f4242c507398f0f21d',
-	password: 'venue below waste gather spin cruise title still boost mother flash tuna',
+	address: 'ARAibxGqLQJTo1bWMJfu5fCc88rdWWjqgv',
+	publicKey: '038082dad560a22ea003022015e3136b21ef1ffd9f2fd50049026cbe8e2258ca17',
+	password: 'craft imitate step mixture patch forest volcano business charge around girl confirm',
 	balance: '245098000000000'
 };
 

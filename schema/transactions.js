@@ -43,10 +43,12 @@ module.exports = {
 				type: 'string'
 			},
 			senderId: {
-				type: 'string'
+				type: 'string',
+				format: 'address'
 			},
 			recipientId: {
-				type: 'string'
+				type: 'string',
+				format: 'address'
 			},
 			amount: {
 				type: 'integer',
@@ -111,7 +113,8 @@ module.exports = {
 			},
 			recipientId: {
 				type: 'string',
-				minLength: 1
+				minLength: 1,
+				format: 'address'
 			},
 			vendorField: {
 				type: 'string',
