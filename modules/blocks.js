@@ -1350,6 +1350,40 @@ Blocks.prototype.processBlock = function (block, cb) {
 };
 
 //
+//__API__ `aggregateBlocksReward`
+
+//
+Blocks.prototype.aggregateBlocksReward = function (filter, cb) {
+	var params = {};
+  
+ 	params.generatorPublicKey = filter.generatorPublicKey;
+ 	params.generatorPublicKey = filter.generatorPublicKey;
+	params.delegates = constants.activeDelegates;
+	
+	if (filter.start !== undefined) {
+		params.start = filter.start - constants.epochTime.getTime () / 1000;
+	}
+	
+	if (filter.end !== undefined) {
+		params.end = filter.end - constants.epochTime.getTime () / 1000; 
+	}
+ 
+ 
+	library.db.query(sql.aggregateBlocksReward(params), params).then(function (rows) {
+ 		var data = rows[0];
+ 		var data = rows[0];
+		if (data.delegate === null) {
+			return setImmediate(cb, 'Account not found or is not a delegate');
+		}
+ 		data = { fees: data.fees || '0', rewards: data.rewards || '0', count: data.count || '0' };
+ 		return setImmediate(cb, null, data);
+ 	}).catch(function (err) {
+		library.logger.error(err.stack);
+		return setImmediate(cb, 'Blocks#aggregateBlocksReward error');
+	});
+};
+
+//
 //__API__ `processEmptyBlock`
 
 //

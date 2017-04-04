@@ -41,7 +41,7 @@ var RoundsSql = {
       'WHERE "address" IN ($1:csv);'
      ].join(' ');
    },
-
+  
   getTotalVotes: 'select ARRAY_AGG(a."accountId") as voters, SUM(b.balance) as vote FROM mem_accounts2delegates a, mem_accounts b where a."accountId" = b.address AND a."dependentId" = ${delegate};',
 
   updateVotes: 'UPDATE mem_accounts SET "vote" = "vote" + (${amount})::bigint WHERE "address" = ${address};',

@@ -1005,3 +1005,134 @@ describe('GET /api/delegates/forging/status', function () {
 		});
 	});
 });
+
+
+describe('GET /api/delegates/forging/getForgedByAccount', function () {
+	var validParams;
+
+	beforeEach(function () {
+		validParams = {
+			generatorPublicKey: '9d3058175acab969f41ad9b86f7a2926c74258670fe56b37c429c01fca9f2f0f',
+			start: 0,
+			end: 0
+		};
+	});
+
+	function buildParams () {
+		return [
+			'generatorPublicKey=' + validParams.generatorPublicKey,
+			validParams.start !== undefined ? 'start=' + validParams.start : '',
+			validParams.end !== undefined ? 'end=' + validParams.end : '',
+		].filter(Boolean).join('&');
+	}
+
+	it('using no params should fail', function (done) {
+		node.get('/api/delegates/forging/getForgedByAccount', function (err, res) {
+			node.expect(res.body).to.have.property('success').to.be.not.ok;
+			node.expect(res.body).to.have.property('error').to.eql('Missing required property: generatorPublicKey');
+			done();
+		});
+	});
+
+	it('using valid params should be ok', function (done) {
+		delete validParams.start;
+		delete validParams.end;
+
+		node.get('/api/delegates/forging/getForgedByAccount?' + buildParams(), function (err, res) {
+			node.expect(res.body).to.have.property('success').to.be.ok;
+			node.expect(res.body).to.have.property('fees').that.is.a('string');
+			node.expect(res.body).to.have.property('rewards').that.is.a('string');
+			node.expect(res.body).to.have.property('forged').that.is.a('string');
+			done();
+		});
+	});
+
+	it('using valid params with borders should be ok', function (done) {
+		node.get('/api/delegates/forging/getForgedByAccount?' + buildParams(), function (err, res) {
+			node.expect(res.body).to.have.property('success').to.be.ok;
+			node.expect(res.body).to.have.property('fees').that.is.a('string').and.eql('0');
+			node.expect(res.body).to.have.property('rewards').that.is.a('string').and.eql('0');
+			node.expect(res.body).to.have.property('forged').that.is.a('string').and.eql('0');
+			node.expect(res.body).to.have.property('count').that.is.a('string').and.eql('0');
+			done();
+		});
+	});
+
+	it('using unknown generatorPublicKey should fail', function (done) {
+		validParams.generatorPublicKey = node.randomAccount().publicKey;
+		delete validParams.start;
+		delete validParams.end;
+
+		node.get('/api/delegates/forging/getForgedByAccount?' + buildParams(), function (err, res) {
+			node.expect(res.body).to.have.property('success').to.be.not.ok;
+			node.expect(res.body).to.have.property('error').to.eql('Account not found');
+			done();
+		});
+	});
+
+	it('using unknown generatorPublicKey with borders should fail', function (done) {
+		validParams.generatorPublicKey = node.randomAccount().publicKey;
+
+		node.get('/api/delegates/forging/getForgedByAccount?' + buildParams(), function (err, res) {
+			node.expect(res.body).to.have.property('success').to.be.not.ok;
+			node.expect(res.body).to.have.property('error').to.eql('Account not found or is not a delegate');
+			done();
+		});
+	});
+
+	it('using invalid generatorPublicKey should fail', function (done) {
+		validParams.generatorPublicKey = 'invalidPublicKey';
+
+		node.get('/api/delegates/forging/getForgedByAccount?' + buildParams(), function (err, res) {
+			node.expect(res.body).to.have.property('success').to.be.not.ok;
+			node.expect(res.body).to.have.property('error').to.eql('Object didn\'t pass validation for format publicKey: invalidPublicKey');
+			done();
+		});
+	});
+
+	it('using no start should be ok', function (done) {
+		delete validParams.start;
+
+		node.get('/api/delegates/forging/getForgedByAccount?' + buildParams(), function (err, res) {
+			node.expect(res.body).to.have.property('success').to.be.ok;
+			node.expect(res.body).to.have.property('fees').that.is.a('string').and.eql('0');
+			node.expect(res.body).to.have.property('rewards').that.is.a('string').and.eql('0');
+			node.expect(res.body).to.have.property('forged').that.is.a('string').and.eql('0');
+			node.expect(res.body).to.have.property('count').that.is.a('string').and.eql('0');
+			done();
+		});
+	});
+
+	it('using no end should be ok', function (done) {
+		delete validParams.end;
+
+		node.get('/api/delegates/forging/getForgedByAccount?' + buildParams(), function (err, res) {
+			node.expect(res.body).to.have.property('success').to.be.ok;
+			node.expect(res.body).to.have.property('fees').that.is.a('string');
+			node.expect(res.body).to.have.property('rewards').that.is.a('string');
+			node.expect(res.body).to.have.property('forged').that.is.a('string');
+			node.expect(res.body).to.have.property('count').that.is.a('string');
+			done();
+		});
+	});
+
+	it('using string start should fail', function (done) {
+		validParams.start = 'one';
+
+		node.get('/api/delegates/forging/getForgedByAccount?' + buildParams(), function (err, res) {
+			node.expect(res.body).to.have.property('success').to.be.not.ok;
+			node.expect(res.body).to.have.property('error').to.eql('Expected type integer but found type string');
+			done();
+		});
+	});
+
+	it('using string end should fail', function (done) {
+		validParams.end = 'two';
+
+		node.get('/api/delegates/forging/getForgedByAccount?' + buildParams(), function (err, res) {
+			node.expect(res.body).to.have.property('success').to.be.not.ok;
+			node.expect(res.body).to.have.property('error').to.eql('Expected type integer but found type string');
+			done();
+		});
+	});
+});
