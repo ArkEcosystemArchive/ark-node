@@ -568,8 +568,8 @@ NodeManager.prototype.onTransactionsReceived = function(transactions, source, cb
 		if(source.toLowerCase() == "api"){
 			transactions.forEach(function(tx){
 				tx.id = library.logic.transaction.getId(tx);
-				tx.broadcast = true;
 				tx.hop = 0;
+				library.bus.message('broadcastTransaction', tx);
 			});
 
 			library.bus.message("addTransactionsToPool", transactions, mSequence);
@@ -585,23 +585,20 @@ NodeManager.prototype.onTransactionsReceived = function(transactions, source, cb
 			}
 
 			var skimmedtransactions = [];
-			async.eachSeries(transactions, function (transaction, cb) {
+			async.eachSeries(transactions, function (transaction, eachCb) {
 				try {
 					transaction = library.logic.transaction.objectNormalize(transaction);
 					transaction.id = library.logic.transaction.getId(transaction);
 				} catch (e) {
-					return cb(e);
+					return eachCb(e);
 				}
 
 				if(!library.logic.transaction.verifyFee(transaction)){
-					return cb("Transaction fee is too low");
+					return eachCb("Transaction fee is too low");
 				}
 
-				library.db.query(sql.getTransactionId, { id: transaction.id }).then(function (rows) {
-					if (rows.length > 0) {
-						library.logger.debug('Transaction ID is already in blockchain', transaction.id);
-					}
-					else{ // we only broadcast tx with known hop.
+				modules.transactions.verify(transaction, function(err){
+					if(!err){
 						transaction.broadcast = false;
 						if(transaction.hop){
 							transaction.hop = parseInt(transaction.hop);
@@ -615,8 +612,12 @@ NodeManager.prototype.onTransactionsReceived = function(transactions, source, cb
 							transaction.broadcast = true;
 						}
 						skimmedtransactions.push(transaction);
+						if(transaction.broadcast) {
+							transaction.broadcast = false;
+							library.bus.message('broadcastTransaction', transaction);
+						}
 					}
-					return cb();
+					return eachCb(err);
 				});
 			}, function (err) {
 				if(err){

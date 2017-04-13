@@ -208,6 +208,23 @@ __private.getVotesById = function (transaction, cb) {
 // Public methods
 
 //
+//__API__ `verify`
+
+//
+Transactions.prototype.verify = function (transaction, cb) {
+	async.waterfall([
+		function setAccountAndGet (waterCb) {
+			modules.accounts.setAccountAndGet({publicKey: transaction.senderPublicKey}, waterCb);
+		},
+		function verifyTransaction (sender, waterCb) {
+			library.logic.transaction.verify(transaction, sender, waterCb);
+		}
+	], cb);
+};
+
+
+
+//
 //__API__ `apply`
 
 //

@@ -507,7 +507,6 @@ Transport.prototype.onAttachNetworkApi = function () {
 Transport.prototype.onBroadcastTransaction = function (transaction) {
 	// clone as we don't want to send all object
 	transaction=JSON.parse(JSON.stringify(transaction));
-	delete transaction.id;
 	delete transaction.broadcast;
 	delete transaction.verified;
 	delete transaction.processed;

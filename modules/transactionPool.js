@@ -618,14 +618,7 @@ __private.processVerifyTransaction = function (transaction, cb) {
 				}
 			});
 		}
-	], function (err, sender) {
-		if (!err && transaction.broadcast) {
-			transaction.broadcast = false;
-			library.bus.message('broadcastTransaction', transaction);
-		}
-
-		return cb(err, sender);
-	});
+	], cb);
 };
 
 __private.applyUnconfirmedList = function (transactions, cb) {
