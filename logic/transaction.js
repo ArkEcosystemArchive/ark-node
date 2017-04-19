@@ -1,6 +1,6 @@
 'use strict';
 
-var _ = require('lodash');
+var _ = require('lodash'); //ALSO UNSED
 var bignum = require('../helpers/bignum.js');
 var ByteBuffer = require('bytebuffer');
 var constants = require('../helpers/constants.js');
@@ -468,7 +468,7 @@ Transaction.prototype.verify = function (trs, sender, requester, cb) {
 
 	// Verify signature
 	try {
-		valid = false;
+		//valid = false; - never used
 		valid = this.verifySignature(trs, (trs.requesterPublicKey || trs.senderPublicKey), trs.signature);
 	} catch (e) {
 		this.scope.logger.error(e.stack);
@@ -491,7 +491,7 @@ Transaction.prototype.verify = function (trs, sender, requester, cb) {
 	// Verify second signature
 	if (requester.secondSignature || sender.secondSignature) {
 		try {
-			valid = false;
+			//valid = false; - never used
 			valid = this.verifySecondSignature(trs, (requester.secondPublicKey || sender.secondPublicKey), trs.signSignature);
 		} catch (e) {
 			return setImmediate(cb, e.toString());

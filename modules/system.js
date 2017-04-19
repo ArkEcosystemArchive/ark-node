@@ -73,7 +73,7 @@ System.prototype.isMyself = function (peer) {
 			return nic.address == peer.ip && peer.port == __private.port;
 		});
 	});
-}
+};
 
 // Shared
 
