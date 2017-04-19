@@ -1,7 +1,6 @@
 'use strict';
 
 var _ = require('lodash');
-var bs58check = require('bs58check');
 var bignum = require('../helpers/bignum.js');
 var ByteBuffer = require('bytebuffer');
 var constants = require('../helpers/constants.js');
@@ -137,7 +136,7 @@ Transaction.prototype.fromBytes = function(buffer){
 	tx.type = buffer.readByte();
 	tx.timestamp = buffer.readInt();
 	return tx;
-}
+};
 
 
 
@@ -590,7 +589,7 @@ Transaction.prototype.verifyFee = function (trs) {
 	else {
 		return true;
 	}
-}
+};
 
 //
 //__API__ `verifySignature`
