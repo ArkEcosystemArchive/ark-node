@@ -7,7 +7,7 @@ Before pushing PR, please [jump in our slack #development](https://ark.io/slack)
 
 # Guidelines
 - pickup any of the existing issues or if you find an issue make a PR,
-- only one PR reward will be awarded per issue,
+- only one PR reward will be awarded per issue it fixes,
 - solving an open issue will increase your chances to be picked up as any of the monthly bounty winners.
 
 # Accepted PR
