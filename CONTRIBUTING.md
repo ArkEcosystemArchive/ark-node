@@ -1,5 +1,5 @@
 # BOUNTY Program
-ARK has a bounty program for all accepted PR (Pull Requests)
+ARK has a bounty program for all accepted PR (Pull Requests) for this repository
 
 More information can be found at https://blog.ark.io/200-000-ark-bounty-for-developers-in-the-1st-year-76aa44304012
 
