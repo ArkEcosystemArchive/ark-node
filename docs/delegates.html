@@ -346,7 +346,7 @@ __private.assetTypes = {};</pre></div></div>
 				<span class="hljs-keyword">return</span> res.json({<span class="hljs-attr">success</span>: <span class="hljs-literal">false</span>, <span class="hljs-attr">error</span>: <span class="hljs-string">'Access denied'</span>});
 			}
 
-			<span class="hljs-keyword">var</span> keypair = library.ed.makeKeypair(crypto.createHash(<span class="hljs-string">'sha256'</span>).update(req.body.secret, <span class="hljs-string">'utf8'</span>).digest());
+			<span class="hljs-keyword">var</span> keypair = library.crypto.makeKeypair(crypto.createHash(<span class="hljs-string">'sha256'</span>).update(req.body.secret, <span class="hljs-string">'utf8'</span>).digest());
 
 			<span class="hljs-keyword">if</span> (req.body.publicKey) {
 				<span class="hljs-keyword">if</span> (keypair.publicKey.toString(<span class="hljs-string">'hex'</span>) !== req.body.publicKey) {
@@ -385,7 +385,7 @@ __private.assetTypes = {};</pre></div></div>
 				<span class="hljs-keyword">return</span> res.json({<span class="hljs-attr">success</span>: <span class="hljs-literal">false</span>, <span class="hljs-attr">error</span>: <span class="hljs-string">'Access denied'</span>});
 			}
 
-			<span class="hljs-keyword">var</span> keypair = library.ed.makeKeypair(crypto.createHash(<span class="hljs-string">'sha256'</span>).update(req.body.secret, <span class="hljs-string">'utf8'</span>).digest());
+			<span class="hljs-keyword">var</span> keypair = library.crypto.makeKeypair(crypto.createHash(<span class="hljs-string">'sha256'</span>).update(req.body.secret, <span class="hljs-string">'utf8'</span>).digest());
 
 			<span class="hljs-keyword">if</span> (req.body.publicKey) {
 				<span class="hljs-keyword">if</span> (keypair.publicKey.toString(<span class="hljs-string">'hex'</span>) !== req.body.publicKey) {
@@ -875,7 +875,7 @@ __private.loadMyDelegates = <span class="hljs-function"><span class="hljs-keywor
 	}
 
 	<span class="hljs-keyword">async</span>.eachSeries(secrets, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">secret, seriesCb</span>) </span>{
-		<span class="hljs-keyword">var</span> keypair = library.ed.makeKeypair(secret);</pre></div></div>
+		<span class="hljs-keyword">var</span> keypair = library.crypto.makeKeypair(secret);</pre></div></div>
             
         </li>
         
@@ -1869,7 +1869,7 @@ shared.addDelegate = <span class="hljs-function"><span class="hljs-keyword">func
 			<span class="hljs-keyword">return</span> cb(err[<span class="hljs-number">0</span>].message);
 		}
 
-		<span class="hljs-keyword">var</span> keypair = library.ed.makeKeypair(req.body.secret);
+		<span class="hljs-keyword">var</span> keypair = library.crypto.makeKeypair(req.body.secret);
 
 		<span class="hljs-keyword">if</span> (req.body.publicKey) {
 			<span class="hljs-keyword">if</span> (keypair.publicKey.toString(<span class="hljs-string">'hex'</span>) !== req.body.publicKey) {
@@ -1916,7 +1916,7 @@ shared.addDelegate = <span class="hljs-function"><span class="hljs-keyword">func
 						<span class="hljs-keyword">var</span> secondKeypair = <span class="hljs-literal">null</span>;
 
 						<span class="hljs-keyword">if</span> (requester.secondSignature) {
-							secondKeypair = library.ed.makeKeypair(req.body.secondSecret);
+							secondKeypair = library.crypto.makeKeypair(req.body.secondSecret);
 						}
 
 						<span class="hljs-keyword">var</span> transaction;
@@ -1954,7 +1954,7 @@ shared.addDelegate = <span class="hljs-function"><span class="hljs-keyword">func
 					<span class="hljs-keyword">var</span> secondKeypair = <span class="hljs-literal">null</span>;
 
 					<span class="hljs-keyword">if</span> (account.secondSignature) {
-						secondKeypair = library.ed.makeKeypair(req.body.secondSecret);
+						secondKeypair = library.crypto.makeKeypair(req.body.secondSecret);
 					}
 
 					<span class="hljs-keyword">var</span> transaction;

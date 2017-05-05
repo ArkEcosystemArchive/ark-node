@@ -71,6 +71,19 @@ Transaction.prototype.create = function (data) {
 };
 
 //
+//__API__ `validateAddress`
+
+//
+Transaction.prototype.validateAddress = function(address){
+	try {
+		var decode = bs58check.decode(address);
+		return decode[0] == this.scope.crypto.network.pubKeyHash;
+	} catch(e){
+		return false;
+	}
+}
+
+//
 //__API__ `attachAssetType`
 
 //
@@ -94,7 +107,7 @@ Transaction.prototype.attachAssetType = function (typeId, instance) {
 
 //
 Transaction.prototype.sign = function (keypair, trs) {
-	var sign = this.scope.ed.sign(this.getHash(trs), keypair).toString('hex');
+	var sign = this.scope.crypto.sign(this.getHash(trs), keypair).toString('hex');
 	return sign;
 };
 
@@ -105,7 +118,7 @@ Transaction.prototype.sign = function (keypair, trs) {
 Transaction.prototype.multisign = function (keypair, trs) {
 	var bytes = this.getBytes(trs, true, true);
 	var hash = crypto.createHash('sha256').update(bytes).digest();
-	var sign = this.scope.ed.sign(hash, keypair).toString('hex');
+	var sign = this.scope.crypto.sign(hash, keypair).toString('hex');
 	return sign;
 };
 
@@ -445,6 +458,10 @@ Transaction.prototype.verify = function (trs, sender, requester, cb) {
 		return cb('Invalid sender address');
 	}
 
+	if(trs.recipientId && !self.validateAddress(trs.recipientId)) {
+		return cb('Invalid recipient address');
+	}
+
 	// Determine multisignatures from sender or transaction asset
 	var multisignatures = sender.multisignatures || sender.u_multisignatures || [];
 	if (multisignatures.length === 0) {
@@ -654,7 +671,7 @@ Transaction.prototype.verifyBytes = function (bytes, publicKey, signature) {
 		var signatureBuffer = new Buffer(signature, 'hex');
 		var publicKeyBuffer = new Buffer(publicKey, 'hex');
 
-		res = this.scope.ed.verify(hash, signatureBuffer || ' ', publicKeyBuffer || ' ');
+		res = this.scope.crypto.verify(hash, signatureBuffer || ' ', publicKeyBuffer || ' ');
 	} catch (e) {
 		throw e;
 	}
@@ -974,7 +991,7 @@ Transaction.prototype.objectNormalize = function (trs) {
 	if (!report) {
 		var log=this.scope.logger;
 		throw 'Failed to validate transaction schema: ' + this.scope.schema.getLastErrors().map(function (err) {
-			log.error(err);
+			log.error("details",err);
 			return err.message;
 		}).join(', ');
 	}

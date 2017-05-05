@@ -6,7 +6,6 @@ var bignum = require('../helpers/bignum.js');
 var BlockReward = require('../logic/blockReward.js');
 var checkIpInList = require('../helpers/checkIpInList.js');
 var constants = require('../helpers/constants.js');
-var crypto = require('crypto');
 var extend = require('extend');
 var MilestoneBlocks = require('../helpers/milestoneBlocks.js');
 var OrderBy = require('../helpers/orderBy.js');
@@ -102,7 +101,7 @@ __private.attachApi = function () {
 				return res.json({success: false, error: 'Access denied'});
 			}
 
-			var keypair = library.ed.makeKeypair(crypto.createHash('sha256').update(req.body.secret, 'utf8').digest());
+			var keypair = library.crypto.makeKeypair(crypto.createHash('sha256').update(req.body.secret, 'utf8').digest());
 
 			if (req.body.publicKey) {
 				if (keypair.publicKey.toString('hex') !== req.body.publicKey) {
@@ -141,7 +140,7 @@ __private.attachApi = function () {
 				return res.json({success: false, error: 'Access denied'});
 			}
 
-			var keypair = library.ed.makeKeypair(crypto.createHash('sha256').update(req.body.secret, 'utf8').digest());
+			var keypair = library.crypto.makeKeypair(crypto.createHash('sha256').update(req.body.secret, 'utf8').digest());
 
 			if (req.body.publicKey) {
 				if (keypair.publicKey.toString('hex') !== req.body.publicKey) {
@@ -239,7 +238,7 @@ __private.forge = function (cb) {
 
 	__private.getBlockSlotData(currentSlot, lastBlock.height + 1, function (err, currentBlockData) {
 		if (err || currentBlockData === null) {
-			err = 'Skipping delegate slot';
+			err = err || 'Skipping delegate slot';
 			return cb(err);
 		}
 
@@ -313,13 +312,13 @@ __private.forge = function (cb) {
 
 							return cb();
 						}
-						// PBFT: most nodes are on same branch, no other block have been forged
+						// PBFT: most nodes are on same branch, no other block have been forged and we are on forgeable currentSlot
 						if(quorum/(quorum+noquorum) > 0.66){
 							letsforge = true;
 						}
 						else{
 							//We are forked!
-							library.logger.debug("Forked from network",[
+							library.logger.info("Forked from network",[
 								"network:", JSON.stringify(network.height),
 								"quorum:", quorum/(quorum+noquorum),
 								"last block id:", lastBlock.id
@@ -445,7 +444,7 @@ __private.loadMyDelegates = function (cb) {
 	}
 
 	async.eachSeries(secrets, function (secret, seriesCb) {
-		var keypair = library.ed.makeKeypair(secret);
+		var keypair = library.crypto.makeKeypair(secret);
 
 		// already loaded? Do nothing
 		if(__private.keypairs[keypair.publicKey.toString('hex')]){
@@ -937,7 +936,7 @@ shared.addDelegate = function (req, cb) {
 			return cb(err[0].message);
 		}
 
-		var keypair = library.ed.makeKeypair(req.body.secret);
+		var keypair = library.crypto.makeKeypair(req.body.secret);
 
 		if (req.body.publicKey) {
 			if (keypair.publicKey.toString('hex') !== req.body.publicKey) {
@@ -984,7 +983,7 @@ shared.addDelegate = function (req, cb) {
 						var secondKeypair = null;
 
 						if (requester.secondSignature) {
-							secondKeypair = library.ed.makeKeypair(req.body.secondSecret);
+							secondKeypair = library.crypto.makeKeypair(req.body.secondSecret);
 						}
 
 						var transaction;
@@ -1022,7 +1021,7 @@ shared.addDelegate = function (req, cb) {
 					var secondKeypair = null;
 
 					if (account.secondSignature) {
-						secondKeypair = library.ed.makeKeypair(req.body.secondSecret);
+						secondKeypair = library.crypto.makeKeypair(req.body.secondSecret);
 					}
 
 					var transaction;

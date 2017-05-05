@@ -337,7 +337,7 @@ shared.addSignature = <span class="hljs-function"><span class="hljs-keyword">fun
 			<span class="hljs-keyword">return</span> cb(err[<span class="hljs-number">0</span>].message);
 		}
 
-		<span class="hljs-keyword">var</span> keypair = library.ed.makeKeypair(req.body.secret);
+		<span class="hljs-keyword">var</span> keypair = library.crypto.makeKeypair(req.body.secret);
 
 		<span class="hljs-keyword">if</span> (req.body.publicKey) {
 			<span class="hljs-keyword">if</span> (keypair.publicKey.toString(<span class="hljs-string">'hex'</span>) !== req.body.publicKey) {
@@ -385,7 +385,7 @@ shared.addSignature = <span class="hljs-function"><span class="hljs-keyword">fun
 							<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Invalid requester public key'</span>);
 						}
 
-						<span class="hljs-keyword">var</span> secondKeypair = library.ed.makeKeypair(req.body.secondSecret);
+						<span class="hljs-keyword">var</span> secondKeypair = library.crypto.makeKeypair(req.body.secondSecret);
 						<span class="hljs-keyword">var</span> transaction;
 
 						<span class="hljs-keyword">try</span> {
@@ -418,7 +418,7 @@ shared.addSignature = <span class="hljs-function"><span class="hljs-keyword">fun
 						<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Account already has a second passphrase'</span>);
 					}
 
-					<span class="hljs-keyword">var</span> secondKeypair = library.ed.makeKeypair(req.body.secondSecret);
+					<span class="hljs-keyword">var</span> secondKeypair = library.crypto.makeKeypair(req.body.secondSecret);
 					<span class="hljs-keyword">var</span> transaction;
 
 					<span class="hljs-keyword">try</span> {

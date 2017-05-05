@@ -1,13 +1,20 @@
 'use strict';
-process.env.SILENT='true';
+// process.env.SILENT='true';
 // Root object
 var node = {};
+var networkName = "testnet"
+var network = require('../networks.json')[networkName];
+node.ark = require('./ark-js');
+node.ark.crypto.setNetworkVersion(network.pubKeyHash);
 
 // Requires
 node.bignum = require('../helpers/bignum.js');
 node.config = require('./config.json');
 node.constants = require('../helpers/constants.js');
 node.txTypes = require('../helpers/transactionTypes.js');
+node.delegates = require('./delegatesPassphrases.'+networkName+'.json');
+node.gAccount = require('./genesisPassphrase.'+networkName+'.json');
+node.gAccount.password = node.gAccount.passphrase;
 
 node._ = require('lodash');
 node.async = require('async');
@@ -16,7 +23,6 @@ node.expect = require('chai').expect;
 node.chai = require('chai');
 node.chai.config.includeStack = true;
 node.chai.use(require('chai-bignumber')(node.bignum));
-node.ark = require('./ark-js');
 node.supertest = require('supertest');
 require('colors');
 
@@ -41,21 +47,11 @@ node.fees = {
 
 
 // Existing delegate account
-node.eAccount = {
-	address: 'ANBkoGqWeTSiaEVgVzSKZd3jS7UWzv9PSo',
-	publicKey: '03287bfebba4c7881a0509717e71b34b63f31e40021c321f89ae04f84be6d6ac37',
-	password: 'clay harbor enemy utility margin pretty hub comic piece aerobic umbrella acquire',
-	balance: '245100000000000',
-	delegateName: 'genesis_1'
-};
+node.eAccount = node.delegates[0];
+node.eAccount.password = node.eAccount.passphrase;
 
+console.log(node.eAccount);
 // Genesis account, initially holding 125M total supply
-node.gAccount = {
-	address: 'AbfQq8iRSf9TFQRzQWo33dHYU7HFMS17Zd',
-	publicKey: '02def27da9336e7fbf63131b8d7e5c9f45b296235db035f1f4242c507398f0f21d',
-	password: 'venue below waste gather spin cruise title still boost mother flash tuna',
-	balance: '245098000000000'
-};
 
 // Optional logging
 if (process.env.SILENT === 'true') {
@@ -93,7 +89,7 @@ node.randomProperty = function (obj, needKey) {
 
 // Returns random ARK amount
 node.randomArk = function () {
-	return Math.floor(Math.random() * (10000 * 100000000)) + (1000 * 100000000);
+	return Math.floor(Math.random() * (100 * 100000000)) + (10 * 100000000);
 };
 
 // Returns current block height
@@ -274,8 +270,8 @@ node.randomAccount = function () {
 	account.password = node.randomPassword();
 	account.secondPassword = node.randomPassword();
 	account.username = node.randomDelegateName();
-	account.publicKey = node.ark.crypto.getKeys(account.password).publicKey;
-	account.address = node.ark.crypto.getAddress(account.publicKey);
+	account.publicKey = node.ark.crypto.getKeys(account.password, network).publicKey;
+	account.address = node.ark.crypto.getAddress(account.publicKey, network.pubKeyHash);
 
 	return account;
 };

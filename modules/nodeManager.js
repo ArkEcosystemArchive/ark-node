@@ -29,8 +29,6 @@ function NodeManager (cb, scope) {
 	return cb(null, self);
 }
 
-
-
 //
 //__EVENT__ `onBind`
 
@@ -261,7 +259,6 @@ NodeManager.prototype.performSPVFix = function (cb) {
 					});
 				}
 			};
-
 			if(publicKey){
 				series.spent = function(cb){
 					library.db.query(spentSQL).then(function(rows){
@@ -297,6 +294,35 @@ NodeManager.prototype.performSPVFix = function (cb) {
 	}).catch(cb);
 };
 
+//
+//__API__ `fixDatabase`
+
+//
+NodeManager.prototype.fixDatabase = function(cb){
+	async.series([
+		function(seriesCb){
+			modules.transactionPool.undoUnconfirmedList([], seriesCb);
+		},
+		modules.loader.resetMemAccounts,
+		self.performSPVFix
+	], cb);
+}
+
+
+//
+//__API__ `SPVRebuild`
+
+//TODO: NOT READY, DO NOT USE
+NodeManager.prototype.SPVRebuild = function(cb){
+	library.managementSequence.add(function(mSequence){
+		async.series([
+			modules.loader.cleanMemAccount,
+			modules.loader.rebuildBalance,
+			modules.loader.rebuildVotes,
+			modules.rounds.rebuildMemDelegates
+		], mSequence);
+	}, cb);
+}
 
 
 //make sure the block transaction list is complete, otherwise try to find transactions
@@ -326,13 +352,13 @@ __private.prepareBlock = function(block, peer, cb){
 			// lets download the missing ones from the peer that sent the block.
 			else{
 				modules.transport.requestFromPeer(peer, {
-					 method: 'GET',
+					method: 'GET',
 					api: '/transactionsFromIds?blockid=' + block.id + "&ids='"+missingTransactionIds.join(",")+"'"
 				}, function (err, res) {
-					library.logger.debug("called "+res.peer.ip+":"+res.peer.port+"/peer/transactionsFromIds");
+					library.logger.debug("called "+peer.ip+":"+peer.port+"/peer/transactionsFromIds");
 					 if (err) {
 						 library.logger.debug('Cannot get transactions for block', block.id);
-						 return cb && cb(null, block);
+						 return cb && cb(err, block);
 					 }
 
 					 var receivedTransactions = res.body.transactions;
@@ -429,6 +455,10 @@ NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 			if(block.orphaned){
 				// this lastBlock is processed because of managementSequence.
 				var lastBlock = modules.blockchain.getLastBlock();
+				if(lastBlock.height > block.height){
+					library.logger.info("Orphaned block arrived over one block time too late, block disregarded", {id: block.id, height:block.height, publicKey:block.generatorPublicKey});
+					return mSequence(null, block);
+				}
 				// all right we are at the beginning of a fork, let's swap asap if needed
 				if(lastBlock && block.timestamp < lastBlock.timestamp){
 					// lowest timestamp win: likely more spread
@@ -538,8 +568,8 @@ NodeManager.prototype.onTransactionsReceived = function(transactions, source, cb
 		if(source.toLowerCase() == "api"){
 			transactions.forEach(function(tx){
 				tx.id = library.logic.transaction.getId(tx);
-				tx.broadcast = true;
 				tx.hop = 0;
+				library.bus.message('broadcastTransaction', tx);
 			});
 
 			library.bus.message("addTransactionsToPool", transactions, mSequence);
@@ -555,23 +585,20 @@ NodeManager.prototype.onTransactionsReceived = function(transactions, source, cb
 			}
 
 			var skimmedtransactions = [];
-			async.eachSeries(transactions, function (transaction, cb) {
+			async.eachSeries(transactions, function (transaction, eachCb) {
 				try {
 					transaction = library.logic.transaction.objectNormalize(transaction);
 					transaction.id = library.logic.transaction.getId(transaction);
 				} catch (e) {
-					return cb(e);
+					return eachCb(e);
 				}
 
 				if(!library.logic.transaction.verifyFee(transaction)){
-					return cb("Transaction fee is too low");
+					return eachCb("Transaction fee is too low");
 				}
 
-				library.db.query(sql.getTransactionId, { id: transaction.id }).then(function (rows) {
-					if (rows.length > 0) {
-						library.logger.debug('Transaction ID is already in blockchain', transaction.id);
-					}
-					else{ // we only broadcast tx with known hop.
+				modules.transactions.verify(transaction, function(err){
+					if(!err){
 						transaction.broadcast = false;
 						if(transaction.hop){
 							transaction.hop = parseInt(transaction.hop);
@@ -585,8 +612,12 @@ NodeManager.prototype.onTransactionsReceived = function(transactions, source, cb
 							transaction.broadcast = true;
 						}
 						skimmedtransactions.push(transaction);
+						if(transaction.broadcast) {
+							transaction.broadcast = false;
+							library.bus.message('broadcastTransaction', transaction);
+						}
 					}
-					return cb();
+					return eachCb(err);
 				});
 			}, function (err) {
 				if(err){

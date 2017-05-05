@@ -348,17 +348,17 @@ __private.getPreviousBlock = function(block, cb){
 }
 
 __private.popLastBlock = function (oldLastBlock, cb) {
-	library.blockSequence.add(function (cb) {
+	library.blockSequence.add(function (sequenceCb) {
 		if(!oldLastBlock.previousBlock){
 			self.simpleDeleteAfterBlock(oldLastBlock.id, function (err) {
 				library.logger.warn("removing block", oldLastBlock.height);
 				modules.blockchain.removeBlock(oldLastBlock);
 			});
-			return cb("No previous block");
+			return sequenceCb("No previous block");
 		}
 		__private.getPreviousBlock(oldLastBlock, function (err, previousBlock) {
 			if (err) {
-				return cb(err);
+				return sequenceCb(err);
 			}
 			if (!previousBlock) {
 				// very wrong removing block from db only
@@ -367,24 +367,24 @@ __private.popLastBlock = function (oldLastBlock, cb) {
 					modules.blockchain.removeBlock(oldLastBlock);
 				});
 
-				return cb("No previous block");
+				return sequenceCb("No previous block");
 			}
 
-			async.eachSeries(oldLastBlock.transactions.reverse(), function (transaction, cb) {
+			async.eachSeries(oldLastBlock.transactions.reverse(), function (transaction, eachSeriesCb) {
 				async.series([
-					function (cb) {
-						modules.transactions.undo(transaction, oldLastBlock, cb);
-					}, function (cb) {
-						modules.transactions.undoUnconfirmed(transaction, cb);
+					function (seriesCb) {
+						modules.transactions.undo(transaction, oldLastBlock, seriesCb);
+					}, function (seriesCb) {
+						modules.transactions.undoUnconfirmed(transaction, seriesCb);
 					}
-				], cb);
+				], eachSeriesCb);
 			}, function (err) {
 				// TODO: reinject transaction into pool: better than this
 				// library.bus.message("receiveTransactions")
 				modules.rounds.backwardTick(oldLastBlock, function () {
 					__private.deleteBlock(oldLastBlock.id, function (err) {
 						library.logger.warn("removing block", oldLastBlock.height);
-						modules.blockchain.removeBlock(oldLastBlock, cb);
+						modules.blockchain.removeBlock(oldLastBlock, sequenceCb);
 					});
 				});
 			});
@@ -1207,10 +1207,10 @@ __private.applyBlock = function (block, cb) {
 		keptTransactions = appliedTransactions = appliedUnconfirmedTransactions = removedTransactionsIds = block = null;
 
 		if(err){
-			modules.nodeManager.performSPVFix(function(error, results){
-				if(results){
-					library.logger.warn("Performed SPV fix after block error", err);
-					library.logger.warn("Fixed "+results.length+" accounts",results);
+			modules.nodeManager.fixDatabase(function(error){
+				library.logger.warn("Performed database maintenance after block error", err);
+				if(error){
+					library.logger.error("Database maintenance error", error);
 				}
 				return cb(err);
 			});
@@ -1413,8 +1413,7 @@ Blocks.prototype.simpleDeleteAfterBlock = function (blockId, cb) {
 Blocks.prototype.loadBlocksFromPeer = function (peer, cb) {
 	var lastValidBlock = modules.blockchain.getLastBlock();
 
-	peer = modules.peers.inspect(peer);
-	library.logger.info('Loading blocks from: ' + peer.string);
+	library.logger.info('Loading blocks from: ' + peer);
 
 	// we increase timeout as it can be a big payload
 	modules.transport.requestFromPeer(peer, {
@@ -1547,13 +1546,13 @@ Blocks.prototype.generateBlock = function (keypair, timestamp, cb) {
 
 //
 Blocks.prototype.onProcessBlock = function (block, cb) {
-	library.blockSequence.add(function(seriesCb){
+	library.blockSequence.add(function(sequenceCb){
 		if(block.numberOfTransactions == 0){
 
-			return self.processEmptyBlock(block,seriesCb);
+			return self.processEmptyBlock(block, sequenceCb);
 		}
 		else{
-			return self.processBlock(block,seriesCb);
+			return self.processBlock(block, sequenceCb);
 		}
 	}, cb);
 };

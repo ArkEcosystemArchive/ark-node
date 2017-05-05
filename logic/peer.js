@@ -9,7 +9,6 @@ _.extend(__schemas, require('../schema/api.public.js'));
 // Private fields
 var modules, library;
 
-
 var __headers;
 
 //
@@ -29,7 +28,7 @@ Peer.bind = function (scope) {
 
 // single Peer object
 function Peer(ip, port, version, os){
-	this.ip = ip;
+	this.ip = ip.trim();
 	this.port = port;
 	this.version = version;
 	this.os = os;
@@ -42,6 +41,7 @@ function Peer(ip, port, version, os){
 	this.requests = 0;
 	this.delay = 10000;
 	this.lastchecked = 0;
+	this.counterror = 0;
 
   this.forgingAllowed = false;
 	this.currentSlot = 0;
@@ -116,28 +116,33 @@ Peer.prototype.fetchHeight = function(cb){
 
 Peer.prototype.fetchStatus = function(cb){
 	var that = this;
-  this.get('/peer/status', function(err, res){
+  this.request('/peer/status', {method:'GET', timeout: 2000}, function(err, res){
 		if(!err){
 			that.height = res.body.height;
 			that.blockheader = res.body.header;
 			that.forgingAllowed = res.body.forgingAllowed;
 			that.currentSlot = res.body.currentSlot;
-			var verification = {
-				verified: false
-			};
+			var check = {verified: false};
 			try {
-				verification = modules.blocks.verifyBlockHeader(res.body.header);
+				check = modules.blocks.verifyBlockHeader(res.body.header);
 			} catch (e) {
-				verification.errors = [e];
+				check.errors = [e];
 			}
-			if(!verification.verified){
+			if(!check.verified){
 				that.status="FORK";
+				that.counterror++;
+				console.log(res.body);
 				library.logger.trace(that + " sent header", res.body.header);
-				return cb('Received invalid block header from peer!', res);
+				library.logger.debug(that + " header errors", check.errors);
+				return cb && cb('Received invalid block header from peer '+that, res);
 			}
 			else {
+				that.counterror = 0;
         that.status = "OK";
       }
+		}
+		else {
+			that.counterror++;
 		}
 		return cb && cb(err, res);
 	});
@@ -148,16 +153,16 @@ Peer.prototype.fetchPeers = function(cb){
 }
 
 Peer.prototype.postTransactions = function(transactions, cb){
-	this.post('/peer/transactions',{transactions: transactions}, cb);
+	this.post('/peer/transactions', {transactions: transactions}, cb);
 }
 
 Peer.prototype.getTransactionFromIds = function(transactionIds, cb){
-	this.get('/peer/transactionsFromIds?ids='+transactionIds.join(","), cb);s
+	this.get('/peer/transactionsFromIds?ids='+transactionIds.join(","), cb);
 }
 
 Peer.prototype.accept = function(){
   this.lastchecked=new Date().getTime();
-  return true;
+  return this;
 };
 
 Peer.prototype.get = function(api, cb){
@@ -187,6 +192,7 @@ Peer.prototype.request = function(api, options, cb){
     that.delay=new Date().getTime()-that.lastchecked;
     if (res.status !== 200) {
       that.status="ERESPONSE";
+			that.counterror++;
       return cb(['Received bad response code', res.status, req.method, req.url].join(' '));
     } else {
 
@@ -204,8 +210,8 @@ Peer.prototype.request = function(api, options, cb){
 
 			if(!report){
 				that.status = "EAPI";
-				console.log(options.method +":"+apihandle);
-				console.log(Object.keys(res.body));
+				that.counterror++;
+				library.logger.debug(options.method +":"+apihandle, res.body);
 				return cb("Returned data does not match API requirement for " + options.method +":"+apihandle);
 			}
 
@@ -231,6 +237,7 @@ Peer.prototype.request = function(api, options, cb){
 
       if(header.nethash !== library.config.nethash) {
         that.status="ENETHASH";
+				that.counterror++;
         return cb(['Peer is not on the same network', header.nethash, req.method, req.url].join(' '));
       }
 
@@ -245,6 +252,7 @@ Peer.prototype.request = function(api, options, cb){
     if(err.code){
 			that.status = err.code;
 		}
+		that.counterror++;
     return cb([err.code, 'Request failed', req.method, req.url].join(' '));
   });
 };

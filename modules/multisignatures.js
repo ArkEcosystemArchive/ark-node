@@ -284,7 +284,7 @@ shared.sign = function (req, cb) {
 					return seriesCb('Transaction not found');
 				}
 
-				scope.keypair = library.ed.makeKeypair(req.body.secret);
+				scope.keypair = library.crypto.makeKeypair(req.body.secret);
 
 				if (req.body.publicKey) {
 					if (scope.keypair.publicKey.toString('hex') !== req.body.publicKey) {
@@ -442,7 +442,7 @@ shared.addMultisignature = function (req, cb) {
 			return cb(err[0].message);
 		}
 
-		var keypair = library.ed.makeKeypair(req.body.secret);
+		var keypair = library.crypto.makeKeypair(req.body.secret);
 
 		if (req.body.publicKey) {
 			if (keypair.publicKey.toString('hex') !== req.body.publicKey) {
@@ -466,7 +466,7 @@ shared.addMultisignature = function (req, cb) {
 				var secondKeypair = null;
 
 				if (account.secondSignature) {
-					secondKeypair = library.ed.makeKeypair(req.body.secondSecret);
+					secondKeypair = library.crypto.makeKeypair(req.body.secondSecret);
 				}
 
 				var transaction;

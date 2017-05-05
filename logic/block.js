@@ -21,8 +21,8 @@ function Block (scope, cb) {
 // Private methods
 __private.blockReward = new BlockReward();
 
-__private.getAddressByPublicKey = function (publicKey) {
-	return arkjs.crypto.getAddress(publicKey);
+__private.getAddressByPublicKey = function (publicKey, network) {
+	return arkjs.crypto.getAddress(publicKey, network.pubKeyHash);
 };
 
 // Public methods
@@ -94,7 +94,7 @@ Block.prototype.create = function (data) {
 Block.prototype.sign = function (block, keypair) {
 	var hash = this.getHash(block);
 
-	return this.scope.ed.sign(hash, keypair).toString('hex');
+	return this.scope.crypto.sign(hash, keypair).toString('hex');
 };
 
 //
@@ -177,7 +177,7 @@ Block.prototype.verifySignature = function (block) {
 		var blockSignatureBuffer = new Buffer(block.blockSignature, 'hex');
 		var generatorPublicKeyBuffer = new Buffer(block.generatorPublicKey, 'hex');
 
-		res = this.scope.ed.verify(hash, blockSignatureBuffer || ' ', generatorPublicKeyBuffer || ' ');
+		res = this.scope.crypto.verify(hash, blockSignatureBuffer || ' ', generatorPublicKeyBuffer || ' ');
 	} catch (e) {
 		throw e;
 	}
@@ -387,7 +387,7 @@ Block.prototype.dbRead = function (raw) {
 			payloadLength: parseInt(raw.b_payloadLength),
 			payloadHash: raw.b_payloadHash,
 			generatorPublicKey: raw.b_generatorPublicKey,
-			generatorId: __private.getAddressByPublicKey(raw.b_generatorPublicKey),
+			generatorId: __private.getAddressByPublicKey(raw.b_generatorPublicKey, this.scope.crypto.network),
 			blockSignature: raw.b_blockSignature,
 			confirmations: parseInt(raw.b_confirmations)
 		};
