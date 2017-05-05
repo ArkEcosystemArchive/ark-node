@@ -417,7 +417,7 @@ shared.addTransactions = function (req, cb) {
 			return cb(err[0].message);
 		}
 
-		var keypair = library.ed.makeKeypair(req.body.secret);
+		var keypair = library.crypto.makeKeypair(req.body.secret);
 
 		if (req.body.publicKey) {
 			if (keypair.publicKey.toString('hex') !== req.body.publicKey) {
@@ -476,7 +476,7 @@ shared.addTransactions = function (req, cb) {
 							var secondKeypair = null;
 
 							if (requester.secondSignature) {
-								secondKeypair = library.ed.makeKeypair(req.body.secondSecret);
+								secondKeypair = library.crypto.makeKeypair(req.body.secondSecret);
 							}
 
 							var transaction;
@@ -524,7 +524,7 @@ shared.addTransactions = function (req, cb) {
 						var secondKeypair = null;
 
 						if (account.secondSignature) {
-							secondKeypair = library.ed.makeKeypair(req.body.secondSecret);
+							secondKeypair = library.crypto.makeKeypair(req.body.secondSecret);
 						}
 
 						var transaction;

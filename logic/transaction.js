@@ -75,10 +75,9 @@ Transaction.prototype.create = function (data) {
 
 //
 Transaction.prototype.validateAddress = function(address){
-	var version = 0x17;
 	try {
 		var decode = bs58check.decode(address);
-		return decode[0] == version;
+		return decode[0] == this.scope.crypto.network.pubKeyHash;
 	} catch(e){
 		return false;
 	}
@@ -108,7 +107,7 @@ Transaction.prototype.attachAssetType = function (typeId, instance) {
 
 //
 Transaction.prototype.sign = function (keypair, trs) {
-	var sign = this.scope.ed.sign(this.getHash(trs), keypair).toString('hex');
+	var sign = this.scope.crypto.sign(this.getHash(trs), keypair).toString('hex');
 	return sign;
 };
 
@@ -119,7 +118,7 @@ Transaction.prototype.sign = function (keypair, trs) {
 Transaction.prototype.multisign = function (keypair, trs) {
 	var bytes = this.getBytes(trs, true, true);
 	var hash = crypto.createHash('sha256').update(bytes).digest();
-	var sign = this.scope.ed.sign(hash, keypair).toString('hex');
+	var sign = this.scope.crypto.sign(hash, keypair).toString('hex');
 	return sign;
 };
 
@@ -672,7 +671,7 @@ Transaction.prototype.verifyBytes = function (bytes, publicKey, signature) {
 		var signatureBuffer = new Buffer(signature, 'hex');
 		var publicKeyBuffer = new Buffer(publicKey, 'hex');
 
-		res = this.scope.ed.verify(hash, signatureBuffer || ' ', publicKeyBuffer || ' ');
+		res = this.scope.crypto.verify(hash, signatureBuffer || ' ', publicKeyBuffer || ' ');
 	} catch (e) {
 		throw e;
 	}

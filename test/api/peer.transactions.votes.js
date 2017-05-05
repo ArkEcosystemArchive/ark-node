@@ -255,10 +255,10 @@ describe('POST /peer/transactions', function () {
 		});
 	});
 
-	it('voting for 20 delegates separately should be ok', function (done) {
+	it('voting for 1 delegates separately should be ok', function (done) {
 		node.onNewBlock(function (err) {
 			postVotes({
-				delegates: delegates.slice(0, 20),
+				delegates: delegates.slice(0, 1),
 				passphrase: account.password,
 				action: '+',
 				voteCb: function (err, res) {
@@ -269,9 +269,9 @@ describe('POST /peer/transactions', function () {
 		});
 	});
 
-	it('removing votes from 34 delegates at once should fail', function (done) {
+	it('removing votes from 2 delegates at once should fail', function (done) {
 		node.onNewBlock(function (err) {
-			var transaction = node.ark.vote.createVote(account.password, delegates.slice(0, 34).map(function (delegate) {
+			var transaction = node.ark.vote.createVote(account.password, delegates.slice(0, 2).map(function (delegate) {
 				return '-' + delegate;
 			}));
 
@@ -283,9 +283,9 @@ describe('POST /peer/transactions', function () {
 		});
 	});
 
-	it('removing votes from 20 delegates separately should be ok', function (done) {
+	it('removing votes from 1 delegates separately should be ok', function (done) {
 		postVotes({
-			delegates: delegates.slice(0, 20),
+			delegates: delegates.slice(0, 1),
 			passphrase: account.password,
 			action: '-',
 			voteCb: function (err, res) {
@@ -333,7 +333,7 @@ describe('POST /peer/transactions after registering a new delegate', function ()
 		});
 	});
 
-	it('exceeding maximum of 51 votes within same block should fail', function (done) {
+	it('exceeding maximum of 1 votes within same block should fail', function (done) {
 		async.series([
 			function (seriesCb) {
 				var slicedDelegates = delegates.slice(0, 26);

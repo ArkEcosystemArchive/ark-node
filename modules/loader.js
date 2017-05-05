@@ -49,7 +49,8 @@ __private.attachApi = function () {
 
 	router.map(shared, {
 		'get /status': 'status',
-		'get /status/sync': 'sync'
+		'get /status/sync': 'sync',
+		'get /autoconfigure': 'autoconfigure'
 	});
 
 	library.network.app.use('/api/loader', router);
@@ -604,7 +605,7 @@ Loader.prototype.rebuildBalance = function(cb){
 			for(var address in accounts){
 				var account = accounts[address];
 				if(account.publicKey){
-					
+
 				}
 			}
 		}
@@ -792,6 +793,18 @@ shared.sync = function (req, cb) {
 		blocks: __private.blocksToSync,
 		height: modules.blocks.getLastBlock().height,
 		id: modules.blocks.getLastBlock().id
+	});
+};
+
+shared.autoconfigure = function (req, cb) {
+	return cb(null, {
+		network: {
+	    "nethash": library.config.nethash,
+	    "token": library.config.network.client.token,
+	    "symbol": library.config.network.client.symbol,
+	    "explorer": library.config.network.client.explorer,
+	    "version": library.config.network.pubKeyHash
+		}
 	});
 };
 

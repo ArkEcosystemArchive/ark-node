@@ -131,6 +131,7 @@ Peer.prototype.fetchStatus = function(cb){
 			if(!check.verified){
 				that.status="FORK";
 				that.counterror++;
+				console.log(res.body);
 				library.logger.trace(that + " sent header", res.body.header);
 				library.logger.debug(that + " header errors", check.errors);
 				return cb && cb('Received invalid block header from peer '+that, res);

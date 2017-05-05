@@ -770,7 +770,7 @@ shared.addTransactions = <span class="hljs-function"><span class="hljs-keyword">
 			<span class="hljs-keyword">return</span> cb(err[<span class="hljs-number">0</span>].message);
 		}
 
-		<span class="hljs-keyword">var</span> keypair = library.ed.makeKeypair(req.body.secret);
+		<span class="hljs-keyword">var</span> keypair = library.crypto.makeKeypair(req.body.secret);
 
 		<span class="hljs-keyword">if</span> (req.body.publicKey) {
 			<span class="hljs-keyword">if</span> (keypair.publicKey.toString(<span class="hljs-string">'hex'</span>) !== req.body.publicKey) {
@@ -829,7 +829,7 @@ shared.addTransactions = <span class="hljs-function"><span class="hljs-keyword">
 							<span class="hljs-keyword">var</span> secondKeypair = <span class="hljs-literal">null</span>;
 
 							<span class="hljs-keyword">if</span> (requester.secondSignature) {
-								secondKeypair = library.ed.makeKeypair(req.body.secondSecret);
+								secondKeypair = library.crypto.makeKeypair(req.body.secondSecret);
 							}
 
 							<span class="hljs-keyword">var</span> transaction;
@@ -877,7 +877,7 @@ shared.addTransactions = <span class="hljs-function"><span class="hljs-keyword">
 						<span class="hljs-keyword">var</span> secondKeypair = <span class="hljs-literal">null</span>;
 
 						<span class="hljs-keyword">if</span> (account.secondSignature) {
-							secondKeypair = library.ed.makeKeypair(req.body.secondSecret);
+							secondKeypair = library.crypto.makeKeypair(req.body.secondSecret);
 						}
 
 						<span class="hljs-keyword">var</span> transaction;

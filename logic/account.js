@@ -85,8 +85,7 @@ function Account (scope, cb) {
 			filter: {
 				required: true,
 				type: 'string',
-				minLength: 1,
-				maxLength: 35
+				format: 'address'
 			},
 			conv: String,
 			immutable: true
