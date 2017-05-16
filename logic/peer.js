@@ -42,27 +42,61 @@ function Peer(ip, port, version, os){
 	this.delay = 10000;
 	this.lastchecked = 0;
 	this.counterror = 0;
+	this.banuntil = new Date().getTime();
 
   this.forgingAllowed = false;
 	this.currentSlot = 0;
 
 	if(!this.liteclient){
-		this.updateStatus();
-		var that = this;
+		this.startMonitoring();
+	}
+}
+
+Peer.prototype.startMonitoring = function(){
+	this.updateStatus();
+	var that = this;
+	if(!this.intervalId){
+		this.counterror = 0;
 		this.intervalId = setInterval(
 			function(){
 				if(new Date().getTime() - that.lastchecked > 60000){
-					that.updateStatus();
+					// basically a node down a few min is banned
+					if(that.counterror > 10){
+						that.stopMonitoring();
+						// 6 hours ban
+						that.ban(6*60);
+					}
+					else {
+						that.updateStatus();
+					}
 				}
-			}, 60000);
+			}, 60000
+		);
 	}
+};
+
+Peer.prototype.stopMonitoring = function(){
+	clearInterval(this.intervalId);
+	this.intervalId = null;
 }
+
+Peer.prototype.ban = function(minutesToBan){
+	this.banuntil = new Date().getTime() + minutesToBan*60*1000;
+	library.logger.info(this + " banned for "+minutesToBan+" minutes");
+};
+
+Peer.prototype.unban = function(){
+	if(this.banuntil < new Date().getTime() && !this.intervalId){
+		this.monitor();
+	}
+};
 
 Peer.prototype.toObject = function(){
   return {
     ip: this.ip,
     port: this.port,
     version: this.version,
+		errors: this.counterror,
     os: this.os,
     height: this.height,
     status: this.status,
