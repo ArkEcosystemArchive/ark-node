@@ -87,7 +87,7 @@ Peer.prototype.ban = function(minutesToBan){
 
 Peer.prototype.unban = function(){
 	if(this.banuntil < new Date().getTime() && !this.intervalId){
-		this.monitor();
+		this.startMonitoring();
 	}
 };
 
