@@ -16,9 +16,9 @@ var totalpremine = 12500000000000000;
 
 
 var config = {
-    "port": 4000,
+    "port": 4002,
     "address": "0.0.0.0",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "fileLogLevel": "info",
     "logFileName": "logs/ark.log",
     "consoleLogLevel": "debug",
@@ -26,7 +26,7 @@ var config = {
     "db": {
         "host": "localhost",
         "port": 5432,
-        "database": "ark_testnet",
+        "database": "ark_devnet",
         "user": null,
         "password": "password",
         "poolSize": 20,
@@ -52,7 +52,7 @@ var config = {
     },
     "peers": {
         "minimumNetworkReach":1,
-        "list": [{"ip":"127.0.0.1", "port":4000}],
+        "list": [{"ip":"127.0.0.1", "port":4002}],
         "blackList": [],
         "options": {
             "limits": {
@@ -88,8 +88,8 @@ var config = {
             "cert": "./ssl/ark.crt"
         }
     },
-    "network":"testnet",
-    "nethash":"198f2b61a8eb95fbeed58b8216780b68f697f26b849acf00c8c93bb9b24f783d"
+    "network":"devnet",
+    "nethash":"placeholder"
 };
 
 makeKeypair = function (seed) {
@@ -272,7 +272,7 @@ for(var i=1; i<52; i++){
 	premineTx.senderId = premine.address;
 	premineTx.signature = arkjs.crypto.sign(premineTx,arkjs.crypto.getKeys(premine.passphrase));
 	premineTx.id = arkjs.crypto.getId(premineTx);
-	transactions.push(premineTx);
+	//transactions.push(premineTx);
 
 
 	// create delegate
