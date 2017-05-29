@@ -10,7 +10,7 @@ var Crypto = require('../helpers/crypto.js');
 var networks = require('../networks.json');
 
 // network name that SHOULD already be preconfigured in ../networks.json
-var network_name = "bitcoindpos";
+var network_name = "bitcoin";
 if(!networks[network_name]){
   console.log("WARNING: no configuration found in networks.json for '"+network_name+"'. Defaulting to 'devnet'");
   network_name = "devnet";
@@ -277,6 +277,7 @@ create = function (data) {
 var delegates = [];
 var transactions = [];
 var remainingfund = {};
+arkjs.crypto.setNetworkVersion(networks[network_name].pubKeyHash);
 
 var genesis = {
   passphrase: bip39.generateMnemonic(),
