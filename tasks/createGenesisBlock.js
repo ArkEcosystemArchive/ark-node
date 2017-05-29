@@ -10,20 +10,20 @@ var Crypto = require('../helpers/crypto.js');
 var networks = require('../networks.json');
 
 // network name that SHOULD already be preconfigured in ../networks.json
-var network_name = "devnet";
+var network_name = "bitcoindpos";
 if(!networks[network_name]){
   console.log("WARNING: no configuration found in networks.json for '"+network_name+"'. Defaulting to 'devnet'");
   network_name = "devnet";
 }
 
 // directory to export passphrases of premine account and genesis delegates. Should exist
-var private_dir = './private';
+var private_dir = './demo';
 
 // directory to export config and genesisBlock files. Should exist
-var output_dir = './tasks';
+var output_dir = './demo';
 
 // default port for node
-var default_port = 4002;
+var default_port = 4100;
 
 // version of network to set in the config file
 var config_version = '0.0.1';
@@ -32,7 +32,7 @@ var config_version = '0.0.1';
 var seed_peers = [
   {
     ip: "127.0.0.1",
-    port: 4002
+    port: 4100
   }
 ];
 
@@ -54,7 +54,7 @@ else {
 }
 
 // Total of premined token in satoshi. The premined accounts will be substracted to this
-var totalpremine = 12500000000000000;
+var totalpremine = 2100000000000000;
 
 
 // config file that will be tuned and exported
@@ -133,8 +133,6 @@ var config = {
     },
     network: network_name
 };
-
-
 // general functions
 makeKeypair = function (seed) {
 	return arkjs.crypto.getKeys(seed, networks[config.network]);
@@ -362,7 +360,7 @@ fs.writeFile(output_dir+"/config."+config.network+".json",JSON.stringify(config,
 for(var i=0;i<51;i++){
 	config.forging.secret.push(delegates[i].passphrase);
 }
-fs.writeFile(private_dir+"/config."+config.network+".autoforging.json", JSON.stringify(delegates, null, 2));
+fs.writeFile(private_dir+"/config."+config.network+".autoforging.json", JSON.stringify(config, null, 2));
 
 // split all delegates accross all seed_peers
 for(var i=0;i<51;i++){
@@ -375,7 +373,7 @@ for(var i=0;i<51;i++){
 
 seed_peers.forEach(function(peer){
   config.forging.secret = peer.secret;
-  fs.writeFile(private_dir+"/config."+config.network+"."+peer.ip+".json", JSON.stringify(delegates, null, 2));
+  fs.writeFile(private_dir+"/config."+config.network+"."+peer.ip+".json", JSON.stringify(config, null, 2));
 });
 
 fs.writeFile(private_dir+"/delegatesPassphrases."+config.network+".json", JSON.stringify(delegates, null, 2));
