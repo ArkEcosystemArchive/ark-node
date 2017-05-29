@@ -80,7 +80,7 @@ sudo npm install grunt-cli -g
 
 Clone this repository
 ```
-git clone https://github.com/arkecosytem/ark-node.git
+git clone https://github.com/arkecosystem/ark-node.git
 cd ark-node
 ```
 
