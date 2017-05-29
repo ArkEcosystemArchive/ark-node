@@ -121,11 +121,16 @@ Generate a genesisBlock.json + a default config.json containing all passphrases 
 ```
 node tasks/createGenesisBlock.js
 ```
-You can find generated files in tasks/
-- genesisBlock.json
-- config.json
-- delegatesPassphrases.json (containing details about the genesis delegates)
-- genesisPassphrase.json (containing the details of account having all premined arks)
+
+Be sure to configure this file for your needs
+
+- a genesisBlock.json containing the genesis block
+- a config.json containing configuration to start relay nodes
+- an autoforging config.json containing configuration to start all delegates on a single node (for testing purpose)
+- a bunch of config files to distribute to different configured delegate nodes starting the network.
+- a delegatesPassphrases.json containing details about the genesis delegates
+- a genesisPassphrase.json containing the details of delegates that will launch your network
+
 
 Obviously you can hack away tasks/createGenesisBlock.js for your own custom use.
 
@@ -182,7 +187,7 @@ peace vanish bleak box tuna woman rally manage undo royal lucky since
 
 The MIT License (MIT)
 
-Copyright (c) 2016 Ark
+Copyright (c) 2016-2017 Ark
 Copyright (c) 2016 Lisk
 Copyright (c) 2014-2015 Crypti
 
