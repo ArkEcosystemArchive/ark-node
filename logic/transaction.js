@@ -1,7 +1,6 @@
 'use strict';
 
-var _ = require('lodash');
-var bs58check = require('bs58check');
+var _ = require('lodash'); //ALSO UNSED
 var bignum = require('../helpers/bignum.js');
 var ByteBuffer = require('bytebuffer');
 var constants = require('../helpers/constants.js');
@@ -148,7 +147,7 @@ Transaction.prototype.fromBytes = function(buffer){
 	tx.type = buffer.readByte();
 	tx.timestamp = buffer.readInt();
 	return tx;
-}
+};
 
 
 
@@ -488,7 +487,7 @@ Transaction.prototype.verify = function (trs, sender, requester, cb) {
 
 	// Verify signature
 	try {
-		valid = false;
+		//valid = false; - never used
 		valid = this.verifySignature(trs, (trs.requesterPublicKey || trs.senderPublicKey), trs.signature);
 	} catch (e) {
 		this.scope.logger.error(e.stack);
@@ -511,7 +510,7 @@ Transaction.prototype.verify = function (trs, sender, requester, cb) {
 	// Verify second signature
 	if (requester.secondSignature || sender.secondSignature) {
 		try {
-			valid = false;
+			//valid = false; - never used
 			valid = this.verifySecondSignature(trs, (requester.secondPublicKey || sender.secondPublicKey), trs.signSignature);
 		} catch (e) {
 			return cb(e.toString());
@@ -609,7 +608,7 @@ Transaction.prototype.verifyFee = function (trs) {
 	else {
 		return true;
 	}
-}
+};
 
 //
 //__API__ `verifySignature`
