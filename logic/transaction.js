@@ -1000,11 +1000,12 @@ Transaction.prototype.objectNormalize = function (trs) {
 		}).join(', ');
 	}
 
-	try {
-		trs = __private.types[trs.type].objectNormalize.call(this, trs);
-	} catch (e) {
-		throw e;
-	}
+	// Todo: normalize data based on transaction type
+	// try {
+	// 	trs = __private.types[trs.type].objectNormalize.call(this, trs);
+	// } catch (e) {
+	// 	throw e;
+	// }
 
 	return trs;
 };
