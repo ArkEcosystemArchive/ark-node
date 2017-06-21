@@ -55,7 +55,12 @@ module.exports = {
 			},
 			username: {
 				type: 'string'
-			}
+			},
+      address: {
+        type: 'string',
+        minLength: 1,
+        format: 'address'
+      }
 		}
 	},
 	search: {
