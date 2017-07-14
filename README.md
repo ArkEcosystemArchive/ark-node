@@ -16,7 +16,14 @@ wget https://ark.io/ARKcommander.sh
 bash ARKcommander.sh
 ```
 
-For developers, please read below in section "Developer Installation"
+For developers, please read the "Developer Installation" section below.  
+
+or Alternatively run
+```
+cd
+wget https://ark.io/DARKcommander.sh
+bash DARKcommander.sh
+```
 
 ## Details
 
