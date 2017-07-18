@@ -1,18 +1,6 @@
 'use strict';
 
 module.exports = {
-	open: {
-		id: 'accounts.openAccount',
-		type: 'object',
-		properties: {
-			secret: {
-				type: 'string',
-				minLength: 1,
-				maxLength: 100
-			}
-		},
-		required: ['secret']
-	},
 	getBalance: {
 		id: 'accounts.getBalance',
 		type: 'object',
@@ -36,17 +24,6 @@ module.exports = {
 			}
 		},
 		required: ['address']
-	},
-	generatePublicKey: {
-		id: 'accounts.generatePublickey',
-		type: 'object',
-		properties: {
-			secret: {
-				type: 'string',
-				minLength: 1
-			}
-		},
-		required: ['secret']
 	},
 	getDelegates: {
 		id: 'accounts.getDelegates',
