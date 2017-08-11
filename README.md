@@ -146,7 +146,7 @@ Then you can distribute the config.json (without the delegates secrets inside, a
 
 First, fork the ark-node repo, make your dummy-node repo and install a node manually!
 
-Create a new network (example "dummy") in network.json and adapt the paramebeters
+Create a new network (example "dummy") in network.json and adapt the parameters
 ```
 "dummy": {  //define your network name
   "messagePrefix": "DUMMY message:\n", //define your message prefix
