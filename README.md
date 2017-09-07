@@ -2,9 +2,7 @@
 
 Ark is a next generation crypto-currency and decentralized application platform, written entirely in JavaScript. For more information please refer to our website: https://ark.io/.
 
-The Token Exchange Campaign is up at https://tec.ark.io
-
-This version is still alpha, use at your own risks
+This version is still beta, use at your own risks
 
 ## Install, Upgrade etc...
 You need to provision a linux (ubuntu tested) server (digital ocean, vultur or other).
@@ -94,19 +92,19 @@ npm install
 To launch Ark on testnet:
 ```
 createdb ark_testnet
-node run start:testnet
+npm run start:testnet
 ```
 
 To launch Ark on devtnet:
 ```
 createdb ark_devnet
-node run start:devnet
+npm run start:devnet
 ```
 
 To launch Ark on mainnet (when launched):
 ```
 createdb ark_mainnet
-node run start:mainnet
+npm run start:mainnet
 ```
 
 **NOTE:** The **port**, **address**, **genesis block** and **config-path** can be overridden by providing the relevant command switch:
