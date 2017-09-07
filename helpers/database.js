@@ -120,6 +120,10 @@ module.exports.connect = function (config, logger, cb) {
 	var pgp = require('pg-promise')(pgOptions);
 	var monitor = require('pg-monitor');
 
+        pgp.pg.types.setTypeParser(20, function (value) {
+            return parseInt(value);
+        });
+
 	monitor.attach(pgOptions, config.logEvents);
 	monitor.setTheme('matrix');
 
