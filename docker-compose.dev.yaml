@@ -1,0 +1,18 @@
+version: '3'
+services:
+  ark:
+    build:
+      context: .
+      dockerfile: Dockerfile-dev
+    volumes:
+      - ".:/src/ark-node"
+    ports:
+      - "4002:4002"
+    command: bash -c "yarn && yarn start:devnet"
+    links:
+      - ark-postgresql
+  ark-postgresql:
+    image: postgres
+    environment:
+      POSTGRES_DB: ark_devnet
+      POSTGRES_PASSWORD: password
