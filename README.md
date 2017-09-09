@@ -51,7 +51,7 @@ This is a fork from Lisk with the following features:
 
 Install Docker and Docker Compose: https://docs.docker.com/compose/install/
 
-Run Docker Compose:
+Run Ark:
 
 ```
 docker-compose -f docker-compose.dev.yaml up
