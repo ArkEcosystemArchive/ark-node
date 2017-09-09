@@ -475,11 +475,11 @@ shared.addTransactions = function (req, cb) {
 
 							var transactionType = req.body.transactionType ? req.body.transactionType : transactionTypes.SEND
 
-							if (typeof transactionType !== 'number' || data % 1 !== 0) {
+							if (typeof transactionType !== 'number' || transactionType % 1 !== 0) {
 								return cb('Invalid transaction type');
 							}
 
-							if (transactionType > 5 || transaction < 0) {
+							if (transactionType > 5 || transactionType < 0) {
 								return cb('Invalid transaction type');
 							}
 
