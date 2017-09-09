@@ -6,7 +6,7 @@ var crypto = require('crypto');
 var bip39 = require('bip39');
 var ByteBuffer = require('bytebuffer');
 var bignum = require('../helpers/bignum.js');
-var ed = require('../helpers/ed.js');
+
 
 var config = {
     "port": 4000,
@@ -84,8 +84,8 @@ var config = {
 };
 
 sign = function (block, keypair) {
-	var hash = getHash(block);
-	return ed.sign(hash, keypair).toString('hex');
+  var hash = getHash(block);
+	return keypair.sign(hash).toDER().toString("hex")
 };
 
 
