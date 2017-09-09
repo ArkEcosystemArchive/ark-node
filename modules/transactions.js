@@ -479,7 +479,7 @@ shared.addTransactions = function (req, cb) {
 								return cb('Invalid transaction type');
 							}
 
-							if (transactionType > 5 || transaction < 0) {
+							if (transactionType > 5 || transactionType < 0) {
 								return cb('Invalid transaction type');
 							}
 
