@@ -2,6 +2,7 @@
   "name": "ark-node",
   "version": "0.2.0",
   "private": true,
+  "bin": "app.js",
   "scripts": {
     "start": "node app.js",
     "doc": "docco -t docs/template/arkio.jst -c docs/template/arkio.css modules/* app.js README.md",
@@ -85,5 +86,9 @@
         "tmp"
       ]
     }
+  },
+  "pkg": {
+    "scripts": "modules/**",
+    "assets": "sql/**"
   }
 }
