@@ -82,11 +82,6 @@
                 </a>
               
                 
-                <a class="source" href="server.html">
-                  server.js
-                </a>
-              
-                
                 <a class="source" href="signatures.html">
                   signatures.js
                 </a>
@@ -175,7 +170,7 @@
 	__private.nethash = library.config.nethash;
 	__private.osName = os.platform() + os.release();
 
-	setImmediate(cb, <span class="hljs-literal">null</span>, self);
+	<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, self);
 }</pre></div></div>
             
         </li>

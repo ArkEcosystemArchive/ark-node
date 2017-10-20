@@ -279,7 +279,7 @@ describe('GET /api/blocks/get?id=', function () {
 	}
 
 	it('using genesisblock id should be ok', function (done) {
-		getBlocks('17790183012548475874', function (err, res) {
+		getBlocks('17184958558311101492', function (err, res) {
 			node.expect(res.body).to.have.property('success').to.be.ok;
 			node.expect(res.body).to.have.property('block').to.be.a('object');
 			node.expect(res.body.block).to.have.property('id').to.be.a('string');

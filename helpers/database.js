@@ -32,7 +32,7 @@ function Migrator (pgp, db) {
 	};
 
 	this.readPendingMigrations = function (lastMigration, waterCb) {
-		var migrationsPath = path.join('sql', 'migrations');
+		var migrationsPath = path.join(__dirname + '/../sql/migrations');
 		var pendingMigrations = [];
 
 		function matchMigrationName (file) {
@@ -102,7 +102,7 @@ function Migrator (pgp, db) {
 	};
 
 	this.applyRuntimeQueryFile = function (waterCb) {
-		var sql = new pgp.QueryFile(path.join('sql', 'runtime.sql'), {minify: true});
+		var sql = new pgp.QueryFile(path.join(__dirname + '/../sql/runtime.sql'), {minify: true});
 
 		db.query(sql).then(function () {
 			return waterCb();

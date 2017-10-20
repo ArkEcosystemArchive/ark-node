@@ -82,11 +82,6 @@
                 </a>
               
                 
-                <a class="source" href="server.html">
-                  server.js
-                </a>
-              
-                
                 <a class="source" href="signatures.html">
                   signatures.js
                 </a>
@@ -266,7 +261,7 @@ reset when we restart</p>
             
             <div class="content"><div class='highlight'><pre>	__private.timeoutPeers = {};
 
-	setImmediate(cb, <span class="hljs-literal">null</span>, self);
+	<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, self);
 }</pre></div></div>
             
         </li>
@@ -319,13 +314,13 @@ __private.updatePeersList = <span class="hljs-function"><span class="hljs-keywor
 	}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, res</span>) </span>{
 		<span class="hljs-keyword">if</span> (err) {
 			library.logger.debug(<span class="hljs-string">'peers validation error '</span>, err);
-			<span class="hljs-keyword">return</span> setImmediate(cb);
+			<span class="hljs-keyword">return</span> cb();
 		}
 
 		library.schema.validate(res.body, schema.updatePeersList.peers, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 			<span class="hljs-keyword">if</span> (err) {
 				library.logger.debug(<span class="hljs-string">'peers validation error '</span>, err);
-				<span class="hljs-keyword">return</span> setImmediate(cb);
+				<span class="hljs-keyword">return</span> cb();
 			}</pre></div></div>
             
         </li>
@@ -412,7 +407,7 @@ i.e. the one that have been placed first.</p>
 
 			library.logger.debug([<span class="hljs-string">'Picked'</span>, peers.length, <span class="hljs-string">'of'</span>, res.body.peers.length, <span class="hljs-string">'peers'</span>].join(<span class="hljs-string">' '</span>));
 
-			<span class="hljs-keyword">async</span>.eachLimit(peers, <span class="hljs-number">2</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">peer, cb</span>) </span>{
+			<span class="hljs-keyword">async</span>.eachLimit(peers, <span class="hljs-number">2</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">peer, eachLimitCb</span>) </span>{
 				peer = self.inspect(peer);
 
 				library.schema.validate(peer, schema.updatePeersList.peer, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
@@ -421,10 +416,10 @@ i.e. the one that have been placed first.</p>
 							library.logger.error([<span class="hljs-string">'Rejecting invalid peer:'</span>, peer.ip, e.path, e.message].join(<span class="hljs-string">' '</span>));
 						});
 
-						<span class="hljs-keyword">return</span> setImmediate(cb);
+						<span class="hljs-keyword">return</span> eachLimitCb();
 					} <span class="hljs-keyword">else</span> {
 						__private.peers[peer.ip+<span class="hljs-string">":"</span>+peer.port] = peer;
-						<span class="hljs-keyword">return</span> setImmediate(cb);
+						<span class="hljs-keyword">return</span> eachLimitCb();
 					}
 				});
 			}, cb);
@@ -433,11 +428,11 @@ i.e. the one that have been placed first.</p>
 };
 
 __private.count = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">cb</span>) </span>{
-	<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, <span class="hljs-built_in">Object</span>.keys(__private.peers).length);
+	<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, <span class="hljs-built_in">Object</span>.keys(__private.peers).length);
 };
 
 __private.banManager = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">cb</span>) </span>{
-	<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, <span class="hljs-number">1</span>);</pre></div></div>
+	<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, <span class="hljs-number">1</span>);</pre></div></div>
             
         </li>
         
@@ -451,10 +446,10 @@ __private.banManager = <span class="hljs-function"><span class="hljs-keyword">fu
                 <a class="pilcrow" href="#section-14">&#182;</a>
               </div>
               <p>library.db.query(sql.banManager, { now: Date.now() }).then(function (res) {
-    return setImmediate(cb, null, res);
+    return cb(null, res);
 }).catch(function (err) {
     library.logger.error(“stack”, err.stack);
-    return setImmediate(cb, ‘Peers#banManager error’);
+    return cb(‘Peers#banManager error’);
 });</p>
 
             </div>
@@ -503,7 +498,7 @@ __private.getByFilter = <span class="hljs-function"><span class="hljs-keyword">f
 	}
 
 	<span class="hljs-keyword">if</span> (params.limit &gt; <span class="hljs-number">100</span>) {
-		<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Invalid limit. Maximum is 100'</span>);
+		<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Invalid limit. Maximum is 100'</span>);
 	}
 
 	<span class="hljs-keyword">var</span> orderBy = OrderBy(
@@ -513,7 +508,7 @@ __private.getByFilter = <span class="hljs-function"><span class="hljs-keyword">f
 	);
 
 	<span class="hljs-keyword">if</span> (orderBy.error) {
-		<span class="hljs-keyword">return</span> setImmediate(cb, orderBy.error);
+		<span class="hljs-keyword">return</span> cb(orderBy.error);
 	}
 
 	<span class="hljs-keyword">return</span> self.list({},cb);</pre></div></div>
@@ -534,10 +529,10 @@ __private.getByFilter = <span class="hljs-function"><span class="hljs-keyword">f
     sortField: orderBy.sortField,
     sortMethod: orderBy.sortMethod
 }), params).then(function (rows) {
-    return setImmediate(cb, null, rows);
+    return cb(null, rows);
 }).catch(function (err) {
     library.logger.error(“stack”, err.stack);
-    return setImmediate(cb, ‘Peers#getByFilter error’);
+    return cb(‘Peers#getByFilter error’);
 });</p>
 
             </div>
@@ -723,10 +718,10 @@ __private.getByFilter = <span class="hljs-function"><span class="hljs-keyword">f
               </div>
               <p>options.limit = options.limit || 100;</p>
 <p>library.db.query(sql.randomList(options), options).then(function (rows) {
-    return setImmediate(cb, null, rows);
+    return cb(null, rows);
 }).catch(function (err) {
     library.logger.error(“stack”, err.stack);
-    return setImmediate(cb, ‘Peers#list error’);
+    return cb(‘Peers#list error’);
 });</p>
 
             </div>
@@ -767,7 +762,7 @@ __private.getByFilter = <span class="hljs-function"><span class="hljs-keyword">f
 		<span class="hljs-keyword">return</span> peer.ip === pip &amp;&amp; peer.port === port;
 	});
 	<span class="hljs-keyword">if</span> (isFrozenList !== <span class="hljs-literal">undefined</span> &amp;&amp; cb) {
-		<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Peer in white list'</span>);
+		<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Peer in white list'</span>);
 	}
 	<span class="hljs-keyword">var</span> clock;
 	<span class="hljs-keyword">if</span> (state === <span class="hljs-number">0</span>) {
@@ -784,10 +779,10 @@ __private.getByFilter = <span class="hljs-function"><span class="hljs-keyword">f
 	};
 	library.db.query(sql.state, params).then(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">res</span>) </span>{
 		library.logger.debug(<span class="hljs-string">'Updated peer state'</span>, params);
-		<span class="hljs-keyword">return</span> cb &amp;&amp; setImmediate(cb, <span class="hljs-literal">null</span>, res);
+		<span class="hljs-keyword">return</span> cb &amp;&amp; cb(<span class="hljs-literal">null</span>, res);
 	}).catch(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 		library.logger.error(<span class="hljs-string">"stack"</span>, err.stack);
-		<span class="hljs-keyword">return</span> cb &amp;&amp; setImmediate(cb);
+		<span class="hljs-keyword">return</span> cb &amp;&amp; cb();
 	});
 };</pre></div></div>
             
@@ -944,10 +939,10 @@ __private.getByFilter = <span class="hljs-function"><span class="hljs-keyword">f
               </div>
               <p>library.db.query(sql.remove, params).then(function (res) {
     library.logger.debug(‘Removed peer’, params);
-    return cb &amp;&amp; setImmediate(cb, null, res);
+    return cb &amp;&amp; cb(null, res);
 }).catch(function (err) {
     library.logger.error(“stack”, err.stack);
-    return cb &amp;&amp; setImmediate(cb);
+    return cb &amp;&amp; cb();
 });</p>
 
             </div>
@@ -1063,10 +1058,10 @@ if (peer.state !== undefined) {
               </div>
               <p>library.db.query(query, params).then(function () {
     library.logger.debug(‘Upserted peer’, params);
-    return setImmediate(cb);
+    return cb();
 }).catch(function (err) {
     library.logger.error(“stack”, err.stack);
-    return setImmediate(cb, ‘Peers#update error’);
+    return cb(‘Peers#update error’);
 });</p>
 
             </div>
@@ -1142,6 +1137,14 @@ if (peer.state !== undefined) {
 		<span class="hljs-keyword">var</span> peer = library.config.peers.list[i];
 		__private.peers[peer.ip+<span class="hljs-string">":"</span>+peer.port] = peer;
 	}
+	setImmediate(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">nextUpdate</span> (<span class="hljs-params"></span>) </span>{
+		__private.updatePeersList(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
+			<span class="hljs-keyword">if</span> (err) {
+				library.logger.error(<span class="hljs-string">'Error while updating the list of peers:'</span>, err);
+			}
+			setTimeout(nextUpdate, <span class="hljs-number">60</span> * <span class="hljs-number">1000</span>);
+		});
+	});
 };</pre></div></div>
             
         </li>
@@ -1213,15 +1216,6 @@ if (peer.state !== undefined) {
 		}
 		library.bus.message(<span class="hljs-string">'peersUpdated'</span>);
 	});
-
-	setImmediate(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">nextUpdate</span> (<span class="hljs-params"></span>) </span>{
-		__private.updatePeersList(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
-			<span class="hljs-keyword">if</span> (err) {
-				library.logger.error(<span class="hljs-string">'Error while updating the list of peers:'</span>, err);
-			}
-			setTimeout(nextUpdate, <span class="hljs-number">60</span> * <span class="hljs-number">1000</span>);
-		});
-	});
 };</pre></div></div>
             
         </li>
@@ -1255,7 +1249,6 @@ if (peer.state !== undefined) {
             
             <div class="content"><div class='highlight'><pre>Peers.prototype.onPeersReady = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
 
-
 	setImmediate(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">nextBanManager</span> (<span class="hljs-params"></span>) </span>{
 		__private.banManager(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 			<span class="hljs-keyword">if</span> (err) {
@@ -1285,19 +1278,19 @@ if (peer.state !== undefined) {
 shared.getPeers = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">req, cb</span>) </span>{
 	library.schema.validate(req.body, schema.getPeers, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 		<span class="hljs-keyword">if</span> (err) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, err[<span class="hljs-number">0</span>].message);
+			<span class="hljs-keyword">return</span> cb(err[<span class="hljs-number">0</span>].message);
 		}
 
 		<span class="hljs-keyword">if</span> (req.body.limit &lt; <span class="hljs-number">0</span> || req.body.limit &gt; <span class="hljs-number">100</span>) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Invalid limit. Maximum is 100'</span>);
+			<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Invalid limit. Maximum is 100'</span>);
 		}
 
 		__private.getByFilter(req.body, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, peers</span>) </span>{
 			<span class="hljs-keyword">if</span> (err) {
-				<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Failed to get peers'</span>);
+				<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Failed to get peers'</span>);
 			}
 
-			<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, {<span class="hljs-attr">peers</span>: peers});
+			<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, {<span class="hljs-attr">peers</span>: peers});
 		});
 	});
 };
@@ -1305,14 +1298,14 @@ shared.getPeers = <span class="hljs-function"><span class="hljs-keyword">functio
 shared.getPeer = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">req, cb</span>) </span>{
 	library.schema.validate(req.body, schema.getPeer, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 		<span class="hljs-keyword">if</span> (err) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, err[<span class="hljs-number">0</span>].message);
+			<span class="hljs-keyword">return</span> cb(err[<span class="hljs-number">0</span>].message);
 		}
 
 		<span class="hljs-keyword">var</span> peer = __private.peers[req.body.ip+<span class="hljs-string">":"</span>+req.body.port];
 		<span class="hljs-keyword">if</span> (peer) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, {<span class="hljs-attr">success</span>: <span class="hljs-literal">true</span>, <span class="hljs-attr">peer</span>: peer});
+			<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, {<span class="hljs-attr">success</span>: <span class="hljs-literal">true</span>, <span class="hljs-attr">peer</span>: peer});
 		} <span class="hljs-keyword">else</span> {
-			<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, {<span class="hljs-attr">success</span>: <span class="hljs-literal">false</span>, <span class="hljs-attr">error</span>: <span class="hljs-string">'Peer not found'</span>});
+			<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, {<span class="hljs-attr">success</span>: <span class="hljs-literal">false</span>, <span class="hljs-attr">error</span>: <span class="hljs-string">'Peer not found'</span>});
 		}</pre></div></div>
             
         </li>
@@ -1331,12 +1324,12 @@ shared.getPeer = <span class="hljs-function"><span class="hljs-keyword">function
     port: req.body.port
 }, function (err, peers) {
     if (err) {
-        return setImmediate(cb, ‘Failed to get peer’);
+        return cb(‘Failed to get peer’);
     }</p>
 <pre><code><span class="hljs-keyword">if</span> (peers.length) {
-    <span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, {<span class="hljs-attr">success</span>: <span class="hljs-literal">true</span>, <span class="hljs-attr">peer</span>: peers[<span class="hljs-number">0</span>]});
+    <span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, {<span class="hljs-attr">success</span>: <span class="hljs-literal">true</span>, <span class="hljs-attr">peer</span>: peers[<span class="hljs-number">0</span>]});
 } <span class="hljs-keyword">else</span> {
-    <span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, {<span class="hljs-attr">success</span>: <span class="hljs-literal">false</span>, <span class="hljs-attr">error</span>: <span class="hljs-string">'Peer not found'</span>});
+    <span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, {<span class="hljs-attr">success</span>: <span class="hljs-literal">false</span>, <span class="hljs-attr">error</span>: <span class="hljs-string">'Peer not found'</span>});
 }
 </code></pre><p>});</p>
 
@@ -1346,7 +1339,7 @@ shared.getPeer = <span class="hljs-function"><span class="hljs-keyword">function
 };
 
 shared.version = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">req, cb</span>) </span>{
-	<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, {<span class="hljs-attr">version</span>: library.config.version, <span class="hljs-attr">build</span>: library.build});
+	<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, {<span class="hljs-attr">version</span>: library.config.version, <span class="hljs-attr">build</span>: library.build});
 };</pre></div></div>
             
         </li>

@@ -82,11 +82,6 @@
                 </a>
               
                 
-                <a class="source" href="server.html">
-                  server.js
-                </a>
-              
-                
                 <a class="source" href="signatures.html">
                   signatures.js
                 </a>
@@ -184,7 +179,7 @@ __private.assetTypes = {};</pre></div></div>
 		transactionTypes.SIGNATURE, <span class="hljs-keyword">new</span> Signature()
 	);
 
-	setImmediate(cb, <span class="hljs-literal">null</span>, self);
+	<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, self);
 }</pre></div></div>
             
         </li>
@@ -333,20 +328,20 @@ __private.assetTypes = {};</pre></div></div>
 
 	fee = constants.fees.secondsignature;
 
-	<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, {<span class="hljs-attr">fee</span>: fee});
+	<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, {<span class="hljs-attr">fee</span>: fee});
 };
 
 shared.addSignature = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">req, cb</span>) </span>{
 	library.schema.validate(req.body, schema.addSignature, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 		<span class="hljs-keyword">if</span> (err) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, err[<span class="hljs-number">0</span>].message);
+			<span class="hljs-keyword">return</span> cb(err[<span class="hljs-number">0</span>].message);
 		}
 
-		<span class="hljs-keyword">var</span> keypair = library.ed.makeKeypair(req.body.secret);
+		<span class="hljs-keyword">var</span> keypair = library.crypto.makeKeypair(req.body.secret);
 
 		<span class="hljs-keyword">if</span> (req.body.publicKey) {
 			<span class="hljs-keyword">if</span> (keypair.publicKey.toString(<span class="hljs-string">'hex'</span>) !== req.body.publicKey) {
-				<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Invalid passphrase'</span>);
+				<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Invalid passphrase'</span>);
 			}
 		}
 
@@ -354,43 +349,43 @@ shared.addSignature = <span class="hljs-function"><span class="hljs-keyword">fun
 			<span class="hljs-keyword">if</span> (req.body.multisigAccountPublicKey &amp;&amp; req.body.multisigAccountPublicKey !== keypair.publicKey.toString(<span class="hljs-string">'hex'</span>)) {
 				modules.accounts.getAccount({<span class="hljs-attr">publicKey</span>: req.body.multisigAccountPublicKey}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, account</span>) </span>{
 					<span class="hljs-keyword">if</span> (err) {
-						<span class="hljs-keyword">return</span> setImmediate(cb, err);
+						<span class="hljs-keyword">return</span> cb(err);
 					}
 
 					<span class="hljs-keyword">if</span> (!account || !account.publicKey) {
-						<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Multisignature account not found'</span>);
+						<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Multisignature account not found'</span>);
 					}
 
 					<span class="hljs-keyword">if</span> (!account.multisignatures || !account.multisignatures) {
-						<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Account does not have multisignatures enabled'</span>);
+						<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Account does not have multisignatures enabled'</span>);
 					}
 
 					<span class="hljs-keyword">if</span> (account.multisignatures.indexOf(keypair.publicKey.toString(<span class="hljs-string">'hex'</span>)) &lt; <span class="hljs-number">0</span>) {
-						<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Account does not belong to multisignature group'</span>);
+						<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Account does not belong to multisignature group'</span>);
 					}
 
 					<span class="hljs-keyword">if</span> (account.secondSignature || account.u_secondSignature) {
-						<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Account already has a second passphrase'</span>);
+						<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Account already has a second passphrase'</span>);
 					}
 
 					modules.accounts.getAccount({<span class="hljs-attr">publicKey</span>: keypair.publicKey}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, requester</span>) </span>{
 						<span class="hljs-keyword">if</span> (err) {
-							<span class="hljs-keyword">return</span> setImmediate(cb, err);
+							<span class="hljs-keyword">return</span> cb(err);
 						}
 
 						<span class="hljs-keyword">if</span> (!requester || !requester.publicKey) {
-							<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Requester not found'</span>);
+							<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Requester not found'</span>);
 						}
 
 						<span class="hljs-keyword">if</span> (requester.secondSignature &amp;&amp; !req.body.secondSecret) {
-							<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Missing requester second passphrase'</span>);
+							<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Missing requester second passphrase'</span>);
 						}
 
 						<span class="hljs-keyword">if</span> (requester.publicKey === account.publicKey) {
-							<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Invalid requester public key'</span>);
+							<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Invalid requester public key'</span>);
 						}
 
-						<span class="hljs-keyword">var</span> secondKeypair = library.ed.makeKeypair(req.body.secondSecret);
+						<span class="hljs-keyword">var</span> secondKeypair = library.crypto.makeKeypair(req.body.secondSecret);
 						<span class="hljs-keyword">var</span> transaction;
 
 						<span class="hljs-keyword">try</span> {
@@ -403,7 +398,7 @@ shared.addSignature = <span class="hljs-function"><span class="hljs-keyword">fun
 
 							});
 						} <span class="hljs-keyword">catch</span> (e) {
-							<span class="hljs-keyword">return</span> setImmediate(cb, e.toString());
+							<span class="hljs-keyword">return</span> cb(e.toString());
 						}
 
 						library.bus.message(<span class="hljs-string">"transactionsReceived"</span>, [transaction], <span class="hljs-string">"api"</span>, cb);
@@ -412,18 +407,18 @@ shared.addSignature = <span class="hljs-function"><span class="hljs-keyword">fun
 			} <span class="hljs-keyword">else</span> {
 				modules.accounts.setAccountAndGet({<span class="hljs-attr">publicKey</span>: keypair.publicKey.toString(<span class="hljs-string">'hex'</span>)}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, account</span>) </span>{
 					<span class="hljs-keyword">if</span> (err) {
-						<span class="hljs-keyword">return</span> setImmediate(cb, err);
+						<span class="hljs-keyword">return</span> cb(err);
 					}
 
 					<span class="hljs-keyword">if</span> (!account || !account.publicKey) {
-						<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Account not found'</span>);
+						<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Account not found'</span>);
 					}
 
 					<span class="hljs-keyword">if</span> (account.secondSignature || account.u_secondSignature) {
-						<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Account already has a second passphrase'</span>);
+						<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Account already has a second passphrase'</span>);
 					}
 
-					<span class="hljs-keyword">var</span> secondKeypair = library.ed.makeKeypair(req.body.secondSecret);
+					<span class="hljs-keyword">var</span> secondKeypair = library.crypto.makeKeypair(req.body.secondSecret);
 					<span class="hljs-keyword">var</span> transaction;
 
 					<span class="hljs-keyword">try</span> {
@@ -434,18 +429,18 @@ shared.addSignature = <span class="hljs-function"><span class="hljs-keyword">fun
 							<span class="hljs-attr">secondKeypair</span>: secondKeypair
 						});
 					} <span class="hljs-keyword">catch</span> (e) {
-						<span class="hljs-keyword">return</span> setImmediate(cb, e.toString());
+						<span class="hljs-keyword">return</span> cb(e.toString());
 					}
-					
+
 					library.bus.message(<span class="hljs-string">"transactionsReceived"</span>, [transaction], <span class="hljs-string">"api"</span>, cb);
 				});
 			}
 
 		}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, transaction</span>) </span>{
 			<span class="hljs-keyword">if</span> (err) {
-				<span class="hljs-keyword">return</span> setImmediate(cb, err);
+				<span class="hljs-keyword">return</span> cb(err);
 			}
-			<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, {<span class="hljs-attr">transaction</span>: transaction[<span class="hljs-number">0</span>]});
+			<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, {<span class="hljs-attr">transaction</span>: transaction[<span class="hljs-number">0</span>]});
 		});
 
 	});

@@ -16,8 +16,8 @@ function Sequence (config) {
 		if (_default.onWarning && self.sequence.length >= _default.warningLimit) {
 			_default.onWarning(self.sequence.length, _default.warningLimit);
 		}
-		self.__tick(function () {
-			setTimeout(nextSequenceTick, 1);
+		self.__tick(function() {
+		  setTimeout(nextSequenceTick, 0);
 		});
 	});
 }
@@ -33,7 +33,7 @@ Sequence.prototype.__tick = function (cb) {
 	}
 	var args = [function (err, res) {
 		if (task.done) {
-			setImmediate(task.done, err, res);
+			task.done(err, res);
 		}
 		setImmediate(cb);
 	}];

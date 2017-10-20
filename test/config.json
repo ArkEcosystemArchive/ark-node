@@ -119,6 +119,9 @@
     "verifyOnLoading": false,
     "loadPerIteration": 5000
   },
+  "modules": {
+      "example":"./optional/example.js"
+  },
   "ssl": {
     "enabled": false,
     "options": {
@@ -128,5 +131,5 @@
       "cert": "./ssl/ark.crt"
     }
   },
-  "nethash": "d9acd04bde4234a81addb8482333b4ac906bed7be5a9970ce8ada428bd083192"
+  "nethash": "d1c7fa0dcf7584add7a535acd674d3b13fa794345d83c3789cc2436d6ecd80d1"
 }

@@ -82,11 +82,6 @@
                 </a>
               
                 
-                <a class="source" href="server.html">
-                  server.js
-                </a>
-              
-                
                 <a class="source" href="signatures.html">
                   signatures.js
                 </a>
@@ -148,6 +143,7 @@
 <span class="hljs-keyword">var</span> z_schema = <span class="hljs-built_in">require</span>(<span class="hljs-string">'./helpers/z_schema.js'</span>);
 <span class="hljs-keyword">var</span> colors = <span class="hljs-built_in">require</span>(<span class="hljs-string">'colors'</span>);
 <span class="hljs-keyword">var</span> vorpal = <span class="hljs-built_in">require</span>(<span class="hljs-string">'vorpal'</span>)();
+<span class="hljs-keyword">var</span> spawn = <span class="hljs-built_in">require</span>(<span class="hljs-string">'child_process'</span>).spawn;
 
 process.stdin.resume();
 
@@ -211,7 +207,6 @@ program
 <span class="hljs-keyword">var</span> config = {
 	<span class="hljs-attr">db</span>: appConfig.db,
 	<span class="hljs-attr">modules</span>: {
-		<span class="hljs-attr">server</span>: <span class="hljs-string">'./modules/server.js'</span>,
 		<span class="hljs-attr">accounts</span>: <span class="hljs-string">'./modules/accounts.js'</span>,
 		<span class="hljs-attr">transactions</span>: <span class="hljs-string">'./modules/transactions.js'</span>,
 		<span class="hljs-attr">blocks</span>: <span class="hljs-string">'./modules/blocks.js'</span>,
@@ -228,6 +223,12 @@ program
 		<span class="hljs-attr">nodeManager</span>: <span class="hljs-string">'./modules/nodeManager.js'</span>
 	}
 };
+
+<span class="hljs-keyword">if</span>(appConfig.modules){
+	<span class="hljs-keyword">for</span>(<span class="hljs-keyword">var</span> name <span class="hljs-keyword">in</span> appConfig.modules){
+		config.modules[name]=appConfig.modules[name];
+	}
+}
 
 <span class="hljs-keyword">var</span> logger = <span class="hljs-keyword">new</span> Logger({ <span class="hljs-attr">echo</span>: appConfig.consoleLogLevel, <span class="hljs-attr">errorLevel</span>: appConfig.fileLogLevel, <span class="hljs-attr">filename</span>: appConfig.logFileName });
 
@@ -618,7 +619,7 @@ To balance transaction application (unconfirmed and confirmed)</p>
 					cb(<span class="hljs-literal">null</span>, scope.db);
 				},
 				<span class="hljs-attr">ed</span>: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">cb</span>) </span>{
-					cb(<span class="hljs-literal">null</span>, scope.ed);
+					cb(<span class="hljs-literal">null</span>, scope.crypto);
 				},
 				<span class="hljs-attr">logger</span>: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">cb</span>) </span>{
 					cb(<span class="hljs-literal">null</span>, logger);
@@ -765,6 +766,45 @@ process.on(<span class="hljs-string">'uncaughtException'</span>, <span class="hl
 
 	  });
 
+	<span class="hljs-keyword">var</span> tail;
+
+	vorpal
+	  .command(<span class="hljs-string">'log start'</span>, <span class="hljs-string">'Start output logs'</span>)
+	  .action(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">args, callback</span>) </span>{
+			<span class="hljs-keyword">var</span> self=<span class="hljs-keyword">this</span>;
+			<span class="hljs-keyword">if</span>(tail){
+				self.log(<span class="hljs-string">"Already listening to logs"</span>);
+				<span class="hljs-keyword">return</span> callback();
+			}
+			tail = spawn(<span class="hljs-string">'tail'</span>, [<span class="hljs-string">'-f'</span>, appConfig.logFileName]);
+			tail.stdout.on(<span class="hljs-string">'data'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">data</span>) </span>{
+			  self.log(data.toString(<span class="hljs-string">"UTF-8"</span>));
+			});
+			callback();
+	  });
+
+	vorpal
+	  .command(<span class="hljs-string">'log stop'</span>, <span class="hljs-string">'Stop output logs'</span>)
+	  .action(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">args, callback</span>) </span>{
+			<span class="hljs-keyword">var</span> self=<span class="hljs-keyword">this</span>;
+			<span class="hljs-keyword">if</span>(tail){
+				tail.kill();
+				tail=<span class="hljs-literal">null</span>;
+			}
+			callback();
+	  });
+
+	vorpal
+	  .command(<span class="hljs-string">'log grep &lt;query&gt;'</span>, <span class="hljs-string">'Grep logs with &lt;query&gt;'</span>)
+	  .action(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">args, callback</span>) </span>{
+			<span class="hljs-keyword">var</span> self=<span class="hljs-keyword">this</span>;
+			<span class="hljs-keyword">var</span> grep = spawn(<span class="hljs-string">'grep'</span>, [<span class="hljs-string">'-e'</span>, args.query, appConfig.logFileName]);
+			grep.stdout.on(<span class="hljs-string">'data'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">data</span>) </span>{
+			  self.log(data.toString(<span class="hljs-string">"UTF-8"</span>));
+			});
+			callback();
+	  });
+
 	vorpal
 	  .command(<span class="hljs-string">'update node'</span>, <span class="hljs-string">'force update from network'</span>)
 	  .action(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">args, callback</span>) </span>{
@@ -823,27 +863,29 @@ process.on(<span class="hljs-string">'uncaughtException'</span>, <span class="hl
 	  .action(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">args, callback</span>) </span>{
 			scope.db.query(<span class="hljs-string">"select * from mem_accounts where address ='"</span>+args.address+<span class="hljs-string">"'"</span>).then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">rows</span>)</span>{
 				<span class="hljs-keyword">var</span> publicKey=rows[<span class="hljs-number">0</span>].publicKey.toString(<span class="hljs-string">"hex"</span>);
-				<span class="hljs-keyword">var</span> receivedSQL=<span class="hljs-string">'select sum(amount) as received from transactions where "recipientId" = \''</span>+args.address+<span class="hljs-string">'\';'</span>
-				<span class="hljs-keyword">var</span> spentSQL=<span class="hljs-string">'select sum(amount+fee) as spent from transactions where "senderPublicKey" = \'\\x'</span>+publicKey+<span class="hljs-string">'\';'</span>
-				<span class="hljs-keyword">var</span> rewardsSQL=<span class="hljs-string">'select sum(reward+"totalFee") as rewards from blocks where "generatorPublicKey" = \'\\x'</span>+publicKey+<span class="hljs-string">'\';'</span>
+				<span class="hljs-keyword">var</span> receivedSQL=<span class="hljs-string">'select sum(amount) as total, count(amount) as count from transactions where amount &gt; 0 and "recipientId" = \''</span>+args.address+<span class="hljs-string">'\';'</span>
+				<span class="hljs-keyword">var</span> spentSQL=<span class="hljs-string">'select sum(amount+fee) as total, count(amount) as count from transactions where "senderPublicKey" = \'\\x'</span>+publicKey+<span class="hljs-string">'\';'</span>
+				<span class="hljs-keyword">var</span> rewardsSQL=<span class="hljs-string">'select sum(reward+"totalFee") as total, count(reward) as count from blocks where "generatorPublicKey" = \'\\x'</span>+publicKey+<span class="hljs-string">'\';'</span>
 				<span class="hljs-keyword">async</span>.series({
 					<span class="hljs-attr">received</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">cb</span>)</span>{
 						scope.db.query(receivedSQL).then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">rows</span>)</span>{
-							cb(<span class="hljs-literal">null</span>, <span class="hljs-built_in">parseInt</span>(rows[<span class="hljs-number">0</span>].received));
+							cb(<span class="hljs-literal">null</span>, rows[<span class="hljs-number">0</span>]);
 						});
 					},
 					<span class="hljs-attr">spent</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">cb</span>)</span>{
 						scope.db.query(spentSQL).then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">rows</span>)</span>{
-							cb(<span class="hljs-literal">null</span>, <span class="hljs-built_in">parseInt</span>(rows[<span class="hljs-number">0</span>].spent));
+							cb(<span class="hljs-literal">null</span>, rows[<span class="hljs-number">0</span>]);
 						});
 					},
 					<span class="hljs-attr">rewards</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">cb</span>)</span>{
 						scope.db.query(rewardsSQL).then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">rows</span>)</span>{
-							cb(<span class="hljs-literal">null</span>, <span class="hljs-built_in">parseInt</span>(rows[<span class="hljs-number">0</span>].rewards));
+							cb(<span class="hljs-literal">null</span>, rows[<span class="hljs-number">0</span>]);
 						});
 					}
 				}, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">err, result</span>)</span>{
-					result.balance = result.received - result.spent + result.rewards;
+					result.balance = <span class="hljs-built_in">parseInt</span>(result.received.total||<span class="hljs-number">0</span>) - <span class="hljs-built_in">parseInt</span>(result.spent.total||<span class="hljs-number">0</span>) + <span class="hljs-built_in">parseInt</span>(result.rewards.total||<span class="hljs-number">0</span>);
+					result.numberOfTransactions = <span class="hljs-built_in">parseInt</span>(result.received.count||<span class="hljs-number">0</span>) + <span class="hljs-built_in">parseInt</span>(result.spent.count||<span class="hljs-number">0</span>)
+					result.forgedBlocks =<span class="hljs-built_in">parseInt</span>(result.rewards.count||<span class="hljs-number">0</span>);
 					self.log(<span class="hljs-built_in">JSON</span>.stringify(result));
 				});
 				callback();
@@ -854,7 +896,6 @@ process.on(<span class="hljs-string">'uncaughtException'</span>, <span class="hl
 			<span class="hljs-keyword">var</span> self = <span class="hljs-keyword">this</span>;
 
 	  });
-
 
 	vorpal.history(<span class="hljs-string">'ark-node'</span>);
 

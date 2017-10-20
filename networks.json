@@ -1,0 +1,57 @@
+{
+  "ark": {
+    "messagePrefix": "ARK message:\n",
+    "bip32": {
+      "public": 46090600,
+      "private": 46089520
+    },
+    "pubKeyHash": 23,
+    "wif": 170,
+    "client": {
+      "token":"ARK",
+      "symbol":"Ѧ",
+      "explorer":"https://explorer.ark.io"
+    }
+  },
+  "bitcoin": {
+    "messagePrefix": "Bitcoin message:\n",
+    "bip32": {
+      "public": 46090600,
+      "private": 46089520
+    },
+    "pubKeyHash": 1,
+    "wif": 1,
+    "client": {
+      "token":"Bitcoin",
+      "symbol":"B"
+    }
+  },
+  "testnet": {
+    "messagePrefix": "TESTNET message:\n",
+    "bip32": {
+      "public": 70617039,
+      "private": 70615956
+    },
+    "pubKeyHash": 82,
+    "wif": 186,
+    "client": {
+      "token":"TARK",
+      "symbol":"TѦ",
+      "explorer":"http://texplorer.ark.io"
+    }
+  },
+  "devnet": {
+    "messagePrefix": "DEVNET message:\n",
+    "bip32": {
+      "public": 70617039,
+      "private": 70615956
+    },
+    "pubKeyHash": 30,
+    "wif": 187,
+    "client": {
+      "token":"DARK",
+      "symbol":"DѦ",
+      "explorer":"http://dexplorer.ark.io"
+    }
+  }
+}

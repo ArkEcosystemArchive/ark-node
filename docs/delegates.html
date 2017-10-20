@@ -82,11 +82,6 @@
                 </a>
               
                 
-                <a class="source" href="server.html">
-                  server.js
-                </a>
-              
-                
                 <a class="source" href="signatures.html">
                   signatures.js
                 </a>
@@ -277,7 +272,7 @@ __private.assetTypes = {};</pre></div></div>
 		transactionTypes.DELEGATE, <span class="hljs-keyword">new</span> Delegate()
 	);
 
-	setImmediate(cb, <span class="hljs-literal">null</span>, self);
+	<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, self);
 }</pre></div></div>
             
         </li>
@@ -351,7 +346,7 @@ __private.assetTypes = {};</pre></div></div>
 				<span class="hljs-keyword">return</span> res.json({<span class="hljs-attr">success</span>: <span class="hljs-literal">false</span>, <span class="hljs-attr">error</span>: <span class="hljs-string">'Access denied'</span>});
 			}
 
-			<span class="hljs-keyword">var</span> keypair = library.ed.makeKeypair(crypto.createHash(<span class="hljs-string">'sha256'</span>).update(req.body.secret, <span class="hljs-string">'utf8'</span>).digest());
+			<span class="hljs-keyword">var</span> keypair = library.crypto.makeKeypair(crypto.createHash(<span class="hljs-string">'sha256'</span>).update(req.body.secret, <span class="hljs-string">'utf8'</span>).digest());
 
 			<span class="hljs-keyword">if</span> (req.body.publicKey) {
 				<span class="hljs-keyword">if</span> (keypair.publicKey.toString(<span class="hljs-string">'hex'</span>) !== req.body.publicKey) {
@@ -390,7 +385,7 @@ __private.assetTypes = {};</pre></div></div>
 				<span class="hljs-keyword">return</span> res.json({<span class="hljs-attr">success</span>: <span class="hljs-literal">false</span>, <span class="hljs-attr">error</span>: <span class="hljs-string">'Access denied'</span>});
 			}
 
-			<span class="hljs-keyword">var</span> keypair = library.ed.makeKeypair(crypto.createHash(<span class="hljs-string">'sha256'</span>).update(req.body.secret, <span class="hljs-string">'utf8'</span>).digest());
+			<span class="hljs-keyword">var</span> keypair = library.crypto.makeKeypair(crypto.createHash(<span class="hljs-string">'sha256'</span>).update(req.body.secret, <span class="hljs-string">'utf8'</span>).digest());
 
 			<span class="hljs-keyword">if</span> (req.body.publicKey) {
 				<span class="hljs-keyword">if</span> (keypair.publicKey.toString(<span class="hljs-string">'hex'</span>) !== req.body.publicKey) {
@@ -453,28 +448,6 @@ __private.assetTypes = {};</pre></div></div>
 		library.logger.error(<span class="hljs-string">'API error '</span> + req.url, err);
 		res.status(<span class="hljs-number">500</span>).send({<span class="hljs-attr">success</span>: <span class="hljs-literal">false</span>, <span class="hljs-attr">error</span>: <span class="hljs-string">'API error: '</span> + err.message});
 	});
-};
-
-__private.getKeysSortByVote = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">cb</span>) </span>{
-	modules.accounts.getAccounts({
-		<span class="hljs-attr">isDelegate</span>: <span class="hljs-number">1</span>,
-		<span class="hljs-attr">sort</span>: {<span class="hljs-string">'vote'</span>: <span class="hljs-number">-1</span>, <span class="hljs-string">'publicKey'</span>: <span class="hljs-number">1</span>},
-		<span class="hljs-attr">limit</span>: slots.delegates
-	}, [<span class="hljs-string">'publicKey'</span>], <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, rows</span>) </span>{
-		<span class="hljs-keyword">if</span> (err) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, err);
-		}
-		<span class="hljs-keyword">var</span> registeredDelegatesPublicKeys = <span class="hljs-built_in">Object</span>.keys(__private.keypairs);
-		<span class="hljs-keyword">var</span> isActive = <span class="hljs-literal">false</span>;
-		<span class="hljs-keyword">var</span> activeDelegates = rows.map(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">el</span>) </span>{
-			<span class="hljs-keyword">if</span>(registeredDelegatesPublicKeys.indexOf(el.publicKey) &gt; <span class="hljs-number">-1</span>){
-				isActive=<span class="hljs-literal">true</span>;
-			}
-			<span class="hljs-keyword">return</span> el.publicKey;
-		});
-		__private.isActiveDelegate = isActive;
-		<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, activeDelegates);
-	});
 };</pre></div></div>
             
         </li>
@@ -499,7 +472,7 @@ __private.getKeysSortByVote = <span class="hljs-function"><span class="hljs-keyw
             <div class="content"><div class='highlight'><pre>__private.getBlockSlotData = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">slot, height, cb</span>) </span>{
 	modules.rounds.getActiveDelegates(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, activeDelegates</span>) </span>{
 		<span class="hljs-keyword">if</span> (err) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, err);
+			<span class="hljs-keyword">return</span> cb(err);
 		}
 
 		<span class="hljs-keyword">var</span> currentSlot = slot;
@@ -510,11 +483,10 @@ __private.getKeysSortByVote = <span class="hljs-function"><span class="hljs-keyw
 			<span class="hljs-keyword">var</span> delegate_id = activeDelegates[delegate_pos];
 
 			<span class="hljs-keyword">if</span> (delegate_id &amp;&amp; __private.keypairs[delegate_id]) {
-				<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, {<span class="hljs-attr">time</span>: slots.getSlotTime(currentSlot), <span class="hljs-attr">keypair</span>: __private.keypairs[delegate_id]});
+				<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, {<span class="hljs-attr">time</span>: slots.getSlotTime(currentSlot), <span class="hljs-attr">keypair</span>: __private.keypairs[delegate_id]});
 			}
 		}
-
-		<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, <span class="hljs-literal">null</span>);
+		<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, <span class="hljs-literal">null</span>);
 	});
 };
 
@@ -522,12 +494,12 @@ __private.forge = <span class="hljs-function"><span class="hljs-keyword">functio
 	<span class="hljs-keyword">var</span> err;
 	<span class="hljs-keyword">if</span> (!<span class="hljs-built_in">Object</span>.keys(__private.keypairs).length) {
 		err = <span class="hljs-string">'No delegates enabled'</span>;
-		<span class="hljs-keyword">return</span> setImmediate(cb, err);
+		<span class="hljs-keyword">return</span> cb(err);
 	}
 
 	<span class="hljs-keyword">if</span> (!__private.forging) {
 		err = <span class="hljs-string">'Forging disabled'</span>;
-		<span class="hljs-keyword">return</span> setImmediate(cb, err);
+		<span class="hljs-keyword">return</span> cb(err);
 	}
 
 	<span class="hljs-keyword">var</span> currentSlot = slots.getSlotNumber();</pre></div></div>
@@ -550,13 +522,13 @@ __private.forge = <span class="hljs-function"><span class="hljs-keyword">functio
             <div class="content"><div class='highlight'><pre>	<span class="hljs-keyword">var</span> lastBlock = modules.blockchain.getLastBlock();
 	<span class="hljs-keyword">if</span> (!lastBlock || currentSlot === slots.getSlotNumber(lastBlock.timestamp)) {
 		err = <span class="hljs-string">'Last block within same delegate slot'</span>;
-		<span class="hljs-keyword">return</span> setImmediate(cb, err);
+		<span class="hljs-keyword">return</span> cb(err);
 	}
 
 	__private.getBlockSlotData(currentSlot, lastBlock.height + <span class="hljs-number">1</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, currentBlockData</span>) </span>{
 		<span class="hljs-keyword">if</span> (err || currentBlockData === <span class="hljs-literal">null</span>) {
 			err = <span class="hljs-string">'Skipping delegate slot'</span>;
-			<span class="hljs-keyword">return</span> setImmediate(cb, err);
+			<span class="hljs-keyword">return</span> cb(err);
 		}
 
 
@@ -585,16 +557,16 @@ This is to prevent from delegate multiple forging on several servers.</p>
 				<span class="hljs-keyword">if</span>(!minimumNetworkReach){
 					minimumNetworkReach = <span class="hljs-number">20</span>;
 				}
-				
+
 				<span class="hljs-keyword">if</span> (err) {
-					<span class="hljs-keyword">return</span> setImmediate(cb, err);
+					<span class="hljs-keyword">return</span> cb(err);
 				}
 				<span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span>(network.peers.length &lt; minimumNetworkReach){
 					library.logger.info(<span class="hljs-string">"Network reach is not sufficient to get quorum"</span>,[
 						<span class="hljs-string">"network # of reached peers:"</span>, network.peers.length,
 						<span class="hljs-string">"last block id:"</span>, lastBlock.id
 					].join(<span class="hljs-string">' '</span>));
-					<span class="hljs-keyword">return</span> setImmediate(cb);
+					<span class="hljs-keyword">return</span> cb();
 				}
 				<span class="hljs-keyword">else</span> {
 					<span class="hljs-keyword">var</span> quorum = <span class="hljs-number">0</span>;
@@ -689,7 +661,7 @@ This is to prevent from delegate multiple forging on several servers.</p>
             </div>
             
             <div class="content"><div class='highlight'><pre>						<span class="hljs-keyword">if</span>(overheightblock.generatorPublicKey == currentBlockData.keypair.publicKey){
-							<span class="hljs-keyword">return</span> setImmediate(cb);
+							<span class="hljs-keyword">return</span> cb();
 						}</pre></div></div>
             
         </li>
@@ -740,7 +712,7 @@ This is to prevent from delegate multiple forging on several servers.</p>
             </div>
             
             <div class="content"><div class='highlight'><pre>
-						<span class="hljs-keyword">return</span> setImmediate(cb);
+						<span class="hljs-keyword">return</span> cb();
 					}</pre></div></div>
             
         </li>
@@ -784,7 +756,7 @@ This is to prevent from delegate multiple forging on several servers.</p>
 							<span class="hljs-string">"last block id:"</span>, lastBlock.id
 						].join(<span class="hljs-string">' '</span>));
 						library.bus.message(<span class="hljs-string">"fork"</span>,lastBlock, <span class="hljs-number">6</span>);
-						<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">"Fork 6 - Not enough quorum to forge next block: "</span> + quorum/(quorum+noquorum));
+						<span class="hljs-keyword">return</span> cb(<span class="hljs-string">"Fork 6 - Not enough quorum to forge next block: "</span> + quorum/(quorum+noquorum));
 					}
 
 					<span class="hljs-keyword">if</span>(letsforge){
@@ -806,7 +778,7 @@ This is to prevent from delegate multiple forging on several servers.</p>
 							}
 							<span class="hljs-keyword">else</span>{
 								library.logger.error(<span class="hljs-string">'Failed generate block within delegate slot'</span>, err);
-								<span class="hljs-keyword">return</span> setImmediate(cb, err);
+								<span class="hljs-keyword">return</span> cb(err);
 							}
 						});
 					}
@@ -814,34 +786,34 @@ This is to prevent from delegate multiple forging on several servers.</p>
 			});
 		} <span class="hljs-keyword">else</span> {
 			library.logger.debug(<span class="hljs-string">'Delegate slot'</span>, slots.getSlotNumber());
-			<span class="hljs-keyword">return</span> setImmediate(cb);
+			<span class="hljs-keyword">return</span> cb();
 		}
 	});
 };
 
 __private.checkDelegates = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">publicKey, votes, state, cb</span>) </span>{
 	<span class="hljs-keyword">if</span> (!<span class="hljs-built_in">Array</span>.isArray(votes)) {
-		<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Votes must be an array'</span>);
+		<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Votes must be an array'</span>);
 	}
 
 	modules.accounts.getAccount({<span class="hljs-attr">publicKey</span>: publicKey}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, account</span>) </span>{
 		<span class="hljs-keyword">if</span> (err) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, err);
+			<span class="hljs-keyword">return</span> cb(err);
 		}
 
 		<span class="hljs-keyword">if</span> (!account) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Account not found'</span>);
+			<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Account not found'</span>);
 		}
 
 		<span class="hljs-keyword">var</span> delegates = (state === <span class="hljs-string">'confirmed'</span>) ? account.delegates : account.u_delegates;
 		<span class="hljs-keyword">var</span> existing_votes = <span class="hljs-built_in">Array</span>.isArray(delegates) ? delegates.length : <span class="hljs-number">0</span>;
 		<span class="hljs-keyword">var</span> additions = <span class="hljs-number">0</span>, removals = <span class="hljs-number">0</span>;
 
-		<span class="hljs-keyword">async</span>.eachSeries(votes, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">action, cb</span>) </span>{
+		<span class="hljs-keyword">async</span>.eachSeries(votes, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">action, eachSeriesCb</span>) </span>{
 			<span class="hljs-keyword">var</span> math = action[<span class="hljs-number">0</span>];
 
 			<span class="hljs-keyword">if</span> (math !== <span class="hljs-string">'+'</span> &amp;&amp; math !== <span class="hljs-string">'-'</span>) {
-				<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Invalid math operator'</span>);
+				<span class="hljs-keyword">return</span> eachSeriesCb(<span class="hljs-string">'Invalid math operator'</span>);
 			}
 
 			<span class="hljs-keyword">if</span> (math === <span class="hljs-string">'+'</span>) {
@@ -856,31 +828,31 @@ __private.checkDelegates = <span class="hljs-function"><span class="hljs-keyword
 				<span class="hljs-keyword">new</span> Buffer(publicKey, <span class="hljs-string">'hex'</span>);
 			} <span class="hljs-keyword">catch</span> (e) {
 				library.logger.error(<span class="hljs-string">"stack"</span>, e.stack);
-				<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Invalid public key'</span>);
+				<span class="hljs-keyword">return</span> eachSeriesCb(<span class="hljs-string">'Invalid public key'</span>);
 			}
 
 			<span class="hljs-keyword">if</span> (math === <span class="hljs-string">'+'</span> &amp;&amp; (delegates != <span class="hljs-literal">null</span> &amp;&amp; delegates.indexOf(publicKey) !== <span class="hljs-number">-1</span>)) {
-				<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Failed to add vote, account has already voted for this delegate'</span>);
+				<span class="hljs-keyword">return</span> eachSeriesCb(<span class="hljs-string">'Failed to add vote, account has already voted for this delegate'</span>);
 			}
 
 			<span class="hljs-keyword">if</span> (math === <span class="hljs-string">'-'</span> &amp;&amp; (delegates === <span class="hljs-literal">null</span> || delegates.indexOf(publicKey) === <span class="hljs-number">-1</span>)) {
-				<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Failed to remove vote, account has not voted for this delegate'</span>);
+				<span class="hljs-keyword">return</span> eachSeriesCb(<span class="hljs-string">'Failed to remove vote, account has not voted for this delegate'</span>);
 			}
 
 			modules.accounts.getAccount({ <span class="hljs-attr">publicKey</span>: publicKey, <span class="hljs-attr">isDelegate</span>: <span class="hljs-number">1</span> }, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, account</span>) </span>{
 				<span class="hljs-keyword">if</span> (err) {
-					<span class="hljs-keyword">return</span> setImmediate(cb, err);
+					<span class="hljs-keyword">return</span> eachSeriesCb(err);
 				}
 
 				<span class="hljs-keyword">if</span> (!account) {
-					<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Delegate not found'</span>);
+					<span class="hljs-keyword">return</span> eachSeriesCb(<span class="hljs-string">'Delegate not found'</span>);
 				}
 
-				<span class="hljs-keyword">return</span> setImmediate(cb);
+				<span class="hljs-keyword">return</span> eachSeriesCb();
 			});
 		}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 			<span class="hljs-keyword">if</span> (err) {
-				<span class="hljs-keyword">return</span> setImmediate(cb, err);
+				<span class="hljs-keyword">return</span> cb(err);
 			}
 
 			<span class="hljs-keyword">var</span> total_votes = (existing_votes + additions) - removals;
@@ -888,9 +860,9 @@ __private.checkDelegates = <span class="hljs-function"><span class="hljs-keyword
 			<span class="hljs-keyword">if</span> (total_votes &gt; constants.maximumVotes) {
 				<span class="hljs-keyword">var</span> exceeded = total_votes - constants.maximumVotes;
 
-				<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Maximum number of '</span> + constants.maximumVotes + <span class="hljs-string">' votes exceeded ('</span> + exceeded + <span class="hljs-string">' too many)'</span>);
+				<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Maximum number of '</span> + constants.maximumVotes + <span class="hljs-string">' votes exceeded ('</span> + exceeded + <span class="hljs-string">' too many)'</span>);
 			} <span class="hljs-keyword">else</span> {
-				<span class="hljs-keyword">return</span> setImmediate(cb);
+				<span class="hljs-keyword">return</span> cb();
 			}
 		});
 	});
@@ -903,7 +875,7 @@ __private.loadMyDelegates = <span class="hljs-function"><span class="hljs-keywor
 	}
 
 	<span class="hljs-keyword">async</span>.eachSeries(secrets, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">secret, seriesCb</span>) </span>{
-		<span class="hljs-keyword">var</span> keypair = library.ed.makeKeypair(secret);</pre></div></div>
+		<span class="hljs-keyword">var</span> keypair = library.crypto.makeKeypair(secret);</pre></div></div>
             
         </li>
         
@@ -1009,7 +981,7 @@ __private.loadMyDelegates = <span class="hljs-function"><span class="hljs-keywor
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-27">&#182;</a>
               </div>
-              <p><strong>API</strong> <code>generateDelegateList</code></p>
+              <p><strong>API</strong> <code>getDelegates</code></p>
 
             </div>
             
@@ -1027,58 +999,6 @@ __private.loadMyDelegates = <span class="hljs-function"><span class="hljs-keywor
               
             </div>
             
-            <div class="content"><div class='highlight'><pre>Delegates.prototype.generateDelegateList = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">height, cb</span>) </span>{
-	__private.getKeysSortByVote(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, truncDelegateList</span>) </span>{
-		<span class="hljs-keyword">if</span> (err) {
-			<span class="hljs-keyword">return</span> cb(err);
-		}
-
-		<span class="hljs-keyword">var</span> seedSource = modules.rounds.getRoundFromHeight(height).toString();
-		<span class="hljs-keyword">var</span> currentSeed = crypto.createHash(<span class="hljs-string">'sha256'</span>).update(seedSource, <span class="hljs-string">'utf8'</span>).digest();
-
-		<span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> i = <span class="hljs-number">0</span>, delCount = truncDelegateList.length; i &lt; delCount; i++) {
-			<span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> x = <span class="hljs-number">0</span>; x &lt; <span class="hljs-number">4</span> &amp;&amp; i &lt; delCount; i++, x++) {
-				<span class="hljs-keyword">var</span> newIndex = currentSeed[x] % delCount;
-				<span class="hljs-keyword">var</span> b = truncDelegateList[newIndex];
-				truncDelegateList[newIndex] = truncDelegateList[i];
-				truncDelegateList[i] = b;
-			}
-			currentSeed = crypto.createHash(<span class="hljs-string">'sha256'</span>).update(currentSeed).digest();
-		}
-
-		<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, truncDelegateList);
-	});
-};</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-29">
-          
-            <div class="fullblock">
-          
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-29">&#182;</a>
-              </div>
-              <p><strong>API</strong> <code>getDelegates</code></p>
-
-            </div>
-            
-        </li>
-        
-        
-        <li id="section-30">
-          
-            <div class="annotation">
-          
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-30">&#182;</a>
-              </div>
-              
-            </div>
-            
             <div class="content"><div class='highlight'><pre>Delegates.prototype.getDelegates = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">query, cb</span>) </span>{
 	<span class="hljs-keyword">if</span> (!query) {
 		<span class="hljs-keyword">throw</span> <span class="hljs-string">'Missing query argument'</span>;
@@ -1088,7 +1008,7 @@ __private.loadMyDelegates = <span class="hljs-function"><span class="hljs-keywor
 		<span class="hljs-attr">sort</span>: { <span class="hljs-string">'vote'</span>: <span class="hljs-number">-1</span>, <span class="hljs-string">'publicKey'</span>: <span class="hljs-number">1</span> }
 	}, [<span class="hljs-string">'username'</span>, <span class="hljs-string">'address'</span>, <span class="hljs-string">'publicKey'</span>, <span class="hljs-string">'vote'</span>, <span class="hljs-string">'missedblocks'</span>, <span class="hljs-string">'producedblocks'</span>], <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, delegates</span>) </span>{
 		<span class="hljs-keyword">if</span> (err) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, err);
+			<span class="hljs-keyword">return</span> cb(err);
 		}
 
 		<span class="hljs-keyword">var</span> limit = query.limit || constants.activeDelegates;
@@ -1119,10 +1039,10 @@ __private.loadMyDelegates = <span class="hljs-function"><span class="hljs-keywor
 		<span class="hljs-keyword">var</span> orderBy = OrderBy(query.orderBy, {<span class="hljs-attr">quoteField</span>: <span class="hljs-literal">false</span>});
 
 		<span class="hljs-keyword">if</span> (orderBy.error) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, orderBy.error);
+			<span class="hljs-keyword">return</span> cb(orderBy.error);
 		}
 
-		<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, {
+		<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, {
 			<span class="hljs-attr">delegates</span>: delegates,
 			<span class="hljs-attr">sortField</span>: orderBy.sortField,
 			<span class="hljs-attr">sortMethod</span>: orderBy.sortMethod,
@@ -1136,6 +1056,39 @@ __private.loadMyDelegates = <span class="hljs-function"><span class="hljs-keywor
         </li>
         
         
+        <li id="section-29">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-29">&#182;</a>
+              </div>
+              <p><strong>API</strong> <code>checkConfirmedDelegates</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-30">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-30">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Delegates.prototype.checkConfirmedDelegates = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">publicKey, votes, cb</span>) </span>{
+	<span class="hljs-keyword">return</span> __private.checkDelegates(publicKey, votes, <span class="hljs-string">'confirmed'</span>, cb);
+};</pre></div></div>
+            
+        </li>
+        
+        
         <li id="section-31">
           
             <div class="fullblock">
@@ -1144,7 +1097,7 @@ __private.loadMyDelegates = <span class="hljs-function"><span class="hljs-keywor
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-31">&#182;</a>
               </div>
-              <p><strong>API</strong> <code>checkConfirmedDelegates</code></p>
+              <p><strong>API</strong> <code>checkUnconfirmedDelegates</code></p>
 
             </div>
             
@@ -1162,8 +1115,8 @@ __private.loadMyDelegates = <span class="hljs-function"><span class="hljs-keywor
               
             </div>
             
-            <div class="content"><div class='highlight'><pre>Delegates.prototype.checkConfirmedDelegates = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">publicKey, votes, cb</span>) </span>{
-	<span class="hljs-keyword">return</span> __private.checkDelegates(publicKey, votes, <span class="hljs-string">'confirmed'</span>, cb);
+            <div class="content"><div class='highlight'><pre>Delegates.prototype.checkUnconfirmedDelegates = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">publicKey, votes, cb</span>) </span>{
+	<span class="hljs-keyword">return</span> __private.checkDelegates(publicKey, votes, <span class="hljs-string">'unconfirmed'</span>, cb);
 };</pre></div></div>
             
         </li>
@@ -1177,7 +1130,7 @@ __private.loadMyDelegates = <span class="hljs-function"><span class="hljs-keywor
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-33">&#182;</a>
               </div>
-              <p><strong>API</strong> <code>checkUnconfirmedDelegates</code></p>
+              <p><strong>API</strong> <code>validateBlockSlot</code></p>
 
             </div>
             
@@ -1195,39 +1148,6 @@ __private.loadMyDelegates = <span class="hljs-function"><span class="hljs-keywor
               
             </div>
             
-            <div class="content"><div class='highlight'><pre>Delegates.prototype.checkUnconfirmedDelegates = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">publicKey, votes, cb</span>) </span>{
-	<span class="hljs-keyword">return</span> __private.checkDelegates(publicKey, votes, <span class="hljs-string">'unconfirmed'</span>, cb);
-};</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-35">
-          
-            <div class="fullblock">
-          
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-35">&#182;</a>
-              </div>
-              <p><strong>API</strong> <code>validateBlockSlot</code></p>
-
-            </div>
-            
-        </li>
-        
-        
-        <li id="section-36">
-          
-            <div class="annotation">
-          
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-36">&#182;</a>
-              </div>
-              
-            </div>
-            
             <div class="content"><div class='highlight'><pre>Delegates.prototype.validateBlockSlot = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">block, cb</span>) </span>{
 	modules.rounds.getActiveDelegates(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, activeDelegates</span>) </span>{
 		<span class="hljs-keyword">if</span> (err) {
@@ -1240,13 +1160,13 @@ __private.loadMyDelegates = <span class="hljs-function"><span class="hljs-keywor
         </li>
         
         
-        <li id="section-37">
+        <li id="section-35">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-37">&#182;</a>
+                <a class="pilcrow" href="#section-35">&#182;</a>
               </div>
               <p>var nextDelegate_id = activeDelegates[(currentSlot + 1) % slots.delegates];
 var previousDelegate_id = activeDelegates[(currentSlot - 1) % slots.delegates];</p>
@@ -1266,6 +1186,44 @@ var previousDelegate_id = activeDelegates[(currentSlot - 1) % slots.delegates];<
         </li>
         
         
+        <li id="section-36">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-36">&#182;</a>
+              </div>
+              <p>Events</p>
+<p><strong>EVENT</strong> <code>onBind</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-37">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-37">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Delegates.prototype.onBind = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">scope</span>) </span>{
+	modules = scope;
+
+	__private.assetTypes[transactionTypes.DELEGATE].bind({
+		<span class="hljs-attr">modules</span>: modules, <span class="hljs-attr">library</span>: library
+	});
+};</pre></div></div>
+            
+        </li>
+        
+        
         <li id="section-38">
           
             <div class="fullblock">
@@ -1274,8 +1232,7 @@ var previousDelegate_id = activeDelegates[(currentSlot - 1) % slots.delegates];<
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-38">&#182;</a>
               </div>
-              <p>Events</p>
-<p><strong>EVENT</strong> <code>onBind</code></p>
+              <p><strong>EVENT</strong> <code>onLoadDelegates</code></p>
 
             </div>
             
@@ -1293,11 +1250,12 @@ var previousDelegate_id = activeDelegates[(currentSlot - 1) % slots.delegates];<
               
             </div>
             
-            <div class="content"><div class='highlight'><pre>Delegates.prototype.onBind = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">scope</span>) </span>{
-	modules = scope;
-
-	__private.assetTypes[transactionTypes.DELEGATE].bind({
-		<span class="hljs-attr">modules</span>: modules, <span class="hljs-attr">library</span>: library
+            <div class="content"><div class='highlight'><pre>Delegates.prototype.onLoadDelegates = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+	__private.loadMyDelegates(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">err, keypairs</span>)</span>{
+		<span class="hljs-keyword">if</span>(err){
+			library.logger.error(err);
+		}
+		library.bus.message(<span class="hljs-string">'delegatesLoaded'</span>, keypairs);
 	});
 };</pre></div></div>
             
@@ -1312,7 +1270,7 @@ var previousDelegate_id = activeDelegates[(currentSlot - 1) % slots.delegates];<
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-40">&#182;</a>
               </div>
-              <p><strong>EVENT</strong> <code>onLoadDelegates</code></p>
+              <p><strong>EVENT</strong> <code>onStartForging</code></p>
 
             </div>
             
@@ -1326,44 +1284,6 @@ var previousDelegate_id = activeDelegates[(currentSlot - 1) % slots.delegates];<
               
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-41">&#182;</a>
-              </div>
-              
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>Delegates.prototype.onLoadDelegates = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
-	__private.loadMyDelegates(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">err, keypairs</span>)</span>{
-		<span class="hljs-keyword">if</span>(err){
-			library.logger.error(err);
-		}
-		library.bus.message(<span class="hljs-string">'delegatesLoaded'</span>, keypairs);
-	});
-};</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-42">
-          
-            <div class="fullblock">
-          
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-42">&#182;</a>
-              </div>
-              <p><strong>EVENT</strong> <code>onStartForging</code></p>
-
-            </div>
-            
-        </li>
-        
-        
-        <li id="section-43">
-          
-            <div class="annotation">
-          
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-43">&#182;</a>
               </div>
               
             </div>
@@ -1386,6 +1306,39 @@ var previousDelegate_id = activeDelegates[(currentSlot - 1) % slots.delegates];<
         </li>
         
         
+        <li id="section-42">
+          
+            <div class="fullblock">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-42">&#182;</a>
+              </div>
+              <p><strong>EVENT</strong> <code>onStopForging</code></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-43">
+          
+            <div class="annotation">
+          
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-43">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Delegates.prototype.onStopForging = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+	__private.forging = <span class="hljs-literal">false</span>;
+};</pre></div></div>
+            
+        </li>
+        
+        
         <li id="section-44">
           
             <div class="fullblock">
@@ -1394,7 +1347,7 @@ var previousDelegate_id = activeDelegates[(currentSlot - 1) % slots.delegates];<
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-44">&#182;</a>
               </div>
-              <p><strong>EVENT</strong> <code>onStopForging</code></p>
+              <p><strong>EVENT</strong> <code>onAttachPublicApi</code></p>
 
             </div>
             
@@ -1412,8 +1365,8 @@ var previousDelegate_id = activeDelegates[(currentSlot - 1) % slots.delegates];<
               
             </div>
             
-            <div class="content"><div class='highlight'><pre>Delegates.prototype.onStopForging = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
-	__private.forging = <span class="hljs-literal">false</span>;
+            <div class="content"><div class='highlight'><pre>Delegates.prototype.onAttachPublicApi = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+	__private.attachApi();
 };</pre></div></div>
             
         </li>
@@ -1427,7 +1380,7 @@ var previousDelegate_id = activeDelegates[(currentSlot - 1) % slots.delegates];<
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-46">&#182;</a>
               </div>
-              <p><strong>EVENT</strong> <code>onAttachPublicApi</code></p>
+              <p><strong>API</strong> <code>cleanup</code></p>
 
             </div>
             
@@ -1445,8 +1398,8 @@ var previousDelegate_id = activeDelegates[(currentSlot - 1) % slots.delegates];<
               
             </div>
             
-            <div class="content"><div class='highlight'><pre>Delegates.prototype.onAttachPublicApi = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
-	__private.attachApi();
+            <div class="content"><div class='highlight'><pre>Delegates.prototype.cleanup = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">cb</span>) </span>{
+	<span class="hljs-keyword">return</span> cb();
 };</pre></div></div>
             
         </li>
@@ -1460,7 +1413,8 @@ var previousDelegate_id = activeDelegates[(currentSlot - 1) % slots.delegates];<
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-48">&#182;</a>
               </div>
-              <p><strong>EVENT</strong> <code>onBlockchainReady</code></p>
+              <p>Ready to forge when it is its slot</p>
+<p><strong>API</strong> <code>isForging</code></p>
 
             </div>
             
@@ -1469,39 +1423,18 @@ var previousDelegate_id = activeDelegates[(currentSlot - 1) % slots.delegates];<
         
         <li id="section-49">
           
-            <div class="fullblock">
+            <div class="annotation">
           
               
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-49">&#182;</a>
               </div>
-              <p>Delegates.prototype.onBlockchainReady = function () {
-    <strong>private.loaded = true;
-    </strong>private.attachApi();
-    __private.loadMyDelegates(function nextForge (err) {
-        if (err) {
-            library.logger.error(‘Failed to load delegates’, err);
-        }</p>
-<pre><code>    <span class="hljs-keyword">try</span> {
-        __private.toggleForgingOnReceipt();
-    } <span class="hljs-keyword">catch</span>(error){
-        library.logger.error(<span class="hljs-string">'Failed to toggle Forging On Receipt'</span>, error);
-    }
-
-    <span class="hljs-keyword">async</span>.series([
-        __private.forge,
-        modules.transactionPool.fillPool
-    ], <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">debug</span>) </span>{
-        <span class="hljs-keyword">if</span>(debug &amp;&amp; <span class="hljs-built_in">Math</span>.random()&lt;<span class="hljs-number">0.1</span>){
-            library.logger.debug(debug);
-        }
-        <span class="hljs-keyword">return</span> setTimeout(nextForge, <span class="hljs-number">1000</span>);
-    });
-});
-</code></pre><p>};</p>
-<p><strong>EVENT</strong> <code>onBlockchainReady</code></p>
-
+              
             </div>
+            
+            <div class="content"><div class='highlight'><pre>Delegates.prototype.isForging = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
+	<span class="hljs-keyword">return</span> __private.forging;
+}</pre></div></div>
             
         </li>
         
@@ -1514,105 +1447,6 @@ var previousDelegate_id = activeDelegates[(currentSlot - 1) % slots.delegates];<
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-50">&#182;</a>
               </div>
-              <p>Delegates.prototype.onBlockchainReady = function () {
-    __private.loaded = true;</p>
-<pre><code>__private.loadMyDelegates(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">nextForge</span> (<span class="hljs-params">err</span>) </span>{
-    <span class="hljs-keyword">if</span> (err) {
-        library.logger.error(<span class="hljs-string">'Failed to load delegates'</span>, err);
-    }
-
-    <span class="hljs-comment">// try {</span>
-    <span class="hljs-comment">//     __private.toggleForgingOnReceipt();</span>
-    <span class="hljs-comment">// } catch(error){</span>
-    <span class="hljs-comment">//     library.logger.error('Failed to toggle Forging On Receipt', error);</span>
-    <span class="hljs-comment">// }</span>
-    __private.forge(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
-        setTimeout(nextForge, <span class="hljs-number">1000</span>);
-    });
-});
-</code></pre><p>};</p>
-
-            </div>
-            
-        </li>
-        
-        
-        <li id="section-51">
-          
-            <div class="fullblock">
-          
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-51">&#182;</a>
-              </div>
-              <p>To trigger a blockchain update from network</p>
-<p><strong>API</strong> <code>cleanup</code></p>
-
-            </div>
-            
-        </li>
-        
-        
-        <li id="section-52">
-          
-            <div class="annotation">
-          
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-52">&#182;</a>
-              </div>
-              
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>Delegates.prototype.cleanup = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">cb</span>) </span>{
-	<span class="hljs-keyword">return</span> cb();
-};</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-53">
-          
-            <div class="fullblock">
-          
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-53">&#182;</a>
-              </div>
-              <p>Ready to forge when it is its slot</p>
-<p><strong>API</strong> <code>isForging</code></p>
-
-            </div>
-            
-        </li>
-        
-        
-        <li id="section-54">
-          
-            <div class="annotation">
-          
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-54">&#182;</a>
-              </div>
-              
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>Delegates.prototype.isForging = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
-	<span class="hljs-keyword">return</span> __private.forging;
-}</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-55">
-          
-            <div class="fullblock">
-          
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-55">&#182;</a>
-              </div>
               <p>Is node active at current height of internal blockchain</p>
 <p><strong>API</strong> <code>isActiveDelegate</code></p>
 
@@ -1621,13 +1455,13 @@ var previousDelegate_id = activeDelegates[(currentSlot - 1) % slots.delegates];<
         </li>
         
         
-        <li id="section-56">
+        <li id="section-51">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-56">&#182;</a>
+                <a class="pilcrow" href="#section-51">&#182;</a>
               </div>
               
             </div>
@@ -1639,13 +1473,13 @@ var previousDelegate_id = activeDelegates[(currentSlot - 1) % slots.delegates];<
         </li>
         
         
-        <li id="section-57">
+        <li id="section-52">
           
             <div class="fullblock">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-57">&#182;</a>
+                <a class="pilcrow" href="#section-52">&#182;</a>
               </div>
               <p><strong>API</strong> <code>updateActiveDelegate</code></p>
 
@@ -1654,13 +1488,13 @@ var previousDelegate_id = activeDelegates[(currentSlot - 1) % slots.delegates];<
         </li>
         
         
-        <li id="section-58">
+        <li id="section-53">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-58">&#182;</a>
+                <a class="pilcrow" href="#section-53">&#182;</a>
               </div>
               
             </div>
@@ -1679,13 +1513,13 @@ var previousDelegate_id = activeDelegates[(currentSlot - 1) % slots.delegates];<
         </li>
         
         
-        <li id="section-59">
+        <li id="section-54">
           
             <div class="fullblock">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-59">&#182;</a>
+                <a class="pilcrow" href="#section-54">&#182;</a>
               </div>
               <p><strong>API</strong> <code>enableForging</code></p>
 
@@ -1694,13 +1528,13 @@ var previousDelegate_id = activeDelegates[(currentSlot - 1) % slots.delegates];<
         </li>
         
         
-        <li id="section-60">
+        <li id="section-55">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-60">&#182;</a>
+                <a class="pilcrow" href="#section-55">&#182;</a>
               </div>
               
             </div>
@@ -1717,13 +1551,13 @@ var previousDelegate_id = activeDelegates[(currentSlot - 1) % slots.delegates];<
         </li>
         
         
-        <li id="section-61">
+        <li id="section-56">
           
             <div class="fullblock">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-61">&#182;</a>
+                <a class="pilcrow" href="#section-56">&#182;</a>
               </div>
               <p><strong>API</strong> <code>disableForging</code></p>
 
@@ -1732,13 +1566,13 @@ var previousDelegate_id = activeDelegates[(currentSlot - 1) % slots.delegates];<
         </li>
         
         
-        <li id="section-62">
+        <li id="section-57">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-62">&#182;</a>
+                <a class="pilcrow" href="#section-57">&#182;</a>
               </div>
               
             </div>
@@ -1755,13 +1589,13 @@ var previousDelegate_id = activeDelegates[(currentSlot - 1) % slots.delegates];<
         </li>
         
         
-        <li id="section-63">
+        <li id="section-58">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-63">&#182;</a>
+                <a class="pilcrow" href="#section-58">&#182;</a>
               </div>
               <p>Private</p>
 
@@ -1773,13 +1607,13 @@ var previousDelegate_id = activeDelegates[(currentSlot - 1) % slots.delegates];<
         </li>
         
         
-        <li id="section-64">
+        <li id="section-59">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-64">&#182;</a>
+                <a class="pilcrow" href="#section-59">&#182;</a>
               </div>
               <p>Enforce local forging if configured</p>
 
@@ -1795,13 +1629,13 @@ var previousDelegate_id = activeDelegates[(currentSlot - 1) % slots.delegates];<
         </li>
         
         
-        <li id="section-65">
+        <li id="section-60">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-65">&#182;</a>
+                <a class="pilcrow" href="#section-60">&#182;</a>
               </div>
               <p>if (lastReceipt.secondsAgo &gt; timeOut) {
     return self.disableForging(‘timeout’);
@@ -1814,13 +1648,13 @@ var previousDelegate_id = activeDelegates[(currentSlot - 1) % slots.delegates];<
         </li>
         
         
-        <li id="section-66">
+        <li id="section-61">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-66">&#182;</a>
+                <a class="pilcrow" href="#section-61">&#182;</a>
               </div>
               <p>}</p>
 
@@ -1832,13 +1666,13 @@ var previousDelegate_id = activeDelegates[(currentSlot - 1) % slots.delegates];<
         </li>
         
         
-        <li id="section-67">
+        <li id="section-62">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-67">&#182;</a>
+                <a class="pilcrow" href="#section-62">&#182;</a>
               </div>
               <p>Shared</p>
 
@@ -1847,12 +1681,12 @@ var previousDelegate_id = activeDelegates[(currentSlot - 1) % slots.delegates];<
             <div class="content"><div class='highlight'><pre>shared.getDelegate = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">req, cb</span>) </span>{
 	library.schema.validate(req.body, schema.getDelegate, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 		<span class="hljs-keyword">if</span> (err) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, err[<span class="hljs-number">0</span>].message);
+			<span class="hljs-keyword">return</span> cb(err[<span class="hljs-number">0</span>].message);
 		}
 
 		modules.delegates.getDelegates(req.body, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, data</span>) </span>{
 			<span class="hljs-keyword">if</span> (err) {
-				<span class="hljs-keyword">return</span> setImmediate(cb, err);
+				<span class="hljs-keyword">return</span> cb(err);
 			}
 
 			<span class="hljs-keyword">var</span> delegate = _.find(data.delegates, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">delegate</span>) </span>{
@@ -1866,9 +1700,9 @@ var previousDelegate_id = activeDelegates[(currentSlot - 1) % slots.delegates];<
 			});
 
 			<span class="hljs-keyword">if</span> (delegate) {
-				<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, {<span class="hljs-attr">delegate</span>: delegate});
+				<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, {<span class="hljs-attr">delegate</span>: delegate});
 			} <span class="hljs-keyword">else</span> {
-				<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Delegate not found'</span>);
+				<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Delegate not found'</span>);
 			}
 		});
 	});
@@ -1880,7 +1714,7 @@ shared.getNextForgers = <span class="hljs-function"><span class="hljs-keyword">f
 
 	modules.rounds.getActiveDelegates(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, activeDelegates</span>) </span>{
 		<span class="hljs-keyword">if</span> (err) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, err);
+			<span class="hljs-keyword">return</span> cb(err);
 		}
 
 		<span class="hljs-keyword">var</span> currentSlot = slots.getSlotNumber(currentBlock.timestamp);
@@ -1891,14 +1725,14 @@ shared.getNextForgers = <span class="hljs-function"><span class="hljs-keyword">f
 				nextForgers.push (activeDelegates[(currentSlot + i) % slots.delegates]);
 			}
 		}
-		<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, {<span class="hljs-attr">currentBlock</span>: currentBlock.height, <span class="hljs-attr">currentSlot</span>: currentSlot, <span class="hljs-attr">delegates</span>: nextForgers});
+		<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, {<span class="hljs-attr">currentBlock</span>: currentBlock.height, <span class="hljs-attr">currentSlot</span>: currentSlot, <span class="hljs-attr">delegates</span>: nextForgers});
 	});
 };
 
 shared.search = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">req, cb</span>) </span>{
 	library.schema.validate(req.body, schema.search, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 		<span class="hljs-keyword">if</span> (err) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, err[<span class="hljs-number">0</span>].message);
+			<span class="hljs-keyword">return</span> cb(err[<span class="hljs-number">0</span>].message);
 		}
 
 		<span class="hljs-keyword">var</span> orderBy = OrderBy(
@@ -1909,7 +1743,7 @@ shared.search = <span class="hljs-function"><span class="hljs-keyword">function<
 		);
 
 		<span class="hljs-keyword">if</span> (orderBy.error) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, orderBy.error);
+			<span class="hljs-keyword">return</span> cb(orderBy.error);
 		}
 
 		library.db.query(sql.search({
@@ -1918,27 +1752,27 @@ shared.search = <span class="hljs-function"><span class="hljs-keyword">function<
 			<span class="hljs-attr">sortField</span>: orderBy.sortField,
 			<span class="hljs-attr">sortMethod</span>: orderBy.sortMethod
 		})).then(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">rows</span>) </span>{
-			<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, {<span class="hljs-attr">delegates</span>: rows});
+			<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, {<span class="hljs-attr">delegates</span>: rows});
 		}).catch(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 			library.logger.error(<span class="hljs-string">"stack"</span>, err.stack);
-			<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Database search failed'</span>);
+			<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Database search failed'</span>);
 		});
 	});
 };
 
 shared.count = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">req, cb</span>) </span>{
 	library.db.one(sql.count).then(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">row</span>) </span>{
-		<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, { <span class="hljs-attr">count</span>: row.count });
+		<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, { <span class="hljs-attr">count</span>: row.count });
 	}).catch(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 		library.logger.error(<span class="hljs-string">"stack"</span>, err.stack);
-		<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Failed to count delegates'</span>);
+		<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Failed to count delegates'</span>);
 	});
 };
 
 shared.getVoters = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">req, cb</span>) </span>{
 	library.schema.validate(req.body, schema.getVoters, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 		<span class="hljs-keyword">if</span> (err) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, err[<span class="hljs-number">0</span>].message);
+			<span class="hljs-keyword">return</span> cb(err[<span class="hljs-number">0</span>].message);
 		}
 
 		library.db.one(sql.getVoters, { <span class="hljs-attr">publicKey</span>: req.body.publicKey }).then(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">row</span>) </span>{
@@ -1949,14 +1783,14 @@ shared.getVoters = <span class="hljs-function"><span class="hljs-keyword">functi
 				<span class="hljs-attr">sort</span>: <span class="hljs-string">'balance'</span>
 			}, [<span class="hljs-string">'address'</span>, <span class="hljs-string">'balance'</span>, <span class="hljs-string">'username'</span>, <span class="hljs-string">'publicKey'</span>], <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, rows</span>) </span>{
 				<span class="hljs-keyword">if</span> (err) {
-					<span class="hljs-keyword">return</span> setImmediate(cb, err);
+					<span class="hljs-keyword">return</span> cb(err);
 				}
 
-				<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, {<span class="hljs-attr">accounts</span>: rows});
+				<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, {<span class="hljs-attr">accounts</span>: rows});
 			});
 		}).catch(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 			library.logger.error(<span class="hljs-string">"stack"</span>, err.stack);
-			<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Failed to get voters for delegate: '</span> + req.body.publicKey);
+			<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Failed to get voters for delegate: '</span> + req.body.publicKey);
 		});
 	});
 };
@@ -1964,12 +1798,12 @@ shared.getVoters = <span class="hljs-function"><span class="hljs-keyword">functi
 shared.getDelegates = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">req, cb</span>) </span>{
 	library.schema.validate(req.body, schema.getDelegates, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 		<span class="hljs-keyword">if</span> (err) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, err[<span class="hljs-number">0</span>].message);
+			<span class="hljs-keyword">return</span> cb(err[<span class="hljs-number">0</span>].message);
 		}
 
 		modules.delegates.getDelegates(req.body, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, data</span>) </span>{
 			<span class="hljs-keyword">if</span> (err) {
-				<span class="hljs-keyword">return</span> setImmediate(cb, err);
+				<span class="hljs-keyword">return</span> cb(err);
 			}
 
 			<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">compareNumber</span> (<span class="hljs-params">a, b</span>) </span>{
@@ -1998,33 +1832,33 @@ shared.getDelegates = <span class="hljs-function"><span class="hljs-keyword">fun
 				} <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> ([<span class="hljs-string">'username'</span>, <span class="hljs-string">'address'</span>, <span class="hljs-string">'publicKey'</span>].indexOf(data.sortField) &gt; <span class="hljs-number">-1</span>) {
 					data.delegates = data.delegates.sort(compareString);
 				} <span class="hljs-keyword">else</span> {
-					<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Invalid sort field'</span>);
+					<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Invalid sort field'</span>);
 				}
 			}
 
 			<span class="hljs-keyword">var</span> delegates = data.delegates.slice(data.offset, data.limit);
 
-			<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, {<span class="hljs-attr">delegates</span>: delegates, <span class="hljs-attr">totalCount</span>: data.count});
+			<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, {<span class="hljs-attr">delegates</span>: delegates, <span class="hljs-attr">totalCount</span>: data.count});
 		});
 	});
 };
 
 shared.getFee = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">req, cb</span>) </span>{
-	<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, {<span class="hljs-attr">fee</span>: constants.fees.delegate});
+	<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, {<span class="hljs-attr">fee</span>: constants.fees.delegate});
 };
 
 shared.getForgedByAccount = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">req, cb</span>) </span>{
 	library.schema.validate(req.body, schema.getForgedByAccount, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 		<span class="hljs-keyword">if</span> (err) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, err[<span class="hljs-number">0</span>].message);
+			<span class="hljs-keyword">return</span> cb(err[<span class="hljs-number">0</span>].message);
 		}
 
 		modules.accounts.getAccount({<span class="hljs-attr">publicKey</span>: req.body.generatorPublicKey}, [<span class="hljs-string">'fees'</span>, <span class="hljs-string">'rewards'</span>], <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, account</span>) </span>{
 			<span class="hljs-keyword">if</span> (err || !account) {
-				<span class="hljs-keyword">return</span> setImmediate(cb, err || <span class="hljs-string">'Account not found'</span>);
+				<span class="hljs-keyword">return</span> cb(err || <span class="hljs-string">'Account not found'</span>);
 			}
 			<span class="hljs-keyword">var</span> forged = bignum(account.fees).plus(bignum(account.rewards)).toString();
-			<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, {<span class="hljs-attr">fees</span>: account.fees, <span class="hljs-attr">rewards</span>: account.rewards, <span class="hljs-attr">forged</span>: forged});
+			<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, {<span class="hljs-attr">fees</span>: account.fees, <span class="hljs-attr">rewards</span>: account.rewards, <span class="hljs-attr">forged</span>: forged});
 		});
 	});
 };
@@ -2032,14 +1866,14 @@ shared.getForgedByAccount = <span class="hljs-function"><span class="hljs-keywor
 shared.addDelegate = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">req, cb</span>) </span>{
 	library.schema.validate(req.body, schema.addDelegate, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 		<span class="hljs-keyword">if</span> (err) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, err[<span class="hljs-number">0</span>].message);
+			<span class="hljs-keyword">return</span> cb(err[<span class="hljs-number">0</span>].message);
 		}
 
-		<span class="hljs-keyword">var</span> keypair = library.ed.makeKeypair(req.body.secret);
+		<span class="hljs-keyword">var</span> keypair = library.crypto.makeKeypair(req.body.secret);
 
 		<span class="hljs-keyword">if</span> (req.body.publicKey) {
 			<span class="hljs-keyword">if</span> (keypair.publicKey.toString(<span class="hljs-string">'hex'</span>) !== req.body.publicKey) {
-				<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Invalid passphrase'</span>);
+				<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Invalid passphrase'</span>);
 			}
 		}
 
@@ -2047,42 +1881,42 @@ shared.addDelegate = <span class="hljs-function"><span class="hljs-keyword">func
 			<span class="hljs-keyword">if</span> (req.body.multisigAccountPublicKey &amp;&amp; req.body.multisigAccountPublicKey !== keypair.publicKey.toString(<span class="hljs-string">'hex'</span>)) {
 				modules.accounts.getAccount({<span class="hljs-attr">publicKey</span>: req.body.multisigAccountPublicKey}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, account</span>) </span>{
 					<span class="hljs-keyword">if</span> (err) {
-						<span class="hljs-keyword">return</span> setImmediate(cb, err);
+						<span class="hljs-keyword">return</span> cb(err);
 					}
 
 					<span class="hljs-keyword">if</span> (!account || !account.publicKey) {
-						<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Multisignature account not found'</span>);
+						<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Multisignature account not found'</span>);
 					}
 
 					<span class="hljs-keyword">if</span> (!account.multisignatures || !account.multisignatures) {
-						<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Account does not have multisignatures enabled'</span>);
+						<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Account does not have multisignatures enabled'</span>);
 					}
 
 					<span class="hljs-keyword">if</span> (account.multisignatures.indexOf(keypair.publicKey.toString(<span class="hljs-string">'hex'</span>)) &lt; <span class="hljs-number">0</span>) {
-						<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Account does not belong to multisignature group'</span>);
+						<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Account does not belong to multisignature group'</span>);
 					}
 
 					modules.accounts.getAccount({<span class="hljs-attr">publicKey</span>: keypair.publicKey}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, requester</span>) </span>{
 						<span class="hljs-keyword">if</span> (err) {
-							<span class="hljs-keyword">return</span> setImmediate(cb, err);
+							<span class="hljs-keyword">return</span> cb(err);
 						}
 
 						<span class="hljs-keyword">if</span> (!requester || !requester.publicKey) {
-							<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Requester not found'</span>);
+							<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Requester not found'</span>);
 						}
 
 						<span class="hljs-keyword">if</span> (requester.secondSignature &amp;&amp; !req.body.secondSecret) {
-							<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Missing requester second passphrase'</span>);
+							<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Missing requester second passphrase'</span>);
 						}
 
 						<span class="hljs-keyword">if</span> (requester.publicKey === account.publicKey) {
-							<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Invalid requester public key'</span>);
+							<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Invalid requester public key'</span>);
 						}
 
 						<span class="hljs-keyword">var</span> secondKeypair = <span class="hljs-literal">null</span>;
 
 						<span class="hljs-keyword">if</span> (requester.secondSignature) {
-							secondKeypair = library.ed.makeKeypair(req.body.secondSecret);
+							secondKeypair = library.crypto.makeKeypair(req.body.secondSecret);
 						}
 
 						<span class="hljs-keyword">var</span> transaction;
@@ -2097,7 +1931,7 @@ shared.addDelegate = <span class="hljs-function"><span class="hljs-keyword">func
 								<span class="hljs-attr">requester</span>: keypair
 							});
 						} <span class="hljs-keyword">catch</span> (e) {
-							<span class="hljs-keyword">return</span> setImmediate(cb, e.toString());
+							<span class="hljs-keyword">return</span> cb(e.toString());
 						}
 
 						library.bus.message(<span class="hljs-string">"transactionsReceived"</span>, [transaction], <span class="hljs-string">"api"</span>, cb);
@@ -2106,21 +1940,21 @@ shared.addDelegate = <span class="hljs-function"><span class="hljs-keyword">func
 			} <span class="hljs-keyword">else</span> {
 				modules.accounts.setAccountAndGet({<span class="hljs-attr">publicKey</span>: keypair.publicKey.toString(<span class="hljs-string">'hex'</span>)}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, account</span>) </span>{
 					<span class="hljs-keyword">if</span> (err) {
-						<span class="hljs-keyword">return</span> setImmediate(cb, err);
+						<span class="hljs-keyword">return</span> cb(err);
 					}
 
 					<span class="hljs-keyword">if</span> (!account || !account.publicKey) {
-						<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Account not found'</span>);
+						<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Account not found'</span>);
 					}
 
 					<span class="hljs-keyword">if</span> (account.secondSignature &amp;&amp; !req.body.secondSecret) {
-						<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Invalid second passphrase'</span>);
+						<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Invalid second passphrase'</span>);
 					}
 
 					<span class="hljs-keyword">var</span> secondKeypair = <span class="hljs-literal">null</span>;
 
 					<span class="hljs-keyword">if</span> (account.secondSignature) {
-						secondKeypair = library.ed.makeKeypair(req.body.secondSecret);
+						secondKeypair = library.crypto.makeKeypair(req.body.secondSecret);
 					}
 
 					<span class="hljs-keyword">var</span> transaction;
@@ -2134,7 +1968,7 @@ shared.addDelegate = <span class="hljs-function"><span class="hljs-keyword">func
 							<span class="hljs-attr">secondKeypair</span>: secondKeypair
 						});
 					} <span class="hljs-keyword">catch</span> (e) {
-						<span class="hljs-keyword">return</span> setImmediate(cb, e.toString());
+						<span class="hljs-keyword">return</span> cb(e.toString());
 					}
 
 					library.bus.message(<span class="hljs-string">"transactionsReceived"</span>, [transaction], <span class="hljs-string">"api"</span>, cb);
@@ -2142,10 +1976,10 @@ shared.addDelegate = <span class="hljs-function"><span class="hljs-keyword">func
 			}
 		}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, transaction</span>) </span>{
 			<span class="hljs-keyword">if</span> (err) {
-				<span class="hljs-keyword">return</span> setImmediate(cb, err);
+				<span class="hljs-keyword">return</span> cb(err);
 			}
 
-			<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, {<span class="hljs-attr">transaction</span>: transaction[<span class="hljs-number">0</span>]});
+			<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, {<span class="hljs-attr">transaction</span>: transaction[<span class="hljs-number">0</span>]});
 		});
 	});
 };</pre></div></div>
@@ -2153,13 +1987,13 @@ shared.addDelegate = <span class="hljs-function"><span class="hljs-keyword">func
         </li>
         
         
-        <li id="section-68">
+        <li id="section-63">
           
             <div class="annotation">
           
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-68">&#182;</a>
+                <a class="pilcrow" href="#section-63">&#182;</a>
               </div>
               <p>Export</p>
 

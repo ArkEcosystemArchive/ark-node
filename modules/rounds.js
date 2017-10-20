@@ -152,6 +152,7 @@ Rounds.prototype.backwardTick = function(block, cb){
 // Changing round on next block
 __private.changeRoundForward = function(block, cb){
 	var nextround = __private.current + 1;
+
 	__private.updateTotalVotesOnDatabase(function(err){
 		if(err){
 			return cb(err, block);
@@ -205,10 +206,13 @@ __private.checkAndChangeRoundBackward = function(block, cb){
 		__private.current = blockround;
 
 		return async.series([
-			function (seriesCb) {
+			function(seriesCb){
+				library.db.none("delete from mem_delegates where round = "+round).then(seriesCb).catch(seriesCb);
+			},
+			function(seriesCb){
 				self.getActiveDelegates(seriesCb);
 			},
-			function (seriesCb) {
+			function(seriesCb){
 				__private.getCurrentRoundForgers(function(err, forgers){
 					__private.forgers[blockround]=forgers.map(function(forger){
 						return forger.publicKey;
@@ -273,6 +277,7 @@ __private.generateDelegateList = function (round, cb) {
 		if (err) {
 			return cb(err);
 		}
+		modules.delegates.updateActiveDelegate(activedelegates);
 
 		return cb(null, __private.randomizeDelegateList(activedelegates, round));
 	});
@@ -342,7 +347,7 @@ Rounds.prototype.getRoundFromHeight = function (height) {
 };
 
 
-// return the active delegates of the round.
+// return the active delegates of the current round.
 // *SAFE* to be be invoked whenever
 //
 //__API__ `getActiveDelegates`
@@ -380,6 +385,35 @@ Rounds.prototype.getActiveDelegates = function(cb) {
 		});
 	}
 }
+
+// return the active delegates from a historical round.
+// *SAFE* to be be invoked whenever
+//
+//__API__ `getActiveDelegates`
+
+//
+Rounds.prototype.getActiveDelegatesFromRound = function(round, cb) {
+	if(round > __private.current){
+		return cb("Node has not reached yet this round", {requestedRound: round, currentRound: __private.current});
+	}
+	if(__private.activedelegates[round]){
+		return cb(null, __private.activedelegates[round]);
+	}
+	else {
+		// let's get active delegates from database if any
+		library.db.query(sql.getActiveDelegates, {round: round}).then(function(rows){
+			if(rows.length == constants.activeDelegates){
+				rows=__private.randomizeDelegateList(rows, round);
+				__private.activedelegates[round]=rows.map(function(row){return row.publicKey;});
+				return cb(null, __private.activedelegates[round]);
+			}
+			else {
+				return cb("Can't build active delegates list for round: "+round+". This is likely a bug. Please report. Rebuild form scratch is likely necessary.");
+			}
+		});
+	}
+}
+
 
 
 // Events

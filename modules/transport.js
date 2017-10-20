@@ -8,6 +8,7 @@ var extend = require('extend');
 var ip = require('ip');
 var popsicle = require('popsicle');
 var Router = require('../helpers/router.js');
+var slots = require('../helpers/slots.js');
 var schema = require('../schema/transport.js');
 var sql = require('../sql/transport.js');
 var zlib = require('zlib');
@@ -37,7 +38,7 @@ function Transport (cb, scope) {
 		}
 	}, 3000);
 
-	setImmediate(cb, null, self);
+	cb(null, self);
 }
 
 // Private methods
@@ -45,7 +46,7 @@ __private.attachApi = function () {
 	var router = new Router();
 
 	router.use(function (req, res, next) {
-		if (modules) { return next(); }
+		if(modules) { return next(); }
 		res.status(500).send({success: false, error: 'Blockchain is loading'});
 	});
 
@@ -58,11 +59,7 @@ __private.attachApi = function () {
 				}
 			);
 		} catch (e) {
-			// Remove peer
-			__private.removePeer({peer: req.peer, code: 'EHEADERS', req: req});
-
-			library.logger.debug(e.toString());
-			return res.status(406).send({success: false, error: 'Invalid request headers'});
+			return res.status(500).send({success: false, error: 'Invalid request headers'});
 		}
 
 		var headers      = req.headers;
@@ -70,43 +67,30 @@ __private.attachApi = function () {
 		    headers.port = req.peer.port;
 
 		req.sanitize(headers, schema.headers, function (err, report) {
-			if (err) { return next(err); }
-			if (!report.isValid) {
-				// Remove peer
-				__private.removePeer({peer: req.peer, code: 'EHEADERS', req: req});
-
+			if(err) { return next(err); }
+			if(!report.isValid) {
 				return res.status(500).send({status: false, error: report.issues});
 			}
 
-			if (headers.nethash !== library.config.nethash) {
-				// Remove peer
+			if(headers.nethash !== library.config.nethash) {
 				__private.removePeer({peer: req.peer, code: 'ENETHASH', req: req});
-
-				return res.status(200).send({success: false, message: 'Request is made on the wrong network', expected: library.config.nethash, received: headers.nethash});
+				return res.status(500).send({success: false, message: 'Request is made on the wrong network', expected: library.config.nethash, received: headers.nethash});
 			}
 
-			req.peer.state = 2;
 			req.peer.os = headers.os;
 			req.peer.version = headers.version;
 
-			// if ((req.peer.version === library.config.version) && (headers.nethash === library.config.nethash)) {
-			// 	if (!modules.blocks.lastReceipt()) {
-			// 		modules.delegates.enableForging();
-			// 	}
-			// }
-
-			modules.peers.update(req.peer);
+			modules.peers.accept(req.peer);
 
 			return next();
 		});
-
 	});
 
 	router.get('/list', function (req, res) {
 		res.set(__private.headers);
-		modules.peers.list({limit: 100}, function (err, peers) {
-			return res.status(200).json({peers: !err ? peers : []});
-		});
+		var peers = modules.peers.listBroadcastPeers();
+		peers = peers.map(function(peer){return peer.toObject()});
+		return res.status(200).json({success:true, peers: peers});
 	});
 
 	router.get('/blocks/common', function (req, res, next) {
@@ -150,7 +134,7 @@ __private.attachApi = function () {
 			if (!report.isValid) { return res.json({success: false, error: report.issues}); }
 
 			// Get 1400+ blocks with all data (joins) from provided block id
-			var limit=500;
+			var limit=400;
 
 			//if forging send a small bunch only to prevent from being overloaded.
 			if(modules.delegates.isActiveDelegate()){
@@ -162,11 +146,11 @@ __private.attachApi = function () {
 				limit: limit
 			}).then(function (rows) {
 				res.status(200);
-				
-				res.json({blocks: rows});
+				res.json({success:true, blocks: rows});
 			}).catch(function (err) {
 				library.logger.error("Error getting blocks from DB", err);
-				return res.json({blocks: []});
+				res.status(500);
+				return res.json({success:false, blocks: []});
 			});
 		});
 	});
@@ -182,7 +166,7 @@ __private.attachApi = function () {
 				id: query.id
 			}).then(function (rows) {
 				res.status(200);
-				
+
 				res.json(rows[0]);
 			}).catch(function (err) {
 				library.logger.error("Error getting block from DB", err);
@@ -212,7 +196,7 @@ __private.attachApi = function () {
 			return res.status(200).json({success: false, error: e.toString()});
 		}
 
-		modules.peers.update(req.peer);
+		modules.peers.accept(req.peer);
 
 
 		library.bus.message('blockReceived', block, req.peer, function(error, data){
@@ -341,6 +325,33 @@ __private.attachApi = function () {
 		});
 	});
 
+	router.get('/status', function (req, res) {
+		res.set(__private.headers);
+		var block = modules.blockchain.getLastBlock();
+		var blockheader = {
+			id: block.id,
+			height: block.height,
+			version: block.version,
+			totalAmount: block.totalAmount,
+			totalFee: block.totalFee,
+			reward: block.reward,
+			payloadHash: block.payloadHash,
+			payloadLength: block.payloadLength,
+			timestamp: block.timestamp,
+			numberOfTransactions: block.numberOfTransactions,
+			previousBlock: block.previousBlock,
+			generatorPublicKey: block.generatorPublicKey,
+			blockSignature: block.blockSignature
+		}
+		res.status(200).json({
+			success: true,
+			height: block.height,
+			forgingAllowed: slots.isForgingAllowed(),
+			currentSlot: slots.getSlotNumber(),
+			header: blockheader
+		});
+	});
+
 	router.use(function (req, res, next) {
 		res.status(500).send({success: false, error: 'API endpoint not found'});
 	});
@@ -366,14 +377,11 @@ __private.hashsum = function (obj) {
 };
 
 __private.banPeer = function (options) {
-	modules.peers.state(options.peer.ip, options.peer.port, 0, options.clock, function (err) {
-		library.logger.warn([options.code, ['Ban', options.peer.string, (options.clock / 60), 'minutes'].join(' '), options.req.method, options.req.url].join(' '));
-	});
+	//TODO
 };
 
 __private.removePeer = function (options) {
-	library.logger.warn([options.code, 'Removing peer', options.peer.string, options.req.method, options.req.url].join(' '));
-	modules.peers.remove(options.peer.ip, options.peer.port);
+	//TODO
 };
 
 // Public methods
@@ -385,49 +393,29 @@ Transport.prototype.broadcast = function (config, options, cb) {
 	library.logger.debug('Broadcast', ["API:", options.api, "METHOD:", options.method, "DATA:", Object.keys(options.data).join(",")].join(" "));
 
 	config.limit = config.limit || 1;
-	modules.peers.list(config, function (err, peers) {
-		if (!config.all && peers.length > config.limit) {
-			peers = peers.slice(0,config.limit);
-		}
-		if (!err) {
-			// TODO: use a good bloom filter lib
-			// filtering out the peers likely already reached
-			// if(config.bloomfilter){
-			// 	peers=peers.filter(function(peer){
-			// 		if(!options.bloomfilter.checkEntry(peer.string)){
-			// 			options.bloomfilter.addEntry(peer.string);
-			// 			return true;
-			// 		}
-			// 		return false;
-			// 	});
-			// 	block.bloomfilter=config.bloomfilter.exportData().toString();
-			// }
-			async.eachLimit(peers, 3, function (peer, cb) {
-				if(!modules.system.isMyself(peer)){
-					return self.getFromPeer(peer, options, cb);
-				}
-				else{
-					cb();
-				}
-			}, function (err) {
-				if (cb) {
-					return cb(err, {body: null, peer: peers});
-				}
-			});
-		} else if (cb) {
-			return cb(err);
+
+	var peers = modules.peers.listBroadcastPeers();
+
+	if (!config.all && peers.length > config.limit) {
+		peers = peers.slice(0,config.limit);
+	}
+	// TODO: use a good bloom filter lib
+	// filtering out the peers likely already reached
+	async.each(peers, function (peer, cb) {
+		if(!modules.system.isMyself(peer)){
+			return self.requestFromPeer(peer, options, cb);
 		}
 		else{
-			library.logger.error("Error broadcasting", err);
+			return cb();
 		}
-	});
+	}, cb);
 };
 
 //
-//__API__ `getFromRandomPeer`
+//__API__ `requestFromRandomPeer`
 
 //
-Transport.prototype.getFromRandomPeer = function (config, options, cb) {
+Transport.prototype.requestFromRandomPeer = function (config, options, cb) {
 	if (typeof options === 'function') {
 		cb = options;
 		options = config;
@@ -435,34 +423,26 @@ Transport.prototype.getFromRandomPeer = function (config, options, cb) {
 	}
 	config.limit = 1;
 
-	// modules.loader.getNetwork(false, function (err, network) {
-	// 	if (err) {
-	// 		return setImmediate(cb, err);
-	// 	}
-	// 	return self.getFromPeer(network.peers[0], options, cb);
-
 	async.retry(20, function (cb) {
-		modules.peers.list(config, function (err, peers) {
-			if (!err && peers.length) {
-
-				return self.getFromPeer(peers[0], options, cb);
-			} else {
-				return cb(err || 'No reachable peers in db');
-			}
-		});
+		var peers = modules.peers.listGoodPeers();
+		if (peers.length) {
+			return self.requestFromPeer(peers[0], options, cb);
+		} else {
+			return cb('No peers stored');
+		}
 	}, function (err, results) {
 		return cb(err, results);
 	});
 };
 
 //
-//__API__ `getFromPeer`
+//__API__ `requestFromPeer`
 
 //
-Transport.prototype.getFromPeer = function (peer, options, cb) {
+Transport.prototype.requestFromPeer = function (peer, options, cb) {
 	var url;
-
-	library.logger.trace("getFromPeer", peer);
+	peer = modules.peers.accept(peer);
+	library.logger.trace("requestFromPeer", peer.toObject());
 
 	if (options.api) {
 		url = '/peer' + options.api;
@@ -470,76 +450,7 @@ Transport.prototype.getFromPeer = function (peer, options, cb) {
 		url = options.url;
 	}
 
-	peer = modules.peers.inspect(peer);
-
-	//update headers to notify peer state
-	var lastBlock = modules.blockchain.getLastBlock();
-
-	__private.headers.height = lastBlock.height;
-
-	var req = {
-		url: 'http://' + peer.ip + ':' + peer.port + url,
-		method: options.method,
-		headers: _.extend({}, __private.headers, options.headers),
-		timeout: options.timeout || library.config.peers.options.timeout
-	};
-
-	if (options.data) {
-		req.body = options.data;
-	}
-
-	var request = popsicle.request(req);
-
-	request.use(popsicle.plugins.parse(['json'], false))
-	.then(function (res) {
-		if (res.status !== 200) {
-			// Remove peer
-			
-			__private.removePeer({peer: peer, code: 'ERESPONSE ' + res.status, req: req});
-
-			return cb(['Received bad response code', res.status, req.method, req.url].join(' '));
-		} else {
-			var headers      = res.headers;
-			    headers.ip   = peer.ip;
-			    headers.port = peer.port;
-
-			var report = library.schema.validate(headers, schema.headers);
-			if (!report) {
-				// Remove peer
-				__private.removePeer({peer: peer, code: 'EHEADERS', req: req});
-
-				return cb(['Invalid response headers', JSON.stringify(headers), req.method, req.url].join(' '));
-			}
-
-			if (headers.nethash !== library.config.nethash) {
-				// Remove peer
-				__private.removePeer({peer: peer, code: 'ENETHASH', req: req});
-
-				return cb(['Peer is not on the same network', headers.nethash, req.method, req.url].join(' '));
-			}
-
-			// update the saved list of peers
-			modules.peers.update({
-				ip: peer.ip,
-				height: peer.height,
-				blockheader: headers.blockheader,
-				port: headers.port,
-				state: 2
-			});
-
-
-			return cb(null, {body: res.body, peer: peer});
-		}
-	})
-	.catch(function (err) {
-		if (peer) {
-			if (err.code === 'EUNAVAILABLE' || err.code === 'ETIMEOUT') {
-				modules.peers.timeoutPeer(peer);
-			}
-		}
-
-		return cb([err.code, 'Request failed', req.method, req.url].join(' '));
-	});
+	return peer.request(url, options, cb);
 };
 
 // Events
@@ -596,7 +507,6 @@ Transport.prototype.onAttachNetworkApi = function () {
 Transport.prototype.onBroadcastTransaction = function (transaction) {
 	// clone as we don't want to send all object
 	transaction=JSON.parse(JSON.stringify(transaction));
-	delete transaction.id;
 	delete transaction.broadcast;
 	delete transaction.verified;
 	delete transaction.processed;
@@ -643,7 +553,7 @@ Transport.prototype.onBroadcastBlock = function (block) {
 	}
 	if(block.numberOfTransactions>0){//i send only ids, because nodes likely have already transactions in mempool.
 		blockheaders.transactionIds=block.transactions.map(function(t){return t.id});
-		
+
 	}
 
 	self.broadcast({all: block.forged, limit: limitbroadcast}, {api: '/blocks', data: {block: blockheaders}, method: 'POST'});
@@ -655,7 +565,7 @@ Transport.prototype.onBroadcastBlock = function (block) {
 
 //
 Transport.prototype.cleanup = function (cb) {
-	return setImmediate(cb);
+	return cb();
 };
 
 

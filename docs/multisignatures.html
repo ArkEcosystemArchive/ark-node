@@ -82,11 +82,6 @@
                 </a>
               
                 
-                <a class="source" href="server.html">
-                  server.js
-                </a>
-              
-                
                 <a class="source" href="signatures.html">
                   signatures.js
                 </a>
@@ -188,7 +183,7 @@ __private.assetTypes = {};</pre></div></div>
 		transactionTypes.MULTI, <span class="hljs-keyword">new</span> Multisignature()
 	);
 
-	setImmediate(cb, <span class="hljs-literal">null</span>, self);
+	<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, self);
 }</pre></div></div>
             
         </li>
@@ -322,7 +317,7 @@ __private.assetTypes = {};</pre></div></div>
 shared.getAccounts = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">req, cb</span>) </span>{
 	library.schema.validate(req.body, schema.getAccounts, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 		<span class="hljs-keyword">if</span> (err) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, err[<span class="hljs-number">0</span>].message);
+			<span class="hljs-keyword">return</span> cb(err[<span class="hljs-number">0</span>].message);
 		}
 
 		library.db.one(sql.getAccounts, { <span class="hljs-attr">publicKey</span>: req.body.publicKey }).then(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">row</span>) </span>{
@@ -333,10 +328,10 @@ shared.getAccounts = <span class="hljs-function"><span class="hljs-keyword">func
 				<span class="hljs-attr">sort</span>: <span class="hljs-string">'balance'</span>
 			}, [<span class="hljs-string">'address'</span>, <span class="hljs-string">'balance'</span>, <span class="hljs-string">'multisignatures'</span>, <span class="hljs-string">'multilifetime'</span>, <span class="hljs-string">'multimin'</span>], <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, rows</span>) </span>{
 				<span class="hljs-keyword">if</span> (err) {
-					<span class="hljs-keyword">return</span> setImmediate(cb, err);
+					<span class="hljs-keyword">return</span> cb(err);
 				}
 
-				<span class="hljs-keyword">async</span>.eachSeries(rows, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">account, cb</span>) </span>{
+				<span class="hljs-keyword">async</span>.eachSeries(rows, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">account, eachSeriesCb</span>) </span>{
 					<span class="hljs-keyword">var</span> addresses = [];
 					<span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> i = <span class="hljs-number">0</span>; i &lt; account.multisignatures.length; i++) {
 						addresses.push(modules.accounts.generateAddressByPublicKey(account.multisignatures[i]));
@@ -346,23 +341,23 @@ shared.getAccounts = <span class="hljs-function"><span class="hljs-keyword">func
 						<span class="hljs-attr">address</span>: { <span class="hljs-attr">$in</span>: addresses }
 					}, [<span class="hljs-string">'address'</span>, <span class="hljs-string">'publicKey'</span>, <span class="hljs-string">'balance'</span>], <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, multisigaccounts</span>) </span>{
 						<span class="hljs-keyword">if</span> (err) {
-							<span class="hljs-keyword">return</span> setImmediate(cb, err);
+							<span class="hljs-keyword">return</span> eachSeriesCb(err);
 						}
 
 						account.multisigaccounts = multisigaccounts;
-						<span class="hljs-keyword">return</span> setImmediate(cb);
+						<span class="hljs-keyword">return</span> eachSeriesCb();
 					});
 				}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 					<span class="hljs-keyword">if</span> (err) {
-						<span class="hljs-keyword">return</span> setImmediate(cb, err);
+						<span class="hljs-keyword">return</span> eachSeriesCb(err);
 					}
 
-					<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, {<span class="hljs-attr">accounts</span>: rows});
+					<span class="hljs-keyword">return</span> eachSeriesCb(<span class="hljs-literal">null</span>, {<span class="hljs-attr">accounts</span>: rows});
 				});
 			});
 		}).catch(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 			library.logger.error(<span class="hljs-string">"stack"</span>, err.stack);
-			<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Multisignature#getAccounts error'</span>);
+			<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Multisignature#getAccounts error'</span>);
 		});
 	});
 };</pre></div></div>
@@ -389,9 +384,9 @@ shared.getAccounts = <span class="hljs-function"><span class="hljs-keyword">func
 		<span class="hljs-attr">validateSchema</span>: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">seriesCb</span>) </span>{
 			library.schema.validate(req.body, schema.pending, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 				<span class="hljs-keyword">if</span> (err) {
-					<span class="hljs-keyword">return</span> setImmediate(seriesCb, err[<span class="hljs-number">0</span>].message);
+					<span class="hljs-keyword">return</span> seriesCb(err[<span class="hljs-number">0</span>].message);
 				} <span class="hljs-keyword">else</span> {
-					<span class="hljs-keyword">return</span> setImmediate(seriesCb);
+					<span class="hljs-keyword">return</span> seriesCb();
 				}
 			});
 		},
@@ -401,7 +396,7 @@ shared.getAccounts = <span class="hljs-function"><span class="hljs-keyword">func
 				<span class="hljs-keyword">return</span> transaction.senderPublicKey === req.body.publicKey;
 			});
 
-			<span class="hljs-keyword">return</span> setImmediate(seriesCb);
+			<span class="hljs-keyword">return</span> seriesCb();
 		},
 		<span class="hljs-attr">buildTransactions</span>: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">seriesCb</span>) </span>{
 			<span class="hljs-keyword">async</span>.eachSeries(scope.transactions, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">transaction, eachSeriesCb</span>) </span>{
@@ -434,20 +429,19 @@ shared.getAccounts = <span class="hljs-function"><span class="hljs-keyword">func
 					signed = <span class="hljs-literal">true</span>;
 				}
 
-				modules.accounts.getAccount({
-					<span class="hljs-attr">publicKey</span>: transaction.senderPublicKey
-				}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, sender</span>) </span>{
+				modules.accounts.getAccount({<span class="hljs-attr">publicKey</span>: transaction.senderPublicKey}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, sender</span>) </span>{
 					<span class="hljs-keyword">if</span> (err) {
-						<span class="hljs-keyword">return</span> setImmediate(cb, err);
+						<span class="hljs-keyword">return</span> eachSeriesCb(err);
 					}
 
 					<span class="hljs-keyword">if</span> (!sender) {
-						<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Sender not found'</span>);
+						<span class="hljs-keyword">return</span> eachSeriesCb(<span class="hljs-string">'Sender not found'</span>);
 					}
 
-					<span class="hljs-keyword">var</span> min = sender.u_multimin || sender.multimin;
-					<span class="hljs-keyword">var</span> lifetime = sender.u_multilifetime || sender.multilifetime;
-					<span class="hljs-keyword">var</span> signatures = sender.u_multisignatures || [];
+
+					<span class="hljs-keyword">var</span> min = transaction.asset.multisignature.min;
+					<span class="hljs-keyword">var</span> lifetime = transaction.asset.multisignature.lifetime;
+					<span class="hljs-keyword">var</span> signatures = transaction.asset.multisignature.keysgroup;
 
 					scope.pending.push({
 						<span class="hljs-attr">max</span>: signatures.length,
@@ -457,14 +451,12 @@ shared.getAccounts = <span class="hljs-function"><span class="hljs-keyword">func
 						<span class="hljs-attr">transaction</span>: transaction
 					});
 
-					<span class="hljs-keyword">return</span> setImmediate(eachSeriesCb);
+					<span class="hljs-keyword">return</span> eachSeriesCb();
 				});
-			}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
-				<span class="hljs-keyword">return</span> setImmediate(seriesCb, err);
-			});
+			}, seriesCb);
 		}
 	}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
-		<span class="hljs-keyword">return</span> setImmediate(cb, err, {<span class="hljs-attr">transactions</span>: scope.pending});
+		<span class="hljs-keyword">return</span> cb(err, {<span class="hljs-attr">transactions</span>: scope.pending});
 	});
 };
 
@@ -477,7 +469,7 @@ shared.sign = <span class="hljs-function"><span class="hljs-keyword">function</s
 		);
 
 		<span class="hljs-keyword">if</span> (permissionDenied) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Permission to sign transaction denied'</span>);
+			<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Permission to sign transaction denied'</span>);
 		}
 
 		<span class="hljs-keyword">var</span> alreadySigned = (
@@ -486,10 +478,10 @@ shared.sign = <span class="hljs-function"><span class="hljs-keyword">function</s
 		);
 
 		<span class="hljs-keyword">if</span> (alreadySigned) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Transaction already signed'</span>);
+			<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Transaction already signed'</span>);
 		}
 
-		<span class="hljs-keyword">return</span> setImmediate(cb);
+		<span class="hljs-keyword">return</span> cb();
 	}
 
 	<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">checkTransactionPermissions</span> (<span class="hljs-params">cb</span>) </span>{
@@ -506,16 +498,16 @@ shared.sign = <span class="hljs-function"><span class="hljs-keyword">function</s
 		}
 
 		<span class="hljs-keyword">if</span> (permissionDenied)  {
-			<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Permission to sign transaction denied'</span>);
+			<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Permission to sign transaction denied'</span>);
 		}
 
 		<span class="hljs-keyword">var</span> alreadySigned = (scope.transaction.signatures &amp;&amp; scope.transaction.signatures.indexOf(scope.signature) !== <span class="hljs-number">-1</span>);
 
 		<span class="hljs-keyword">if</span> (alreadySigned) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Transaction already signed'</span>);
+			<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Transaction already signed'</span>);
 		}
 
-		<span class="hljs-keyword">return</span> setImmediate(cb);
+		<span class="hljs-keyword">return</span> cb();
 	}
 
 	library.balancesSequence.add(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">cb</span>) </span>{
@@ -523,9 +515,9 @@ shared.sign = <span class="hljs-function"><span class="hljs-keyword">function</s
 			<span class="hljs-attr">validateSchema</span>: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">seriesCb</span>) </span>{
 				library.schema.validate(req.body, schema.sign, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 					<span class="hljs-keyword">if</span> (err) {
-						<span class="hljs-keyword">return</span> setImmediate(seriesCb, err[<span class="hljs-number">0</span>].message);
+						<span class="hljs-keyword">return</span> seriesCb(err[<span class="hljs-number">0</span>].message);
 					} <span class="hljs-keyword">else</span> {
-						<span class="hljs-keyword">return</span> setImmediate(seriesCb);
+						<span class="hljs-keyword">return</span> seriesCb();
 					}
 				});
 			},
@@ -533,31 +525,31 @@ shared.sign = <span class="hljs-function"><span class="hljs-keyword">function</s
 				scope.transaction = modules.transactionPool.getMultisignatureTransaction(req.body.transactionId);
 
 				<span class="hljs-keyword">if</span> (!scope.transaction) {
-					<span class="hljs-keyword">return</span> setImmediate(seriesCb, <span class="hljs-string">'Transaction not found'</span>);
+					<span class="hljs-keyword">return</span> seriesCb(<span class="hljs-string">'Transaction not found'</span>);
 				}
 
-				scope.keypair = library.ed.makeKeypair(req.body.secret);
+				scope.keypair = library.crypto.makeKeypair(req.body.secret);
 
 				<span class="hljs-keyword">if</span> (req.body.publicKey) {
 					<span class="hljs-keyword">if</span> (scope.keypair.publicKey.toString(<span class="hljs-string">'hex'</span>) !== req.body.publicKey) {
-						<span class="hljs-keyword">return</span> setImmediate(seriesCb, <span class="hljs-string">'Invalid passphrase'</span>);
+						<span class="hljs-keyword">return</span> seriesCb(<span class="hljs-string">'Invalid passphrase'</span>);
 					}
 				}
 
 				scope.signature = library.logic.transaction.multisign(scope.keypair, scope.transaction);
-				<span class="hljs-keyword">return</span> setImmediate(seriesCb);
+				<span class="hljs-keyword">return</span> seriesCb();
 			},
 			<span class="hljs-attr">getAccount</span>: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">seriesCb</span>) </span>{
 				modules.accounts.getAccount({
 					<span class="hljs-attr">address</span>: scope.transaction.senderId
 				}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, sender</span>) </span>{
 					<span class="hljs-keyword">if</span> (err) {
-						<span class="hljs-keyword">return</span> setImmediate(seriesCb, err);
+						<span class="hljs-keyword">return</span> seriesCb(err);
 					} <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (!sender) {
-						<span class="hljs-keyword">return</span> setImmediate(seriesCb, <span class="hljs-string">'Sender not found'</span>);
+						<span class="hljs-keyword">return</span> seriesCb(<span class="hljs-string">'Sender not found'</span>);
 					} <span class="hljs-keyword">else</span> {
 						scope.sender = sender;
-						<span class="hljs-keyword">return</span> setImmediate(seriesCb);
+						<span class="hljs-keyword">return</span> seriesCb();
 					}
 				});
 			},
@@ -570,13 +562,13 @@ shared.sign = <span class="hljs-function"><span class="hljs-keyword">function</s
 			}
 		}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 			<span class="hljs-keyword">if</span> (err) {
-				<span class="hljs-keyword">return</span> setImmediate(cb, err);
+				<span class="hljs-keyword">return</span> cb(err);
 			}
 
 			<span class="hljs-keyword">var</span> transaction = modules.transactionPool.getMultisignatureTransaction(req.body.transactionId);
 
 			<span class="hljs-keyword">if</span> (!transaction) {
-				<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Transaction not found'</span>);
+				<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Transaction not found'</span>);
 			}
 
 			transaction.signatures = transaction.signatures || [];
@@ -586,7 +578,7 @@ shared.sign = <span class="hljs-function"><span class="hljs-keyword">function</s
 			library.bus.message(<span class="hljs-string">'signature'</span>, {<span class="hljs-attr">transaction</span>: transaction.id, <span class="hljs-attr">signature</span>: scope.signature}, <span class="hljs-literal">true</span>);
 			library.network.io.sockets.emit(<span class="hljs-string">'multisignatures/signature/change'</span>, transaction);
 
-			<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, {<span class="hljs-attr">transactionId</span>: transaction.id});
+			<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, {<span class="hljs-attr">transactionId</span>: transaction.id});
 		});
 	}, cb);
 };</pre></div></div>
@@ -624,35 +616,32 @@ shared.sign = <span class="hljs-function"><span class="hljs-keyword">function</s
 	<span class="hljs-keyword">var</span> transaction = modules.transactionPool.getUnconfirmedTransaction(tx.transaction);
 
 	<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">done</span> (<span class="hljs-params">transaction, cb</span>) </span>{
-		library.balancesSequence.add(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">cb</span>) </span>{
-
-			modules.accounts.getAccount({
-				<span class="hljs-attr">address</span>: transaction.senderId
-			}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, sender</span>) </span>{
-				<span class="hljs-keyword">if</span> (err) {
-					<span class="hljs-keyword">return</span> setImmediate(cb, err);
-				} <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (!sender) {
-					<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Sender not found'</span>);
-				} <span class="hljs-keyword">else</span> {
-					transaction.signatures = transaction.signatures || [];
-					transaction.signatures.push(tx.signature);
-					transaction.ready = Multisignature.prototype.ready(transaction, sender);
-					library.bus.message(<span class="hljs-string">'signature'</span>, {<span class="hljs-attr">transaction</span>: tx.transaction, <span class="hljs-attr">signature</span>: tx.signature}, <span class="hljs-literal">true</span>);
-					<span class="hljs-keyword">return</span> setImmediate(cb);
-				}
-			});
-		}, cb);
+		modules.accounts.getAccount({
+			<span class="hljs-attr">address</span>: transaction.senderId
+		}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, sender</span>) </span>{
+			<span class="hljs-keyword">if</span> (err) {
+				<span class="hljs-keyword">return</span> cb(err);
+			} <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (!sender) {
+				<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Sender not found'</span>);
+			} <span class="hljs-keyword">else</span> {
+				transaction.signatures = transaction.signatures || [];
+				transaction.signatures.push(tx.signature);
+				transaction.ready = Multisignature.prototype.ready(transaction, sender);
+				library.bus.message(<span class="hljs-string">'signature'</span>, {<span class="hljs-attr">transaction</span>: tx.transaction, <span class="hljs-attr">signature</span>: tx.signature}, <span class="hljs-literal">true</span>);
+				<span class="hljs-keyword">return</span> cb();
+			}
+		});
 	}
 
 	<span class="hljs-keyword">if</span> (!transaction) {
-		<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Missing transaction'</span>);
+		<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Missing transaction'</span>);
 	}
 
 	<span class="hljs-keyword">if</span> (transaction.type === transactionTypes.MULTI) {
 		transaction.signatures = transaction.signatures || [];
 
 		<span class="hljs-keyword">if</span> (transaction.asset.multisignature.signatures || transaction.signatures.indexOf(tx.signature) !== <span class="hljs-number">-1</span>) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Permission to sign transaction denied'</span>);
+			<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Permission to sign transaction denied'</span>);
 		}</pre></div></div>
             
         </li>
@@ -679,11 +668,11 @@ shared.sign = <span class="hljs-function"><span class="hljs-keyword">function</s
 			}
 		} <span class="hljs-keyword">catch</span> (e) {
 			library.logger.error(<span class="hljs-string">"stack"</span>, e.stack);
-			<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Failed to verify signature'</span>);
+			<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Failed to verify signature'</span>);
 		}
 
 		<span class="hljs-keyword">if</span> (!verify) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Failed to verify signature'</span>);
+			<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Failed to verify signature'</span>);
 		}
 
 		<span class="hljs-keyword">return</span> done(transaction, cb);
@@ -692,7 +681,7 @@ shared.sign = <span class="hljs-function"><span class="hljs-keyword">function</s
 			<span class="hljs-attr">address</span>: transaction.senderId
 		}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, account</span>) </span>{
 			<span class="hljs-keyword">if</span> (err) {
-				<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Multisignature account not found'</span>);
+				<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Multisignature account not found'</span>);
 			}
 
 			<span class="hljs-keyword">var</span> verify = <span class="hljs-literal">false</span>;
@@ -703,13 +692,13 @@ shared.sign = <span class="hljs-function"><span class="hljs-keyword">function</s
 			}
 
 			<span class="hljs-keyword">if</span> (!account) {
-				<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Account not found'</span>);
+				<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Account not found'</span>);
 			}
 
 			transaction.signatures = transaction.signatures || [];
 
 			<span class="hljs-keyword">if</span> (transaction.signatures.indexOf(tx.signature) &gt;= <span class="hljs-number">0</span>) {
-				<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Signature already exists'</span>);
+				<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Signature already exists'</span>);
 			}
 
 			<span class="hljs-keyword">try</span> {
@@ -718,14 +707,13 @@ shared.sign = <span class="hljs-function"><span class="hljs-keyword">function</s
 				}
 			} <span class="hljs-keyword">catch</span> (e) {
 				library.logger.error(<span class="hljs-string">"stack"</span>, e.stack);
-				<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Failed to verify signature'</span>);
+				<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Failed to verify signature'</span>);
 			}
 
 			<span class="hljs-keyword">if</span> (!verify) {
-				<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Failed to verify signature'</span>);
+				<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Failed to verify signature'</span>);
 			}
 
-			library.network.io.sockets.emit(<span class="hljs-string">'multisignatures/signature/change'</span>, {});
 			<span class="hljs-keyword">return</span> done(cb);
 		});
 	}
@@ -734,35 +722,34 @@ shared.sign = <span class="hljs-function"><span class="hljs-keyword">function</s
 shared.addMultisignature = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">req, cb</span>) </span>{
 	library.schema.validate(req.body, schema.addMultisignature, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 		<span class="hljs-keyword">if</span> (err) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, err[<span class="hljs-number">0</span>].message);
+			<span class="hljs-keyword">return</span> cb(err[<span class="hljs-number">0</span>].message);
 		}
 
-		<span class="hljs-keyword">var</span> keypair = library.ed.makeKeypair(req.body.secret);
+		<span class="hljs-keyword">var</span> keypair = library.crypto.makeKeypair(req.body.secret);
 
 		<span class="hljs-keyword">if</span> (req.body.publicKey) {
 			<span class="hljs-keyword">if</span> (keypair.publicKey.toString(<span class="hljs-string">'hex'</span>) !== req.body.publicKey) {
-				<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Invalid passphrase'</span>);
+				<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Invalid passphrase'</span>);
 			}
 		}
 
-		library.balancesSequence.add(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">cb</span>) </span>{
 			modules.accounts.setAccountAndGet({<span class="hljs-attr">publicKey</span>: keypair.publicKey.toString(<span class="hljs-string">'hex'</span>)}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, account</span>) </span>{
 				<span class="hljs-keyword">if</span> (err) {
-					<span class="hljs-keyword">return</span> setImmediate(cb, err);
+					<span class="hljs-keyword">return</span> cb(err);
 				}
 
 				<span class="hljs-keyword">if</span> (!account || !account.publicKey) {
-					<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Account not found'</span>);
+					<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Account not found'</span>);
 				}
 
 				<span class="hljs-keyword">if</span> (account.secondSignature &amp;&amp; !req.body.secondSecret) {
-					<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Invalid second passphrase'</span>);
+					<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Invalid second passphrase'</span>);
 				}
 
 				<span class="hljs-keyword">var</span> secondKeypair = <span class="hljs-literal">null</span>;
 
 				<span class="hljs-keyword">if</span> (account.secondSignature) {
-					secondKeypair = library.ed.makeKeypair(req.body.secondSecret);
+					secondKeypair = library.crypto.makeKeypair(req.body.secondSecret);
 				}
 
 				<span class="hljs-keyword">var</span> transaction;
@@ -778,19 +765,16 @@ shared.addMultisignature = <span class="hljs-function"><span class="hljs-keyword
 						<span class="hljs-attr">lifetime</span>: req.body.lifetime
 					});
 				} <span class="hljs-keyword">catch</span> (e) {
-					<span class="hljs-keyword">return</span> setImmediate(cb, e.toString());
+					<span class="hljs-keyword">return</span> cb(e.toString());
 				}
 
-				library.bus.message(<span class="hljs-string">"transactionsReceived"</span>, [transaction], <span class="hljs-string">"api"</span>, cb);
+				library.bus.message(<span class="hljs-string">"transactionsReceived"</span>, [transaction], <span class="hljs-string">"api"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, transactions</span>) </span>{
+					<span class="hljs-keyword">if</span> (err) {
+						<span class="hljs-keyword">return</span> cb(err, transaction);
+					}
+					<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, {<span class="hljs-attr">transactionId</span>: transactions[<span class="hljs-number">0</span>].id});
+				});
 			});
-		}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, transaction</span>) </span>{
-			<span class="hljs-keyword">if</span> (err) {
-				<span class="hljs-keyword">return</span> setImmediate(cb, err);
-			}
-
-			library.network.io.sockets.emit(<span class="hljs-string">'multisignatures/change'</span>, {});
-			<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, {<span class="hljs-attr">transactionId</span>: transaction[<span class="hljs-number">0</span>].id});
-		});
 	});
 };</pre></div></div>
             

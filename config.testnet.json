@@ -1,10 +1,10 @@
 {
   "port": 4000,
   "address": "0.0.0.0",
-  "version": "0.3.0",
+  "version": "1.0.0",
   "fileLogLevel": "info",
   "logFileName": "logs/ark.log",
-  "consoleLogLevel": "info",
+  "consoleLogLevel": "debug",
   "trustProxy": false,
   "db": {
     "host": "localhost",
@@ -20,7 +20,7 @@
     ]
   },
   "api": {
-    "mount":true,
+    "mount": true,
     "access": {
       "whiteList": []
     },
@@ -34,13 +34,12 @@
     }
   },
   "peers": {
-    "minimumNetworkReach":20,
+    "minimumNetworkReach": 1,
     "list": [
-      {"ip":"5.39.9.245", "port":4000},
-      {"ip":"5.39.9.246", "port":4000},
-      {"ip":"5.39.9.247", "port":4000},
-      {"ip":"5.39.9.248", "port":4000},
-      {"ip":"5.39.9.249", "port":4000}
+      {
+        "ip": "127.0.0.1",
+        "port": 4000
+      }
     ],
     "blackList": [],
     "options": {
@@ -57,7 +56,59 @@
   "forging": {
     "coldstart": 6,
     "force": true,
-    "secret": [],
+    "secret": [
+      "height dance bottom plastic circle scrap will creek invest fever degree oven",
+      "runway home silent mutual blade nose spin marriage fancy main smooth champion",
+      "elder alter stock acoustic jazz divide toward whip decorate summer wire length",
+      "deputy shoe pizza eyebrow choice fury emotion morning naive that error opera",
+      "define end worry style typical basket fresh chapter cloud enroll kidney juice",
+      "gap open romance sadness north system jump vault debris correct spend exist",
+      "history hollow pencil marine sentence chat plastic sniff focus final impulse toilet",
+      "disorder exit caution joke kitchen broccoli response decorate machine outside this again",
+      "paddle ridge young goddess tackle struggle radio door wink engage inhale pear",
+      "false man grocery depth thought hammer vital jaguar seminar old tobacco field",
+      "nerve finger use balcony capable soul mixed shallow hurt bench video below",
+      "observe champion change history very soft bleak twenty cigar such penalty bunker",
+      "nurse island tragic margin absorb danger naive whale blouse owner rifle average",
+      "other nut young essay endorse talent sick flavor panel under brand cancel",
+      "globe shine sand lonely problem tilt laugh garbage clutch submit distance arrive",
+      "expose law earn crucial what bridge guard split delay average isolate home",
+      "shoot they acid whip vicious injury future siren chuckle twin bless wrist",
+      "property machine actor forest rigid dilemma such globe cross citizen across enemy",
+      "survey parent uphold shine metal draw normal stove potato melt huge master",
+      "office sting divorce fragile limit creek maple aware hour clutch code avocado",
+      "debris city onion achieve screen village orange labor rice item someone much",
+      "limit shaft canoe sorry domain exclude danger enter invite just meat price",
+      "lock auto ankle want whip lottery picnic wolf permit start essay wasp",
+      "dwarf capital weasel insane sauce cake ice toy suspect eye horn ecology",
+      "gossip wreck cruise fault tortoise convince sauce meat bulk two bicycle host",
+      "direct joke weapon other acoustic pulse blue word team flush boil supply",
+      "unit swap skull magic flock bread sudden problem cushion intact able olympic",
+      "hedgehog notable grant person riot vague recycle local naive debate rib gap",
+      "into sauce sleep setup super element squeeze employ try decline brass educate",
+      "wave drop air picnic vicious oil wheat stereo pride artefact food like",
+      "devote kiss protect cook where welcome unaware express climb catalog wool little",
+      "inner enforce have caution lawn proof because similar clarify dinner pig sadness",
+      "hood welcome room pencil pen find must trend cat warfare hip fine",
+      "deliver one turkey pelican derive sport oval minute poem myth also color",
+      "secret pepper antique flip airport stadium angry talent act blur bulb hammer",
+      "solve novel model upset demise thunder select number sun club region become",
+      "scrub lawsuit dynamic matrix unhappy reason first taste bind dial lonely pair",
+      "cousin negative reward elevator mosquito remember pizza slab park pulp pencil lock",
+      "bicycle dignity burger public miss target oblige dragon ready wood velvet spatial",
+      "fragile vicious movie field dentist sheriff soda sing gloom gold horse antenna",
+      "dress jeans obscure update wisdom enact person little sting make napkin rural",
+      "behind choose rally brand worth time coast decide used celery ribbon adapt",
+      "solve property flash genius subway verb access portion orphan say taste gorilla",
+      "sick bike dilemma ten room donkey fossil innocent limit learn inhale globe",
+      "shoot oppose garment dial replace smoke razor loud cube exile story envelope",
+      "assume harbor must knee shoulder file already apart today october target range",
+      "mix judge volcano hidden road stumble phrase behave car setup inhale border",
+      "jazz erase bargain city there thank vintage erase excuse wrong chronic lend",
+      "client when person chuckle pen balance rescue measure price toy around soft",
+      "narrow vague cannon home churn want sick rail above letter tourist switch",
+      "general sock juice birth express dress harbor tobacco limb drive chimney tree"
+    ],
     "access": {
       "whiteList": [
         "127.0.0.1"
@@ -77,5 +128,6 @@
       "cert": "./ssl/ark.crt"
     }
   },
-  "nethash": "4befbd4cd1f2f10cbe69ac0b494b5ce070595ed23ee7abd386867c4edcdaf3bd"
+  "network": "testnet",
+  "nethash": "d1c7fa0dcf7584add7a535acd674d3b13fa794345d83c3789cc2436d6ecd80d1"
 }
