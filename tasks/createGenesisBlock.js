@@ -10,7 +10,7 @@ var Crypto = require('../helpers/crypto.js');
 var networks = require('../networks.json');
 
 // network name that SHOULD already be preconfigured in ../networks.json
-var network_name = "bitcoin";
+var network_name = "jark";
 if(!networks[network_name]){
   console.log("WARNING: no configuration found in networks.json for '"+network_name+"'. Defaulting to 'devnet'");
   network_name = "devnet";
