@@ -51,27 +51,27 @@ Delegate.prototype.calculateFee = function (trs) {
 //
 Delegate.prototype.verify = function (trs, sender, cb) {
 	if (trs.recipientId) {
-		return setImmediate(cb, 'Invalid recipient');
+		return cb('Invalid recipient');
 	}
 
 	if (trs.amount !== 0) {
-		return setImmediate(cb, 'Invalid transaction amount');
+		return cb('Invalid transaction amount');
 	}
 
 	if (sender.isDelegate) {
-		return setImmediate(cb, 'Account is already a delegate');
+		return cb('Account is already a delegate');
 	}
 
 	if (!trs.asset || !trs.asset.delegate) {
-		return setImmediate(cb, 'Invalid transaction asset');
+		return cb('Invalid transaction asset');
 	}
 
 	if (!trs.asset.delegate.username) {
-		return setImmediate(cb, 'Username is undefined');
+		return cb('Username is undefined');
 	}
 
 	if (trs.asset.delegate.username !== trs.asset.delegate.username.toLowerCase()) {
-		return setImmediate(cb, 'Username must be lowercase');
+		return cb('Username must be lowercase');
 	}
 
 	var isAddress = /^[1-9A-Za-z]{1,35}$/g;
@@ -80,34 +80,34 @@ Delegate.prototype.verify = function (trs, sender, cb) {
 	var username = String(trs.asset.delegate.username).toLowerCase().trim();
 
 	if (username === '') {
-		return setImmediate(cb, 'Empty username');
+		return cb('Empty username');
 	}
 
 	if (username.length > 20) {
-		return setImmediate(cb, 'Username is too long. Maximum is 20 characters');
+		return cb('Username is too long. Maximum is 20 characters');
 	}
 
 	// Not relevant anymore
 	// if (isAddress.test(username)) {
-	// 	return setImmediate(cb, 'Username can not be a potential address');
+	// 	return cb('Username can not be a potential address');
 	// }
 
 	if (!allowSymbols.test(username)) {
-		return setImmediate(cb, 'Username can only contain alphanumeric characters with the exception of !@$&_.');
+		return cb('Username can only contain alphanumeric characters with the exception of !@$&_.');
 	}
 
 	modules.accounts.getAccount({
 		username: username
 	}, function (err, account) {
 		if (err) {
-			return setImmediate(cb, err);
+			return cb(err);
 		}
 
 		if (account) {
-			return setImmediate(cb, 'Username already exists');
+			return cb('Username already exists');
 		}
 
-		return setImmediate(cb, null, trs);
+		return cb(null, trs);
 	});
 };
 
@@ -116,7 +116,7 @@ Delegate.prototype.verify = function (trs, sender, cb) {
 
 //
 Delegate.prototype.process = function (trs, sender, cb) {
-	return setImmediate(cb, null, trs);
+	return cb(null, trs);
 };
 
 //
@@ -185,7 +185,7 @@ Delegate.prototype.undo = function (trs, block, sender, cb) {
 //
 Delegate.prototype.applyUnconfirmed = function (trs, sender, cb) {
 	if (sender.u_isDelegate) {
-		return setImmediate(cb, 'Account is already a delegate');
+		return cb('Account is already a delegate');
 	}
 
 	function done () {
@@ -207,11 +207,11 @@ Delegate.prototype.applyUnconfirmed = function (trs, sender, cb) {
 		u_username: trs.asset.delegate.username
 	}, function (err, account) {
 		if (err) {
-			return setImmediate(cb, err);
+			return cb(err);
 		}
 
 		if (account) {
-			return setImmediate(cb, 'Username already exists');
+			return cb('Username already exists');
 		}
 
 		done();

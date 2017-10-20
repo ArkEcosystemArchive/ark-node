@@ -85,8 +85,7 @@ function Account (scope, cb) {
 			filter: {
 				required: true,
 				type: 'string',
-				minLength: 1,
-				maxLength: 35
+				format: 'address'
 			},
 			conv: String,
 			immutable: true
@@ -352,7 +351,7 @@ function Account (scope, cb) {
 		}
 	}.bind(this));
 
-	return setImmediate(cb, null, this);
+	return cb(null, this);
 }
 
 //
@@ -363,10 +362,10 @@ Account.prototype.createTables = function (cb) {
 	// var sql = new pgp.QueryFile(path.join('sql', 'memoryTables.sql'), {minify: true});
 	//
 	// db.query(sql).then(function () {
-	// 	return setImmediate(cb);
+	// 	return cb();
 	// }).catch(function (err) {
 	// 	library.logger.error("stack", err.stack);
-	// 	return setImmediate(cb, 'Account#createTables error');
+	// 	return cb('Account#createTables error');
 	// });
 	return cb();
 };
@@ -392,10 +391,10 @@ Account.prototype.removeTables = function (cb) {
 	});
 
 	db.query(sqles.join('')).then(function () {
-		return setImmediate(cb);
+		return cb();
 	}).catch(function (err) {
 		library.logger.error("stack", err.stack);
-		return setImmediate(cb, 'Account#removeTables error');
+		return cb('Account#removeTables error');
 	});
 };
 
@@ -469,7 +468,7 @@ Account.prototype.get = function (filter, fields, cb) {
 	}
 
 	this.getAll(filter, fields, function (err, data) {
-		return setImmediate(cb, err, data && data.length ? data[0] : null);
+		return cb(err, data && data.length ? data[0] : null);
 	});
 };
 
@@ -525,10 +524,10 @@ Account.prototype.getAll = function (filter, fields, cb) {
 	});
 
 	db.query(sql.query, sql.values).then(function (rows) {
-		return setImmediate(cb, null, rows);
+		return cb(null, rows);
 	}).catch(function (err) {
 		library.logger.error("stack", err.stack);
-		return setImmediate(cb, 'Account#getAll error');
+		return cb('Account#getAll error');
 	});
 };
 
@@ -551,15 +550,14 @@ Account.prototype.set = function (address, fields, cb) {
 	});
 
 	db.none(sql.query, sql.values).then(function () {
-		return setImmediate(cb);
+		return cb();
 	}).catch(function (err) {
 		library.logger.error("stack", err.stack);
-		return setImmediate(cb, 'Account#set error');
+		return cb('Account#set error');
 	});
 };
 
 
-//TODO: to simplify with the new delegate listing algo
 //
 //__API__ `merge`
 
@@ -582,7 +580,7 @@ Account.prototype.merge = function (address, diff, cb) {
 					break;
 				case Number:
 					if (isNaN(trueValue) || trueValue === Infinity) {
-						return setImmediate(cb, 'Encountered unsane number: ' + trueValue);
+						return cb('Encountered unsane number: ' + trueValue);
 					}
 					else if (Math.abs(trueValue) === trueValue && trueValue !== 0) {
 						update.$inc = update.$inc || {};
@@ -713,10 +711,10 @@ Account.prototype.merge = function (address, diff, cb) {
 
 	function done (err) {
 		if (cb.length !== 2) {
-			return setImmediate(cb, err);
+			return cb(err);
 		} else {
 			if (err) {
-				return setImmediate(cb, err);
+				return cb(err);
 			}
 			self.get({address: address}, cb);
 		}
@@ -755,10 +753,10 @@ Account.prototype.remove = function (address, cb) {
 		}
 	});
 	db.none(sql.query, sql.values).then(function () {
-		return setImmediate(cb, null, address);
+		return cb(null, address);
 	}).catch(function (err) {
 		library.logger.error("stack", err.stack);
-		return setImmediate(cb, 'Account#remove error');
+		return cb('Account#remove error');
 	});
 };
 

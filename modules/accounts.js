@@ -27,7 +27,7 @@ function Accounts (cb, scope) {
 		transactionTypes.VOTE, new Vote()
 	);
 
-	setImmediate(cb, null, self);
+	return cb(null, self);
 }
 
 // Private methods
@@ -107,7 +107,7 @@ __private.attachApi = function () {
 
 //
 Accounts.prototype.generateAddressByPublicKey = function (publicKey) {
-	return arkjs.crypto.getAddress(publicKey);
+	return arkjs.crypto.getAddress(publicKey, library.config.network.pubKeyHash);
 };
 
 //
@@ -142,17 +142,17 @@ Accounts.prototype.setAccountAndGet = function (data, cb) {
 		if (data.publicKey) {
 			address = self.generateAddressByPublicKey(data.publicKey);
 		} else {
-			return setImmediate(cb, 'Missing address or public key');
+			return cb('Missing address or public key');
 		}
 	}
 
 	if (!address) {
-		return setImmediate(cb, 'Invalid public key');
+		return cb('Invalid public key');
 	}
 
 	library.logic.account.set(address, data, function (err) {
 		if (err) {
-			return setImmediate(cb, err);
+			return cb(err);
 		}
 		return library.logic.account.get({address: address}, cb);
 	});
@@ -169,12 +169,12 @@ Accounts.prototype.mergeAccountAndGet = function (data, cb) {
 		if (data.publicKey) {
 			address = self.generateAddressByPublicKey(data.publicKey);
 		} else {
-			return setImmediate(cb, 'Missing address or public key');
+			return cb('Missing address or public key');
 		}
 	}
 
 	if (!address) {
-		return setImmediate(cb, 'Invalid public key');
+		return cb('Invalid public key');
 	}
 
 	return library.logic.account.merge(address, data, cb);
@@ -206,23 +206,23 @@ Accounts.prototype.onAttachPublicApi = function () {
 shared.getBalance = function (req, cb) {
 	library.schema.validate(req.body, schema.getBalance, function (err) {
 		if (err) {
-			return setImmediate(cb, err[0].message);
+			return cb(err[0].message);
 		}
 
 		var isAddress = /^[1-9A-Za-z]{1,35}$/g;
 		if (!isAddress.test(req.body.address)) {
-			return setImmediate(cb, 'Invalid address');
+			return cb('Invalid address');
 		}
 
 		self.getAccount({ address: req.body.address }, function (err, account) {
 			if (err) {
-				return setImmediate(cb, err);
+				return cb(err);
 			}
 
 			var balance = account ? account.balance : '0';
 			var unconfirmedBalance = account ? account.u_balance : '0';
 
-			return setImmediate(cb, null, {balance: balance, unconfirmedBalance: unconfirmedBalance});
+			return cb(null, {balance: balance, unconfirmedBalance: unconfirmedBalance});
 		});
 	});
 };
@@ -230,24 +230,24 @@ shared.getBalance = function (req, cb) {
 shared.getPublickey = function (req, cb) {
 	library.schema.validate(req.body, schema.getPublicKey, function (err) {
 		if (err) {
-			return setImmediate(cb, err[0].message);
+			return cb(err[0].message);
 		}
 
 		var isAddress = /^[1-9A-Za-z]{1,35}$/g;
 		if (!isAddress.test(req.body.address)) {
-			return setImmediate(cb, 'Invalid address');
+			return cb('Invalid address');
 		}
 
 		self.getAccount({ address: req.body.address }, function (err, account) {
 			if (err) {
-				return setImmediate(cb, err);
+				return cb(err);
 			}
 
 			if (!account || !account.publicKey) {
-				return setImmediate(cb, 'Account not found');
+				return cb('Account not found');
 			}
 
-			return setImmediate(cb, null, {publicKey: account.publicKey});
+			return cb(null, {publicKey: account.publicKey});
 		});
 	});
 };
@@ -255,16 +255,16 @@ shared.getPublickey = function (req, cb) {
 shared.getDelegates = function (req, cb) {
 	library.schema.validate(req.body, schema.getDelegates, function (err) {
 		if (err) {
-			return setImmediate(cb, err[0].message);
+			return cb(err[0].message);
 		}
 
 		self.getAccount({ address: req.body.address }, function (err, account) {
 			if (err) {
-				return setImmediate(cb, err);
+				return cb(err);
 			}
 
 			if (!account) {
-				return setImmediate(cb, 'Account not found');
+				return cb('Account not found');
 			}
 
 			if (account.delegates) {
@@ -273,73 +273,72 @@ shared.getDelegates = function (req, cb) {
 						return account.delegates.indexOf(delegate.publicKey) !== -1;
 					});
 
-					return setImmediate(cb, null, {delegates: delegates});
+					return cb(null, {delegates: delegates});
 				});
 			} else {
-				return setImmediate(cb, null, {delegates: []});
+				return cb(null, {delegates: []});
 			}
 		});
 	});
 };
 
 shared.getDelegatesFee = function (req, cb) {
-	return setImmediate(cb, null, {fee: constants.fees.delegate});
+	return cb(null, {fee: constants.fees.delegate});
 };
 
 shared.addDelegates = function (req, cb) {
 	library.schema.validate(req.body, schema.addDelegates, function (err) {
 		if (err) {
-			return setImmediate(cb, err[0].message);
+			return cb(err[0].message);
 		}
 
-		var keypair = library.ed.makeKeypair(req.body.secret);
+		var keypair = library.crypto.makeKeypair(req.body.secret);
 
 		if (req.body.publicKey) {
 			if (keypair.publicKey.toString('hex') !== req.body.publicKey) {
-				return setImmediate(cb, 'Invalid passphrase');
+				return cb('Invalid passphrase');
 			}
 		}
 
-		library.balancesSequence.add(function (cb) {
 			if (req.body.multisigAccountPublicKey && req.body.multisigAccountPublicKey !== keypair.publicKey.toString('hex')) {
 				modules.accounts.getAccount({ publicKey: req.body.multisigAccountPublicKey }, function (err, account) {
 					if (err) {
-						return setImmediate(cb, err);
+						return cb(err);
 					}
 
 					if (!account || !account.publicKey) {
-						return setImmediate(cb, 'Multisignature account not found');
+						return cb('Multisignature account not found');
 					}
 
 					if (!account.multisignatures || !account.multisignatures) {
-						return setImmediate(cb, 'Account does not have multisignatures enabled');
+						return cb('Account does not have multisignatures enabled');
 					}
 
 					if (account.multisignatures.indexOf(keypair.publicKey.toString('hex')) < 0) {
-						return setImmediate(cb, 'Account does not belong to multisignature group');
+						return cb('Account does not belong to multisignature group');
 					}
 
 					modules.accounts.getAccount({ publicKey: keypair.publicKey }, function (err, requester) {
 						if (err) {
-							return setImmediate(cb, err);
+							return cb(err);
 						}
 
 						if (!requester || !requester.publicKey) {
-							return setImmediate(cb, 'Requester not found');
+							return cb('Requester not found');
 						}
 
 						if (requester.secondSignature && !req.body.secondSecret) {
-							return setImmediate(cb, 'Missing requester second passphrase');
+							return cb('Missing requester second passphrase');
 						}
 
 						if (requester.publicKey === account.publicKey) {
-							return setImmediate(cb, 'Invalid requester public key');
+							return cb('Invalid requester public key');
 						}
 
 						var secondKeypair = null;
 
 						if (requester.secondSignature) {
-							secondKeypair = library.ed.makeKeypair(req.body.secondSecret);
+							secondKeypair = library.crypto.makeKeypair(req.body.secondSecret);
 						}
 
 						var transaction;
@@ -354,30 +353,36 @@ shared.addDelegates = function (req, cb) {
 								requester: keypair
 							});
 						} catch (e) {
-							return setImmediate(cb, e.toString());
+							return cb(e.toString());
 						}
 
-						library.bus.message("transactionsReceived", [transaction], "api", cb);
+						library.bus.message("transactionsReceived", [transaction], "api", function (err, transactions) {
+							if (err) {
+								return cb(err, transaction);
+							}
+
+							return cb(null, {transaction: transactions[0]});
+						});
 					});
 				});
 			} else {
 				self.setAccountAndGet({ publicKey: keypair.publicKey.toString('hex') }, function (err, account) {
 					if (err) {
-						return setImmediate(cb, err);
+						return cb(err);
 					}
 
 					if (!account || !account.publicKey) {
-						return setImmediate(cb, 'Account not found');
+						return cb('Account not found');
 					}
 
 					if (account.secondSignature && !req.body.secondSecret) {
-						return setImmediate(cb, 'Invalid second passphrase');
+						return cb('Invalid second passphrase');
 					}
 
 					var secondKeypair = null;
 
 					if (account.secondSignature) {
-						secondKeypair = library.ed.makeKeypair(req.body.secondSecret);
+						secondKeypair = library.crypto.makeKeypair(req.body.secondSecret);
 					}
 
 					var transaction;
@@ -391,43 +396,42 @@ shared.addDelegates = function (req, cb) {
 							secondKeypair: secondKeypair
 						});
 					} catch (e) {
-						return setImmediate(cb, e.toString());
+						return cb(e.toString());
 					}
 
-					library.bus.message("transactionsReceived", [transaction], "api", cb);
+					library.bus.message("transactionsReceived", [transaction], "api", function (err, transactions) {
+						if (err) {
+							return cb(err, transaction);
+						}
+
+						return cb(null, {transaction: transactions[0]});
+					});
 				});
 			}
-		}, function (err, transaction) {
-			if (err) {
-				return setImmediate(cb, err);
-			}
-
-			return setImmediate(cb, null, {transaction: transaction[0]});
-		});
 	});
 };
 
 shared.getAccount = function (req, cb) {
 	library.schema.validate(req.body, schema.getAccount, function (err) {
 		if (err) {
-			return setImmediate(cb, err[0].message);
+			return cb(err[0].message);
 		}
 
 		var isAddress = /^[1-9A-Za-z]{1,35}$/g;
 		if (!isAddress.test(req.body.address)) {
-			return setImmediate(cb, 'Invalid address');
+			return cb('Invalid address');
 		}
 
 		self.getAccount({ address: req.body.address }, function (err, account) {
 			if (err) {
-				return setImmediate(cb, err);
+				return cb(err);
 			}
 
 			if (!account) {
-				return setImmediate(cb, 'Account not found');
+				return cb('Account not found');
 			}
 
-			return setImmediate(cb, null, {
+			return cb(null, {
 				account: {
 					address: account.address,
 					unconfirmedBalance: account.u_balance,

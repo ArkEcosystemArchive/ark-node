@@ -82,11 +82,6 @@
                 </a>
               
                 
-                <a class="source" href="server.html">
-                  server.js
-                </a>
-              
-                
                 <a class="source" href="signatures.html">
                   signatures.js
                 </a>
@@ -189,7 +184,7 @@ __private.assetTypes = {};</pre></div></div>
 		transactionTypes.SEND, <span class="hljs-keyword">new</span> Transfer()
 	);
 
-	setImmediate(cb, <span class="hljs-literal">null</span>, self);
+	<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, self);
 }</pre></div></div>
             
         </li>
@@ -283,7 +278,7 @@ __private.list = <span class="hljs-function"><span class="hljs-keyword">function
 	}
 
 	<span class="hljs-keyword">if</span> (params.limit &gt; constants.maxTxsPerBlock) {
-		<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Invalid limit. Maximum is '</span>+constants.maxTxsPerBlock);
+		<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Invalid limit. Maximum is '</span>+constants.maxTxsPerBlock);
 	}
 
 	<span class="hljs-keyword">var</span> orderBy = OrderBy(
@@ -300,7 +295,7 @@ __private.list = <span class="hljs-function"><span class="hljs-keyword">function
 	);
 
 	<span class="hljs-keyword">if</span> (orderBy.error) {
-		<span class="hljs-keyword">return</span> setImmediate(cb, orderBy.error);
+		<span class="hljs-keyword">return</span> cb(orderBy.error);
 	}
 
 	library.db.query(sql.countList({
@@ -316,7 +311,7 @@ __private.list = <span class="hljs-function"><span class="hljs-keyword">function
 			<span class="hljs-attr">sortMethod</span>: orderBy.sortMethod
 		}), params).then(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">rows</span>) </span>{
 			<span class="hljs-keyword">var</span> transactions = [];
-			
+
 			<span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> i = <span class="hljs-number">0</span>; i &lt; rows.length; i++) {
 				transactions.push(library.logic.transaction.dbRead(rows[i]));
 			}
@@ -326,36 +321,36 @@ __private.list = <span class="hljs-function"><span class="hljs-keyword">function
 				<span class="hljs-attr">count</span>: count
 			};
 
-			<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, data);
+			<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, data);
 		}).catch(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 			library.logger.error(<span class="hljs-string">"stack"</span>, err.stack);
-			<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Transactions#list error'</span>);
+			<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Transactions#list error'</span>);
 		});
 	}).catch(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 		library.logger.error(<span class="hljs-string">"stack"</span>, err.stack);
-		<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Transactions#list error'</span>);
+		<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Transactions#list error'</span>);
 	});
 };
 
 __private.getById = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">id, cb</span>) </span>{
 	library.db.query(sql.getById, {<span class="hljs-attr">id</span>: id}).then(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">rows</span>) </span>{
 		<span class="hljs-keyword">if</span> (!rows.length) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Transaction not found: '</span> + id);
+			<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Transaction not found: '</span> + id);
 		}
 
 		<span class="hljs-keyword">var</span> transaction = library.logic.transaction.dbRead(rows[<span class="hljs-number">0</span>]);
 
-		<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, transaction);
+		<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, transaction);
 	}).catch(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 		library.logger.error(<span class="hljs-string">"stack"</span>, err);
-		<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Transactions#getById error'</span>);
+		<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Transactions#getById error'</span>);
 	});
 };
 
 __private.getVotesById = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">transaction, cb</span>) </span>{
 	library.db.query(sql.getVotesById, {<span class="hljs-attr">id</span>: transaction.id}).then(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">rows</span>) </span>{
 		<span class="hljs-keyword">if</span> (!rows.length) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Transaction not found: '</span> + id);
+			<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Transaction not found: '</span> + id);
 		}
 
 		<span class="hljs-keyword">var</span> votes = rows[<span class="hljs-number">0</span>].votes.split(<span class="hljs-string">','</span>);
@@ -372,10 +367,10 @@ __private.getVotesById = <span class="hljs-function"><span class="hljs-keyword">
 
 		transaction.votes = {<span class="hljs-attr">added</span>: added, <span class="hljs-attr">deleted</span>: deleted};
 
-		<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, transaction);
+		<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, transaction);
 	}).catch(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 		library.logger.error(<span class="hljs-string">"stack"</span>, err.stack);
-		<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Transactions#getVotesById error'</span>);
+		<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Transactions#getVotesById error'</span>);
 	});
 };</pre></div></div>
             
@@ -424,13 +419,13 @@ __private.getVotesById = <span class="hljs-function"><span class="hljs-keyword">
             </div>
             
             <div class="content"><div class='highlight'><pre>Transactions.prototype.apply = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">transaction, block, cb</span>) </span>{
-	library.transactionSequence.add(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">cb</span>)</span>{
+	library.transactionSequence.add(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">sequenceCb</span>)</span>{
 		library.logger.debug(<span class="hljs-string">'Applying confirmed transaction'</span>, transaction.id);
 		modules.accounts.getAccount({<span class="hljs-attr">publicKey</span>: transaction.senderPublicKey}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, sender</span>) </span>{
 			<span class="hljs-keyword">if</span> (err) {
-				<span class="hljs-keyword">return</span> setImmediate(eachSeriesCb, err);
+				<span class="hljs-keyword">return</span> sequenceCb(err);
 			}
-			library.logic.transaction.apply(transaction, block, sender, cb);
+			library.logic.transaction.apply(transaction, block, sender, sequenceCb);
 		});
 	}, cb);
 };</pre></div></div>
@@ -465,13 +460,13 @@ __private.getVotesById = <span class="hljs-function"><span class="hljs-keyword">
             </div>
             
             <div class="content"><div class='highlight'><pre>Transactions.prototype.undo = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">transaction, block, cb</span>) </span>{
-	library.transactionSequence.add(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">cb</span>)</span>{
+	library.transactionSequence.add(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">sequenceCb</span>)</span>{
 		library.logger.debug(<span class="hljs-string">'Undoing confirmed transaction'</span>, transaction.id);
 		modules.accounts.getAccount({<span class="hljs-attr">publicKey</span>: transaction.senderPublicKey}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, sender</span>) </span>{
 			<span class="hljs-keyword">if</span> (err) {
-				<span class="hljs-keyword">return</span> setImmediate(eachSeriesCb, err);
+				<span class="hljs-keyword">return</span> sequenceCb(err);
 			}
-			library.logic.transaction.undo(transaction, block, sender, cb);
+			library.logic.transaction.undo(transaction, block, sender, sequenceCb);
 		});
 	}, cb);
 };</pre></div></div>
@@ -508,24 +503,24 @@ __private.getVotesById = <span class="hljs-function"><span class="hljs-keyword">
             <div class="content"><div class='highlight'><pre>Transactions.prototype.applyUnconfirmed = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">transaction, cb</span>) </span>{
 	modules.accounts.setAccountAndGet({<span class="hljs-attr">publicKey</span>: transaction.senderPublicKey}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, sender</span>) </span>{
 		<span class="hljs-keyword">if</span> (!sender &amp;&amp; transaction.blockId !== genesisblock.block.id) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Invalid block id'</span>);
+			<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Invalid block id'</span>);
 		} <span class="hljs-keyword">else</span> {
-			library.transactionSequence.add(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">cb</span>)</span>{
+			library.transactionSequence.add(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">sequenceCb</span>)</span>{
 				library.logger.debug(<span class="hljs-string">'Applying unconfirmed transaction'</span>, transaction.id);
 				<span class="hljs-keyword">if</span> (transaction.requesterPublicKey) {
 					modules.accounts.getAccount({<span class="hljs-attr">publicKey</span>: transaction.requesterPublicKey}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, requester</span>) </span>{
 						<span class="hljs-keyword">if</span> (err) {
-							<span class="hljs-keyword">return</span> setImmediate(cb, err);
+							<span class="hljs-keyword">return</span> sequenceCb(err);
 						}
 
 						<span class="hljs-keyword">if</span> (!requester) {
-							<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Requester not found'</span>);
+							<span class="hljs-keyword">return</span> sequenceCb(<span class="hljs-string">'Requester not found'</span>);
 						}
 
-						library.logic.transaction.applyUnconfirmed(transaction, sender, requester, cb);
+						library.logic.transaction.applyUnconfirmed(transaction, sender, requester, sequenceCb);
 					});
 				} <span class="hljs-keyword">else</span> {
-					library.logic.transaction.applyUnconfirmed(transaction, sender, cb);
+					library.logic.transaction.applyUnconfirmed(transaction, sender, sequenceCb);
 				}
 			}, cb);
 		}
@@ -562,13 +557,13 @@ __private.getVotesById = <span class="hljs-function"><span class="hljs-keyword">
             </div>
             
             <div class="content"><div class='highlight'><pre>Transactions.prototype.undoUnconfirmed = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">transaction, cb</span>) </span>{
-	library.transactionSequence.add(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">cb</span>)</span>{
+	library.transactionSequence.add(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">sequenceCb</span>)</span>{
 		library.logger.debug(<span class="hljs-string">'Undoing unconfirmed transaction'</span>, transaction.id);
 		modules.accounts.getAccount({<span class="hljs-attr">publicKey</span>: transaction.senderPublicKey}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, sender</span>) </span>{
 			<span class="hljs-keyword">if</span> (err) {
-				<span class="hljs-keyword">return</span> setImmediate(cb, err);
+				<span class="hljs-keyword">return</span> sequenceCb(err);
 			}
-			library.logic.transaction.undoUnconfirmed(transaction, sender, cb);
+			library.logic.transaction.undoUnconfirmed(transaction, sender, sequenceCb);
 		});
 	}, cb);
 };</pre></div></div>
@@ -694,15 +689,15 @@ __private.getVotesById = <span class="hljs-function"><span class="hljs-keyword">
             <div class="content"><div class='highlight'><pre>shared.getTransactions = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">req, cb</span>) </span>{
 	library.schema.validate(req.body, schema.getTransactions, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 		<span class="hljs-keyword">if</span> (err) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, err[<span class="hljs-number">0</span>].message);
+			<span class="hljs-keyword">return</span> cb(err[<span class="hljs-number">0</span>].message);
 		}
 
 		__private.list(req.body, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, data</span>) </span>{
 			<span class="hljs-keyword">if</span> (err) {
-				<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Failed to get transactions: '</span> + err);
+				<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Failed to get transactions: '</span> + err);
 			}
 
-			<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, {<span class="hljs-attr">transactions</span>: data.transactions, <span class="hljs-attr">count</span>: data.count});
+			<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, {<span class="hljs-attr">transactions</span>: data.transactions, <span class="hljs-attr">count</span>: data.count});
 		});
 	});
 };
@@ -710,19 +705,19 @@ __private.getVotesById = <span class="hljs-function"><span class="hljs-keyword">
 shared.getTransaction = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">req, cb</span>) </span>{
 	library.schema.validate(req.body, schema.getTransaction, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 		<span class="hljs-keyword">if</span> (err) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, err[<span class="hljs-number">0</span>].message);
+			<span class="hljs-keyword">return</span> cb(err[<span class="hljs-number">0</span>].message);
 		}
 
 		__private.getById(req.body.id, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, transaction</span>) </span>{
 			<span class="hljs-keyword">if</span> (!transaction || err) {
-				<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Transaction not found'</span>);
+				<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Transaction not found'</span>);
 			}
 			<span class="hljs-keyword">if</span> (transaction.type == <span class="hljs-number">3</span>) {
 				__private.getVotesById(transaction, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, transaction</span>) </span>{
-					<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, {<span class="hljs-attr">transaction</span>: transaction});
+					<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, {<span class="hljs-attr">transaction</span>: transaction});
 				});
 			} <span class="hljs-keyword">else</span> {
-				<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, {<span class="hljs-attr">transaction</span>: transaction});
+				<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, {<span class="hljs-attr">transaction</span>: transaction});
 			}
 		});
 	});
@@ -731,23 +726,23 @@ shared.getTransaction = <span class="hljs-function"><span class="hljs-keyword">f
 shared.getUnconfirmedTransaction = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">req, cb</span>) </span>{
 	library.schema.validate(req.body, schema.getUnconfirmedTransaction, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 		<span class="hljs-keyword">if</span> (err) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, err[<span class="hljs-number">0</span>].message);
+			<span class="hljs-keyword">return</span> cb(err[<span class="hljs-number">0</span>].message);
 		}
 
 		<span class="hljs-keyword">var</span> unconfirmedTransaction = modules.transactionPool.getUnconfirmedTransaction(req.body.id);
 
 		<span class="hljs-keyword">if</span> (!unconfirmedTransaction) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Transaction not found'</span>);
+			<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Transaction not found'</span>);
 		}
 
-		<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, {<span class="hljs-attr">transaction</span>: unconfirmedTransaction});
+		<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, {<span class="hljs-attr">transaction</span>: unconfirmedTransaction});
 	});
 };
 
 shared.getUnconfirmedTransactions = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">req, cb</span>) </span>{
 	library.schema.validate(req.body, schema.getUnconfirmedTransactions, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 		<span class="hljs-keyword">if</span> (err) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, err[<span class="hljs-number">0</span>].message);
+			<span class="hljs-keyword">return</span> cb(err[<span class="hljs-number">0</span>].message);
 		}
 
 		<span class="hljs-keyword">var</span> transactions = modules.transactionPool.getUnconfirmedTransactionList(<span class="hljs-literal">true</span>);
@@ -765,77 +760,76 @@ shared.getUnconfirmedTransactions = <span class="hljs-function"><span class="hlj
 			}
 		}
 
-		<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, {<span class="hljs-attr">transactions</span>: toSend});
+		<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, {<span class="hljs-attr">transactions</span>: toSend});
 	});
 };
 
 shared.addTransactions = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">req, cb</span>) </span>{
 	library.schema.validate(req.body, schema.addTransactions, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
 		<span class="hljs-keyword">if</span> (err) {
-			<span class="hljs-keyword">return</span> setImmediate(cb, err[<span class="hljs-number">0</span>].message);
+			<span class="hljs-keyword">return</span> cb(err[<span class="hljs-number">0</span>].message);
 		}
 
-		<span class="hljs-keyword">var</span> keypair = library.ed.makeKeypair(req.body.secret);
+		<span class="hljs-keyword">var</span> keypair = library.crypto.makeKeypair(req.body.secret);
 
 		<span class="hljs-keyword">if</span> (req.body.publicKey) {
 			<span class="hljs-keyword">if</span> (keypair.publicKey.toString(<span class="hljs-string">'hex'</span>) !== req.body.publicKey) {
-				<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Invalid passphrase'</span>);
+				<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Invalid passphrase'</span>);
 			}
 		}
 
 		<span class="hljs-keyword">var</span> query = { <span class="hljs-attr">address</span>: req.body.recipientId };
 
-		library.balancesSequence.add(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">cb</span>) </span>{
 			modules.accounts.getAccount(query, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, recipient</span>) </span>{
 				<span class="hljs-keyword">if</span> (err) {
-					<span class="hljs-keyword">return</span> setImmediate(cb, err);
+					<span class="hljs-keyword">return</span> cb(err);
 				}
 
 				<span class="hljs-keyword">var</span> recipientId = recipient ? recipient.address : req.body.recipientId;
 
 				<span class="hljs-keyword">if</span> (!recipientId) {
-					<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Invalid recipient'</span>);
+					<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Invalid recipient'</span>);
 				}
 
 				<span class="hljs-keyword">if</span> (req.body.multisigAccountPublicKey &amp;&amp; req.body.multisigAccountPublicKey !== keypair.publicKey.toString(<span class="hljs-string">'hex'</span>)) {
 					modules.accounts.getAccount({<span class="hljs-attr">publicKey</span>: req.body.multisigAccountPublicKey}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, account</span>) </span>{
 						<span class="hljs-keyword">if</span> (err) {
-							<span class="hljs-keyword">return</span> setImmediate(cb, err);
+							<span class="hljs-keyword">return</span> cb(err);
 						}
 
 						<span class="hljs-keyword">if</span> (!account || !account.publicKey) {
-							<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Multisignature account not found'</span>);
+							<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Multisignature account not found'</span>);
 						}
 
 						<span class="hljs-keyword">if</span> (!<span class="hljs-built_in">Array</span>.isArray(account.multisignatures)) {
-							<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Account does not have multisignatures enabled'</span>);
+							<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Account does not have multisignatures enabled'</span>);
 						}
 
 						<span class="hljs-keyword">if</span> (account.multisignatures.indexOf(keypair.publicKey.toString(<span class="hljs-string">'hex'</span>)) &lt; <span class="hljs-number">0</span>) {
-							<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Account does not belong to multisignature group'</span>);
+							<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Account does not belong to multisignature group'</span>);
 						}
 
 						modules.accounts.getAccount({<span class="hljs-attr">publicKey</span>: keypair.publicKey}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, requester</span>) </span>{
 							<span class="hljs-keyword">if</span> (err) {
-								<span class="hljs-keyword">return</span> setImmediate(cb, err);
+								<span class="hljs-keyword">return</span> cb(err);
 							}
 
 							<span class="hljs-keyword">if</span> (!requester || !requester.publicKey) {
-								<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Requester not found'</span>);
+								<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Requester not found'</span>);
 							}
 
 							<span class="hljs-keyword">if</span> (requester.secondSignature &amp;&amp; !req.body.secondSecret) {
-								<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Missing requester second passphrase'</span>);
+								<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Missing requester second passphrase'</span>);
 							}
 
 							<span class="hljs-keyword">if</span> (requester.publicKey === account.publicKey) {
-								<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Invalid requester public key'</span>);
+								<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Invalid requester public key'</span>);
 							}
 
 							<span class="hljs-keyword">var</span> secondKeypair = <span class="hljs-literal">null</span>;
 
 							<span class="hljs-keyword">if</span> (requester.secondSignature) {
-								secondKeypair = library.ed.makeKeypair(req.body.secondSecret);
+								secondKeypair = library.crypto.makeKeypair(req.body.secondSecret);
 							}
 
 							<span class="hljs-keyword">var</span> transaction;
@@ -853,33 +847,37 @@ shared.addTransactions = <span class="hljs-function"><span class="hljs-keyword">
 
 								transaction.id=library.logic.transaction.getId(transaction);
 
-								
-
 							} <span class="hljs-keyword">catch</span> (e) {
-								<span class="hljs-keyword">return</span> setImmediate(cb, e.toString());
+								<span class="hljs-keyword">return</span> balanceCb(e.toString());
 							}
 
-							library.bus.message(<span class="hljs-string">"transactionsReceived"</span>, [transaction], <span class="hljs-string">"api"</span>, cb);
+							library.bus.message(<span class="hljs-string">"transactionsReceived"</span>, [transaction], <span class="hljs-string">"api"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, transactions</span>) </span>{
+								<span class="hljs-keyword">if</span> (err) {
+									<span class="hljs-keyword">return</span> cb(err, transaction);
+								}
+
+								<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, {<span class="hljs-attr">transactionId</span>: transactions[<span class="hljs-number">0</span>].id});
+							});
 						});
 					});
 				} <span class="hljs-keyword">else</span> {
 					modules.accounts.setAccountAndGet({<span class="hljs-attr">publicKey</span>: keypair.publicKey.toString(<span class="hljs-string">'hex'</span>)}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, account</span>) </span>{
 						<span class="hljs-keyword">if</span> (err) {
-							<span class="hljs-keyword">return</span> setImmediate(cb, err);
+							<span class="hljs-keyword">return</span> cb(err);
 						}
 
 						<span class="hljs-keyword">if</span> (!account || !account.publicKey) {
-							<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Account not found'</span>);
+							<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Account not found'</span>);
 						}
 
 						<span class="hljs-keyword">if</span> (account.secondSignature &amp;&amp; !req.body.secondSecret) {
-							<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-string">'Missing second passphrase'</span>);
+							<span class="hljs-keyword">return</span> cb(<span class="hljs-string">'Missing second passphrase'</span>);
 						}
 
 						<span class="hljs-keyword">var</span> secondKeypair = <span class="hljs-literal">null</span>;
 
 						<span class="hljs-keyword">if</span> (account.secondSignature) {
-							secondKeypair = library.ed.makeKeypair(req.body.secondSecret);
+							secondKeypair = library.crypto.makeKeypair(req.body.secondSecret);
 						}
 
 						<span class="hljs-keyword">var</span> transaction;
@@ -898,20 +896,19 @@ shared.addTransactions = <span class="hljs-function"><span class="hljs-keyword">
 							transaction.id=library.logic.transaction.getId(transaction);
 
 						} <span class="hljs-keyword">catch</span> (e) {
-							<span class="hljs-keyword">return</span> setImmediate(cb, e.toString());
+							<span class="hljs-keyword">return</span> cb(e.toString());
 						}
 
-						library.bus.message(<span class="hljs-string">"transactionsReceived"</span>, [transaction], <span class="hljs-string">"api"</span>, cb);
+						library.bus.message(<span class="hljs-string">"transactionsReceived"</span>, [transaction], <span class="hljs-string">"api"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, transactions</span>) </span>{
+							<span class="hljs-keyword">if</span> (err) {
+								<span class="hljs-keyword">return</span> cb(err, transaction);
+							}
+
+							<span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>, {<span class="hljs-attr">transactionId</span>: transactions[<span class="hljs-number">0</span>].id});
+						});
 					});
 				}
 			});
-		}, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err, transaction</span>) </span>{
-			<span class="hljs-keyword">if</span> (err) {
-				<span class="hljs-keyword">return</span> setImmediate(cb, err);
-			}
-
-			<span class="hljs-keyword">return</span> setImmediate(cb, <span class="hljs-literal">null</span>, {<span class="hljs-attr">transactionId</span>: transaction[<span class="hljs-number">0</span>].id});
-		});
 	});
 };</pre></div></div>
             

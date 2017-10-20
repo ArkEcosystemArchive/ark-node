@@ -31,7 +31,7 @@ var __private = {
 function Blockchain (cb, scope) {
 	library = scope;
 	self = this;
-	setImmediate(cb, null, self);
+	cb(null, self);
 }
 
 //
@@ -59,7 +59,7 @@ Blockchain.prototype.onStartBlockchain = function(){
 					library.logger.warn("Blockchain rebuild done", __private.timestampState());
 					if(!timedout){
 						timedout=true;
-						setTimeout(listenBlockchainState, 1000);
+						return setTimeout(listenBlockchainState, 1000);
 					}
 				}
 				// rebuild not done because in sync with network (ie network stale)
@@ -68,7 +68,7 @@ Blockchain.prototype.onStartBlockchain = function(){
 					library.logger.warn("# Network looks stopped");
 					if(!timedout){
 						timedout=true;
-						setTimeout(listenBlockchainState, 10000);
+						return setTimeout(listenBlockchainState, 10000);
 					}
 				}
 				// rebuild not done because of internal error
@@ -76,7 +76,7 @@ Blockchain.prototype.onStartBlockchain = function(){
 					library.logger.error("Error rebuilding blockchain. You need to restart the node to get in sync", __private.timestampState());
 					if(!timedout){
 						timedout=true;
-						setTimeout(listenBlockchainState, 10000);
+						return setTimeout(listenBlockchainState, 10000);
 					}
 				}
 			});
@@ -86,13 +86,12 @@ Blockchain.prototype.onStartBlockchain = function(){
 
 			library.bus.message("downloadBlocks", function(err, lastblock){
 
-				// TODO: see how the download went for further action
 			});
 			// ok let's try in one more blocktime if still stale
-			setTimeout(listenBlockchainState, 8000);
+			return setTimeout(listenBlockchainState, 8000);
 		}
 		else{
-			setTimeout(listenBlockchainState, 1000);
+			return setTimeout(listenBlockchainState, 1000);
 		}
 	});
 
@@ -104,7 +103,7 @@ Blockchain.prototype.onStartBlockchain = function(){
 			delete __private.blockchain[blockremoved.height];
 			blockremoved = __private.blockchain[""+(blockremoved.height-1)];
 		}
-		setTimeout(cleanBlockchain, 10000);
+		return setTimeout(cleanBlockchain, 10000);
 	});
 }
 
@@ -117,13 +116,14 @@ Blockchain.prototype.upsertBlock = function(block, cb){
   var error = null;
   if(!__private.blockchain[block.height]){
     __private.blockchain[block.height]=block;
+		delete __private.orphanedBlocks[block.id];
   } else if(__private.blockchain[block.height].id!=block.id){
 		__private.orphanedBlocks[block.id]=block;
     error = "upsertBlock - Orphaned Block has been added in the blockchain";
   } else {
     __private.blockchain[block.height]=block;
   }
-  return cb && setImmediate(cb, error, __private.blockchain[block.height]);
+  return cb && cb(error, __private.blockchain[block.height]);
 }
 
 //
@@ -159,7 +159,6 @@ Blockchain.prototype.isForked = function(block){
 
 // Check if block is already in blockchain (ie same id) or already found as orphaned
 Blockchain.prototype.isPresent = function(block){
-
 	return (__private.blockchain[block.height] && __private.blockchain[block.height].id == block.id) || __private.orphanedBlocks[block.id];
 }
 
@@ -187,13 +186,15 @@ Blockchain.prototype.addBlock = function(block, cb){
   var error = null;
   if(!__private.blockchain[block.height]){
     __private.blockchain[block.height]=block;
+		// if it was previously an orphaned Block, remove it
+		delete __private.orphanedBlocks[block.id];
   }
   else if(__private.blockchain[block.height].id != block.id){
 		__private.orphanedBlocks[block.id]=block;
     error = "addBlock - Orphaned Block has been added in the blockchain";
   }
 	// if same block id don't update
-  return cb && setImmediate(cb, error, __private.blockchain[block.height]);
+  return cb && cb(error, __private.blockchain[block.height]);
 };
 
 // return the previousBlock even if orphaned.
@@ -234,8 +235,9 @@ Blockchain.prototype.removeBlock = function(block, cb){
 		// if one of the orphaned block is at the origin (ie block.previousBlock == orphanedBlock.previousBlock)
 		delete __private.orphanedBlocks[block.id];
   }
-  return cb && setImmediate(cb, error, block);
+  return cb && cb(error, block);
 };
+
 
 //
 //__API__ `getBlockAtHeight`
@@ -343,7 +345,8 @@ Blockchain.prototype.onBlockReceived = function(block, peer) {
 
 	if(self.isOrphaned(block)){
 		__private.orphanedBlocks[block.id]=block;
-		block.orphaned=true;
+		// if the forger has a clock drift over a block time, just ignore it
+		block.orphaned = block.height==__private.lastBlock.height;
 		library.logger.info("Orphaned block received", {id: block.id, height:block.height, peer:peer.string});
 		return;
 	}

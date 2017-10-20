@@ -2,9 +2,7 @@
 
 Ark is a next generation crypto-currency and decentralized application platform, written entirely in JavaScript. For more information please refer to our website: https://ark.io/.
 
-The Token Exchange Campaign is up at https://tec.ark.io
-
-This version is still alpha, use at your own risks
+This version is still beta, use at your own risks
 
 ## Install, Upgrade etc...
 You need to provision a linux (ubuntu tested) server (digital ocean, vultur or other).
@@ -80,7 +78,7 @@ sudo npm install grunt-cli -g
 
 Clone this repository
 ```
-git clone https://github.com/arkecosytem/ark-node.git
+git clone https://github.com/arkecosystem/ark-node.git
 cd ark-node
 ```
 
@@ -94,19 +92,19 @@ npm install
 To launch Ark on testnet:
 ```
 createdb ark_testnet
-node run start:testnet
+npm run start:testnet
 ```
 
 To launch Ark on devtnet:
 ```
 createdb ark_devnet
-node run start:devnet
+npm run start:devnet
 ```
 
 To launch Ark on mainnet (when launched):
 ```
 createdb ark_mainnet
-node run start:mainnet
+npm run start:mainnet
 ```
 
 **NOTE:** The **port**, **address**, **genesis block** and **config-path** can be overridden by providing the relevant command switch:
@@ -121,11 +119,16 @@ Generate a genesisBlock.json + a default config.json containing all passphrases 
 ```
 node tasks/createGenesisBlock.js
 ```
-You can find generated files in tasks/
-- genesisBlock.json
-- config.json
-- delegatesPassphrases.json (containing details about the genesis delegates)
-- genesisPassphrase.json (containing the details of account having all premined arks)
+
+Be sure to configure this file for your needs
+
+- a genesisBlock.json containing the genesis block
+- a config.json containing configuration to start relay nodes
+- an autoforging config.json containing configuration to start all delegates on a single node (for testing purpose)
+- a bunch of config files to distribute to different configured delegate nodes starting the network.
+- a delegatesPassphrases.json containing details about the genesis delegates
+- a genesisPassphrase.json containing the details of delegates that will launch your network
+
 
 Obviously you can hack away tasks/createGenesisBlock.js for your own custom use.
 
@@ -182,7 +185,7 @@ peace vanish bleak box tuna woman rally manage undo royal lucky since
 
 The MIT License (MIT)
 
-Copyright (c) 2016 Ark
+Copyright (c) 2016-2017 Ark
 Copyright (c) 2016 Lisk
 Copyright (c) 2014-2015 Crypti
 

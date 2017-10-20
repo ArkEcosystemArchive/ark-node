@@ -24,7 +24,7 @@ function Signatures (cb, scope) {
 		transactionTypes.SIGNATURE, new Signature()
 	);
 
-	setImmediate(cb, null, self);
+	return cb(null, self);
 }
 
 // Private methods
@@ -83,20 +83,20 @@ shared.getFee = function (req, cb) {
 
 	fee = constants.fees.secondsignature;
 
-	return setImmediate(cb, null, {fee: fee});
+	return cb(null, {fee: fee});
 };
 
 shared.addSignature = function (req, cb) {
 	library.schema.validate(req.body, schema.addSignature, function (err) {
 		if (err) {
-			return setImmediate(cb, err[0].message);
+			return cb(err[0].message);
 		}
 
-		var keypair = library.ed.makeKeypair(req.body.secret);
+		var keypair = library.crypto.makeKeypair(req.body.secret);
 
 		if (req.body.publicKey) {
 			if (keypair.publicKey.toString('hex') !== req.body.publicKey) {
-				return setImmediate(cb, 'Invalid passphrase');
+				return cb('Invalid passphrase');
 			}
 		}
 
@@ -104,43 +104,43 @@ shared.addSignature = function (req, cb) {
 			if (req.body.multisigAccountPublicKey && req.body.multisigAccountPublicKey !== keypair.publicKey.toString('hex')) {
 				modules.accounts.getAccount({publicKey: req.body.multisigAccountPublicKey}, function (err, account) {
 					if (err) {
-						return setImmediate(cb, err);
+						return cb(err);
 					}
 
 					if (!account || !account.publicKey) {
-						return setImmediate(cb, 'Multisignature account not found');
+						return cb('Multisignature account not found');
 					}
 
 					if (!account.multisignatures || !account.multisignatures) {
-						return setImmediate(cb, 'Account does not have multisignatures enabled');
+						return cb('Account does not have multisignatures enabled');
 					}
 
 					if (account.multisignatures.indexOf(keypair.publicKey.toString('hex')) < 0) {
-						return setImmediate(cb, 'Account does not belong to multisignature group');
+						return cb('Account does not belong to multisignature group');
 					}
 
 					if (account.secondSignature || account.u_secondSignature) {
-						return setImmediate(cb, 'Account already has a second passphrase');
+						return cb('Account already has a second passphrase');
 					}
 
 					modules.accounts.getAccount({publicKey: keypair.publicKey}, function (err, requester) {
 						if (err) {
-							return setImmediate(cb, err);
+							return cb(err);
 						}
 
 						if (!requester || !requester.publicKey) {
-							return setImmediate(cb, 'Requester not found');
+							return cb('Requester not found');
 						}
 
 						if (requester.secondSignature && !req.body.secondSecret) {
-							return setImmediate(cb, 'Missing requester second passphrase');
+							return cb('Missing requester second passphrase');
 						}
 
 						if (requester.publicKey === account.publicKey) {
-							return setImmediate(cb, 'Invalid requester public key');
+							return cb('Invalid requester public key');
 						}
 
-						var secondKeypair = library.ed.makeKeypair(req.body.secondSecret);
+						var secondKeypair = library.crypto.makeKeypair(req.body.secondSecret);
 						var transaction;
 
 						try {
@@ -153,7 +153,7 @@ shared.addSignature = function (req, cb) {
 
 							});
 						} catch (e) {
-							return setImmediate(cb, e.toString());
+							return cb(e.toString());
 						}
 
 						library.bus.message("transactionsReceived", [transaction], "api", cb);
@@ -162,18 +162,18 @@ shared.addSignature = function (req, cb) {
 			} else {
 				modules.accounts.setAccountAndGet({publicKey: keypair.publicKey.toString('hex')}, function (err, account) {
 					if (err) {
-						return setImmediate(cb, err);
+						return cb(err);
 					}
 
 					if (!account || !account.publicKey) {
-						return setImmediate(cb, 'Account not found');
+						return cb('Account not found');
 					}
 
 					if (account.secondSignature || account.u_secondSignature) {
-						return setImmediate(cb, 'Account already has a second passphrase');
+						return cb('Account already has a second passphrase');
 					}
 
-					var secondKeypair = library.ed.makeKeypair(req.body.secondSecret);
+					var secondKeypair = library.crypto.makeKeypair(req.body.secondSecret);
 					var transaction;
 
 					try {
@@ -184,18 +184,18 @@ shared.addSignature = function (req, cb) {
 							secondKeypair: secondKeypair
 						});
 					} catch (e) {
-						return setImmediate(cb, e.toString());
+						return cb(e.toString());
 					}
-					
+
 					library.bus.message("transactionsReceived", [transaction], "api", cb);
 				});
 			}
 
 		}, function (err, transaction) {
 			if (err) {
-				return setImmediate(cb, err);
+				return cb(err);
 			}
-			return setImmediate(cb, null, {transaction: transaction[0]});
+			return cb(null, {transaction: transaction[0]});
 		});
 
 	});

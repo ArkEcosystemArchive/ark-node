@@ -1,6 +1,37 @@
 'use strict';
 
 module.exports = {
+	headers: {
+		id: 'peer.headers',
+		type: 'object',
+		properties: {
+			port: {
+				type: 'integer',
+				minimum: 1,
+				maximum: 65535
+			},
+			os: {
+				type: 'string',
+				maxLength: 64
+			},
+			nethash: {
+				type: 'string',
+				maxLength: 64
+			},
+			height: {
+				type: 'integer',
+				minimum: 0
+			},
+			version: {
+				type: 'string',
+				maxLength: 11
+			},
+			blockheader: {
+				type: 'object'
+			}
+		},
+		required: ['port', 'nethash', 'version']
+	},
 	updatePeersList: {
 		peers: {
 			id: 'peer.updatePeersList.peers',
