@@ -30,10 +30,22 @@ var config_version = '0.0.1';
 
 // ips of your nodes in your network
 var seed_peers = [
-  {
-    ip: "127.0.0.1",
-    port: 4100
-  }
+        {
+        ip: "127.0.0.1",
+        port: 4100
+      },{
+        ip: "127.0.0.2",
+        port: 4100
+      },{
+        ip: "127.0.0.3",
+        port: 4100
+      },{
+        ip: "127.0.0.4",
+        port: 4100
+      },{
+        ip: "127.0.0.5",
+        port: 4100
+      }
 ];
 
 // default db named
@@ -363,17 +375,18 @@ for(var i=0;i<51;i++){
 }
 fs.writeFile(private_dir+"/config."+config.network+".autoforging.json", JSON.stringify(config, null, 2));
 
+var forging = [];
+seed_peers.forEach(function(seed){
+    forging.push({secret:[]});
+});
 // split all delegates accross all seed_peers
 for(var i=0;i<51;i++){
   var seed_index = i % seed_peers.length;
-  if(!seed_peers[seed_index].secret){
-    seed_peers[seed_index].secret = [];
-  }
-  seed_peers[seed_index].secret.push(delegates[i].passphrase);
+  forging[seed_index].secret.push(delegates[i].passphrase);
 }
 
-seed_peers.forEach(function(peer){
-  config.forging.secret = peer.secret;
+seed_peers.forEach(function(peer,index){
+  config.forging.secret = forging[index];
   fs.writeFile(private_dir+"/config."+config.network+"."+peer.ip+".json", JSON.stringify(config, null, 2));
 });
 
