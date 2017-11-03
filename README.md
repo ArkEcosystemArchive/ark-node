@@ -57,7 +57,7 @@ sudo apt-get install -y curl build-essential python git
 Install PostgreSQL (min version: 9.5.2)
 
 ```
-sudo apt-get install -y postgresql postgresql-contrib
+sudo apt-get install -yyq postgresql postgresql-contrib libpq-dev
 sudo -u postgres createuser --createdb --password $USER
 createdb ark_test
 ```
