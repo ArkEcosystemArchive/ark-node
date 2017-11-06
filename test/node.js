@@ -1,10 +1,10 @@
 'use strict';
-// process.env.SILENT='true';
+process.env.SILENT='true';
 // Root object
 var node = {};
 var networkName = "testnet"
 var network = require('../networks.json')[networkName];
-node.ark = require('./ark-js');
+node.ark = require('arkjs');
 node.ark.crypto.setNetworkVersion(network.pubKeyHash);
 
 // Requires
