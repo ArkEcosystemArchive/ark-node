@@ -1,5 +1,4 @@
-# Ark
-
+![ARK-NODE](https://i.imgur.com/ej8GvMn.png)
 Ark is a next generation crypto-currency and decentralized application platform, written entirely in JavaScript. For more information please refer to our website: https://ark.io/.
 
 This version is still beta, use at your own risks
