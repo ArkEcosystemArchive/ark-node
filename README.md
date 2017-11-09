@@ -46,6 +46,20 @@ This is a fork from Lisk with the following features:
 
 ## Developer Installation
 
+### Vagrant
+
+[Vagrant](https://www.vagrantup.com/) is a virtual development environment manager backed by a provider like VirtualBox.
+
+To start the environment:
+
+```
+vagrant up
+```
+
+All configuration for the dev environment is in the `VagrantFile`. After installation, ark-node will automatically start and log all output to the console.
+
+### Non-Vagrant
+
 Install essentials:
 
 ```
