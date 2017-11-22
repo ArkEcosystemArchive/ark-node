@@ -1,0 +1,16 @@
+FROM node:latest
+MAINTAINER Yohan Graterol <yohangraterol92@gmail.com>
+
+RUN mkdir -p /src/ark-node
+
+WORKDIR /src/ark-node
+
+VOLUME /src/ark-node
+
+COPY entrypoint-dev.sh /usr/local/bin/entrypoint-dev.sh
+
+RUN chmod +x /usr/local/bin/entrypoint-dev.sh
+
+EXPOSE 4002
+
+ENTRYPOINT ["entrypoint-dev.sh"]

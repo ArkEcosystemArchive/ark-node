@@ -46,6 +46,24 @@ This is a fork from Lisk with the following features:
 
 ## Developer Installation
 
+### Docker - Ark on devtnet
+
+Install Docker and Docker Compose: https://docs.docker.com/compose/install/
+
+Run Ark:
+
+```
+docker-compose -f docker-compose.dev.yaml up
+```
+
+To build the image again:
+
+```
+docker-compose -f docker-compose.dev.yaml build
+```
+
+### Ubuntu
+
 Install essentials:
 
 ```
