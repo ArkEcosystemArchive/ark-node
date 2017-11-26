@@ -5,6 +5,11 @@ var Router = require('../helpers/router.js');
 // Private fields
 var modules, library, self, __private = {};
 
+/**
+ * @constructor
+ * @param {(err: null, result: Server) => *} cb
+ * @param {*} scope
+ */
 // Constructor
 function Server (cb, scope) {
 	library = scope;

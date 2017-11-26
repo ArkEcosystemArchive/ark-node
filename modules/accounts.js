@@ -17,6 +17,10 @@ var modules, library, self, __private = {}, shared = {};
 __private.assetTypes = {};
 __private.blockReward = new BlockReward();
 
+/**
+ * @param {(err: null, result: Accounts) => *} cb
+ * @param {*} scope
+ */
 // Constructor
 function Accounts (cb, scope) {
 	library = scope;

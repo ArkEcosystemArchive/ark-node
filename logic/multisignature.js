@@ -10,6 +10,9 @@ var modules, library, __private = {};
 
 __private.unconfirmedSignatures = {};
 
+/**
+ * @constructor
+ */
 // Constructor
 function Multisignature () {}
 

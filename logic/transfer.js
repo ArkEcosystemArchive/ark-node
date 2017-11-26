@@ -37,6 +37,11 @@ Transfer.prototype.calculateFee = function (trs) {
 	return constants.fees.send;
 };
 
+/**
+ * @param {*} trs
+ * @param {*} sender
+ * @param {(err: string|null, result) => *} cb
+ */
 //
 //__API__ `verify`
 

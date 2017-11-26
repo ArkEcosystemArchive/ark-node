@@ -5,6 +5,9 @@ var constants = require('../helpers/constants.js');
 // Private fields
 var __private = {};
 
+/**
+ * @constructor
+ */
 // Constructor
 function BlockReward () {
 	// Array of milestones
@@ -27,6 +30,11 @@ __private.parseHeight = function (height) {
 };
 
 // Public methods
+
+/**
+ * @param {number|string} height
+ * @returns {number}
+ */
 //
 //__API__ `calcMilestone`
 
@@ -42,6 +50,10 @@ BlockReward.prototype.calcMilestone = function (height) {
 	}
 };
 
+/**
+ * @param {number|string} height
+ * @returns {number}
+ */
 //
 //__API__ `calcReward`
 
@@ -56,6 +68,10 @@ BlockReward.prototype.calcReward = function (height) {
 	}
 };
 
+/**
+ * @param {number|string} height
+ * @returns {number}
+ */
 //
 //__API__ `calcSupply`
 

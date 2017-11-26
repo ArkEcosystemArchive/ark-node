@@ -27,6 +27,10 @@ __private.total = 0;
 __private.blocksToSync = 0;
 __private.syncFromNetworkIntervalId = null;
 
+/**
+ * @param {(err: null, result: Loader) => *} cb
+ * @param {*} scope
+ */
 // Constructor
 function Loader (cb, scope) {
 	library = scope;

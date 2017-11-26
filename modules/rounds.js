@@ -53,7 +53,10 @@ var __private = {
 
 };
 
-
+/**
+ * @param {(err: null, result: Rounds) => *} cb
+ * @param {*} scope
+ */
 // Constructor
 function Rounds (cb, scope) {
 	library = scope;

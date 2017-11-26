@@ -20,6 +20,10 @@ __private.headers = {};
 __private.messages = {};
 __private.broadcastTransactions = [];
 
+/**
+ * @param {(err: null, result: Transport) => void} cb
+ * @param {*} scope
+ */
 // Constructor
 function Transport (cb, scope) {
 	library = scope;

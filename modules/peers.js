@@ -28,6 +28,10 @@ var __private = {
 	headers: {}
 };
 
+/**
+ * @param {(err: null, result: Peers) => *} cb
+ * @param {*} scope
+ */
 // Constructor
 function Peers (cb, scope) {
 	library = scope;

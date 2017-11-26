@@ -15,6 +15,10 @@ var __private = {
 	keypairs: {}
 };
 
+/**
+ * @param {(err: null, result: NodeManager) => *} cb
+ * @param {*} scope
+ */
 // ## Constructor
 function NodeManager (cb, scope) {
 	library = scope;

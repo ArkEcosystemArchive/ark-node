@@ -17,6 +17,10 @@ var modules, library, self, __private = {}, shared = {};
 
 __private.assetTypes = {};
 
+/**
+ * @param {(err: null, result: Multisignatures) => *} cb
+ * @param {*} scope
+ */
 // Constructor
 function Multisignatures (cb, scope) {
 	library = scope;

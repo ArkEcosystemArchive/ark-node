@@ -30,6 +30,10 @@ __private.keypairs = {};
 // tempo helper to start forging not righ now
 __private.coldstart = new Date().getTime();
 
+/**
+ * @param {(err: null, result: Delegates) => *} cb
+ * @param {*} scope
+ */
 // Constructor
 function Delegates (cb, scope) {
 	library = scope;

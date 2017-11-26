@@ -26,7 +26,10 @@ var __private = {
 	lastBlock: {height: 0}
 };
 
-
+/**
+ * @param {(err: null, result: Blockchain) => void} cb
+ * @param {*} scope
+ */
 // Constructor
 function Blockchain (cb, scope) {
 	library = scope;

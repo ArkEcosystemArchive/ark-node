@@ -8,6 +8,9 @@ var Diff = require('../helpers/diff.js');
 // Private fields
 var modules, library, self;
 
+/**
+ * @constructor
+ */
 // Constructor
 function Vote () {
 	self = this;

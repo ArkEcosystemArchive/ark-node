@@ -8,6 +8,10 @@ var slots = require('../helpers/slots.js');
 // Private fields
 var modules, library, self, __private = {};
 
+/**
+ * @param {(err: null, result: TransactionPool) => void} cb
+ * @param {*} scope
+ */
 // Constructor
 function TransactionPool (cb, scope) {
 	library = scope;

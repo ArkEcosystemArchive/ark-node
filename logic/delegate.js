@@ -5,6 +5,9 @@ var constants = require('../helpers/constants.js');
 // Private fields
 var modules, library;
 
+/**
+ * @constructor
+ */
 // Constructor
 function Delegate () {}
 
@@ -37,6 +40,10 @@ Delegate.prototype.create = function (data, trs) {
 	return trs;
 };
 
+/**
+ * @param {*} trs
+ * @returns {number}
+ */
 //
 //__API__ `calculateFee`
 
@@ -45,6 +52,11 @@ Delegate.prototype.calculateFee = function (trs) {
 	return constants.fees.delegate;
 };
 
+/**
+ * @param {*} trs
+ * @param {*} sender
+ * @param {(err: string} cb
+ */
 //
 //__API__ `verify`
 

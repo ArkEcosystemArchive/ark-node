@@ -70,6 +70,10 @@ __private.blocksDataFields = {
 };
 // @formatter:on
 
+/**
+ * @param {(err, result: Blocks) => void} cb
+ * @param {*} scope
+ */
 // Constructor
 function Blocks (cb, scope) {
 	library = scope;

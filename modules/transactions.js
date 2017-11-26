@@ -19,6 +19,10 @@ var modules, library, self, __private = {}, shared = {};
 
 __private.assetTypes = {};
 
+/**
+ * @param {(err: null, result: Transactions) => *} cb
+ * @param {*} scope
+ */
 // Constructor
 function Transactions (cb, scope) {
 	library = scope;

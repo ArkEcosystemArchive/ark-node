@@ -6,6 +6,9 @@ var constants = require('../helpers/constants.js');
 // Private fields
 var modules, library;
 
+/**
+ * @constructor
+ */
 // Constructor
 function Signature () {}
 
@@ -65,6 +68,11 @@ Signature.prototype.verify = function (trs, sender, cb) {
 	return cb(null, trs);
 };
 
+/**
+ * @param {*} trs
+ * @param {*} sender
+ * @param {(err: null, result) => *} cb
+ */
 //
 //__API__ `process`
 
@@ -216,6 +224,11 @@ Signature.prototype.dbSave = function (trs) {
 	};
 };
 
+/**
+ * @param {*} trs
+ * @param {*} sender
+ * @returns {boolean}
+ */
 //
 //__API__ `ready`
 
