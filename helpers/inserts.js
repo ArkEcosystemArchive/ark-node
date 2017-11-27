@@ -2,6 +2,18 @@
 
 var pgp = require('pg-promise');
 
+/**
+ * @typedef RecordType
+ * @property {*} table
+ * @property {*} values
+ */
+
+/**
+ * @class
+ * @param {RecordType} record
+ * @param {Array} values
+ * @param {boolean} [concat=false]
+ */
 function Inserts (record, values, concat) {
 	if (!(this instanceof Inserts)) {
 		return new Inserts(record, values, concat);

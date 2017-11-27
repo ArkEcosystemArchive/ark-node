@@ -3,17 +3,20 @@
 var constants = require('./constants.js');
 
 /**
- * Get time from Ark epoch.
- * @param {number|undefined} time Time in unix seconds
- * @returns {number}
+ * @returns {Date}
  */
-
 function beginEpochTime () {
 	var d = constants.epochTime;
 
 	return d;
 }
 
+/**
+ * Get time from Ark epoch.
+ *
+ * @param {number} [time=] Time in UNIX seconds
+ * @returns {number}
+ */
 function getEpochTime (time) {
 	if (time === undefined) {
 		time = (new Date()).getTime();
@@ -26,13 +29,23 @@ function getEpochTime (time) {
 }
 
 module.exports = {
+	/** @type {number} */
 	interval: constants.blocktime,
+	/** @type {number} */
 	delegates: constants.activeDelegates,
 
+	/**
+	 * @param {number} [time=] Time in UNIX seconds
+	 * @returns {number}
+	 */
 	getTime: function (time) {
 		return getEpochTime(time);
 	},
 
+	/**
+	 * @param {number} [epochTime=]
+	 * @returns {number}
+	 */
 	getRealTime: function (epochTime) {
 		if (epochTime === undefined) {
 			epochTime = this.getTime();
@@ -44,6 +57,10 @@ module.exports = {
 		return t + epochTime * 1000;
 	},
 
+	/**
+	 * @param {number} [epochTime=]
+	 * @returns {number}
+	 */
 	getSlotNumber: function (epochTime) {
 		if (epochTime === undefined) {
 			epochTime = this.getTime();
@@ -52,7 +69,12 @@ module.exports = {
 		return Math.floor(epochTime / this.interval);
 	},
 
-	// Forging is allowed only during the first half of blocktime
+	/**
+	 * Forging is allowed only during the first half of blocktime.
+	 *
+	 * @param {number} [epochTime=]
+	 * @returns {boolean}
+	 */
 	isForgingAllowed: function (epochTime) {
 		if (epochTime === undefined) {
 			epochTime = this.getTime();
@@ -61,20 +83,35 @@ module.exports = {
 		return Math.floor(epochTime / this.interval) == Math.floor((epochTime + this.interval / 2) / this.interval);
 	},
 
+	/**
+	 * @param {number} slot
+	 * @returns {number}
+	 */
 	getSlotTime: function (slot) {
 		return slot * this.interval;
 	},
 
+	/**
+	 * @returns {number}
+	 */
 	getNextSlot: function () {
 		var slot = this.getSlotNumber();
 
 		return slot + 1;
 	},
 
+	/**
+	 * @param {number} nextSlot
+	 * @returns {number}
+	 */
 	getLastSlot: function (nextSlot) {
 		return nextSlot + this.delegates;
 	},
 
+	/**
+	 * @param {Date} date
+	 * @returns {number}
+	 */
 	roundTime: function (date) {
 		return Math.floor(date.getTime() / 1000) * 1000;
 	}

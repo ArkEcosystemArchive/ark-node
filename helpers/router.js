@@ -2,6 +2,11 @@
 
 var extend = require('extend');
 
+/**
+ * @class
+ * @param {*} root
+ * @param {*} config
+ */
 function Map (root, config) {
 	var router = this;
 

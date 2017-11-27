@@ -12,8 +12,9 @@ exports.Field = Field;
 
 /**
  * Create validator. Options could have properties `forceAsync`, `skipMissed` and `rules`.
- * @param {object} options
- * @constructor
+ *
+ * @class
+ * @param {{forceAsync?: boolean, skipMissed?: boolean, rules?: Array}} [options={}]
  */
 function Validator (options) {
 	options = options || {};
@@ -37,30 +38,35 @@ function Validator (options) {
 
 /**
  * Make validation async even if no async rules are used.
+ *
  * @type {boolean}
  */
 Validator.prototype.forceAsync = false;
 
 /**
- * Don't throw error if rule is missed
+ * Don't throw error if a rule is missed.
+ *
  * @type {boolean}
  */
 Validator.prototype.skipMissed = false;
 
 /**
- * If rule value is function run it to get value
+ * If rule value is a function, run it to obtain its value.
+ *
  * @type {boolean}
  */
 Validator.prototype.execRules = true;
 
 /**
  * Issue reporter. Convert issues.
+ *
  * @type {Reporter}
  */
 Validator.prototype.reporter = null;
 
 /**
- * Check whether rule exists.
+ * Check whether the given rule exists.
+ *
  * @param {string} name
  * @returns {boolean}
  */
@@ -73,9 +79,11 @@ Validator.prototype.hasRule = function (name) {
 };
 
 /**
- * Get rule descriptor.
+ * Get a specified rule descriptor.
+ *
  * @param {string} name
  * @returns {*}
+ * @throws
  */
 //
 //__API__ `getRule`
@@ -89,10 +97,13 @@ Validator.prototype.getRule = function (name) {
 };
 
 /**
- * Validate values with specified rules set
+ * Validate values with specified rules set.
+ *
  * @param {*} value
  * @param {object} rules Set of rules
- * @param {function (err:Error,report:Array,output:*)=} callback Result callback
+ * @param {(err?: Error, report: Array, output) => void} [callback=] Result callback
+ * @returns {object}
+ * @throws
  */
 //
 //__API__ `validate`
@@ -154,16 +165,18 @@ Validator.prototype.validate = function (value, rules, callback) {
 
 /**
  * Validator field constructor
+ *
  * @type {Field}
  */
 Validator.prototype.Field = Field;
 
 /**
- * Create field instance
- * @param {string|string[]} path Field path
+ * Create field instance.
+ *
+ * @param {string[]|string} path Field path
  * @param {*} value Validated value
  * @param {object} rules Rule set
- * @param {*=} thisArg This reference for Validation methods. Optional
+ * @param {*} [thisArg=] This reference for Validation methods. Optional
  * @returns {Validator.Field}
  */
 //
@@ -175,8 +188,7 @@ Validator.prototype.createField = function (path, value, rules, thisArg) {
 };
 
 /**
- * Set of validator rule descriptors
- * @type {{}}
+ * Set of validator rule descriptors.
  */
 Validator.prototype.rules = {};
 
@@ -211,8 +223,9 @@ Validator.prototype.onEnd = function () {};
 
 /**
  * Add validation rule descriptor to validator rule set.
+ *
  * @param {string} name Validator name
- * @param {{validate:function,filter:function}} descriptor Validator descriptor object
+ * @param {{validate: function, filter: function}} descriptor Validator descriptor object
  */
 Validator.addRule = function (name, descriptor) {
 	if (typeof descriptor !== 'object') {
@@ -231,7 +244,8 @@ Validator.addRule = function (name, descriptor) {
 };
 
 /**
- * Add rule alias
+ * Add rule alias.
+ *
  * @param {string} name
  * @param {string} origin
  */
@@ -244,9 +258,10 @@ Validator.addAlias = function (name, origin) {
 };
 
 /**
- * Add extra property to Field. It could be
- * @param name
- * @param value
+ * Add an extra property to Field.
+ *
+ * @param {string} name
+ * @param {*} value
  */
 Validator.fieldProperty = function (name, value) {
 	this.prototype.Field.prototype[name] = value;
@@ -254,7 +269,6 @@ Validator.fieldProperty = function (name, value) {
 
 /**
  * Validator instance options for fast initialization in method validate.
- * @type {{forceAsync: boolean, skipMissed: boolean}}
  */
 Validator.options = {
 	forceAsync : false,
@@ -264,11 +278,12 @@ Validator.options = {
 };
 
 /**
- * Validate with fast initialization. Use `options` property for constructor instance;
+ * Validate with fast initialization. Use `options` property for constructor instance.
+ *
  * @param {*} value Validated value
  * @param {object} rules Set of rules
- * @param {object} customRules Customized rule set. Optional
- * @param {function (err:Error, report:object[], result:*)} callback Result callback
+ * @param {object} [customRules=] Customized rule set. Optional
+ * @param {(err?: Error, report: object[], result) => void} callback Result callback
  */
 Validator.validate = function (value, rules, customRules, callback) {
 	if (typeof customRules === 'function') {
