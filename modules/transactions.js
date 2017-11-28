@@ -211,6 +211,10 @@ __private.getVotesById = function (transaction, cb) {
 
 // Public methods
 
+/**
+ * @param {object} transaction
+ * @param {function} cb
+ */
 //
 //__API__ `verify`
 
@@ -227,7 +231,11 @@ Transactions.prototype.verify = function (transaction, cb) {
 };
 
 
-
+/**
+ * @param {object} transaction
+ * @param {object} block
+ * @param {function} cb
+ */
 //
 //__API__ `apply`
 
@@ -244,6 +252,11 @@ Transactions.prototype.apply = function (transaction, block, cb) {
 	}, cb);
 };
 
+/**
+ * @param {object} transaction
+ * @param {object} block
+ * @param {function} cb
+ */
 //
 //__API__ `undo`
 
@@ -260,6 +273,10 @@ Transactions.prototype.undo = function (transaction, block, cb) {
 	}, cb);
 };
 
+/**
+ * @param {object} transaction
+ * @param {function} cb
+ */
 //
 //__API__ `applyUnconfirmed`
 
@@ -291,6 +308,10 @@ Transactions.prototype.applyUnconfirmed = function (transaction, cb) {
 	});
 };
 
+/**
+ * @param {object} transaction
+ * @param {function} cb
+ */
 //
 //__API__ `undoUnconfirmed`
 

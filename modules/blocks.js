@@ -71,7 +71,8 @@ __private.blocksDataFields = {
 // @formatter:on
 
 /**
- * @param {(err, result: Blocks) => void} cb
+ * @constructor
+ * @param {(err?, result: Blocks) => *} cb
  * @param {*} scope
  */
 // Constructor
@@ -536,6 +537,12 @@ Blocks.prototype.lastReceipt = function (lastReceipt) {
 	return __private.lastReceipt;
 };
 
+/**
+ * 
+ * @param {*} blockid 
+ * @param {*} ids 
+ * @param {(err?: string, result?) => *} cb
+ */
 //
 //__API__ `getTransactionsFromIds`
 
@@ -604,6 +611,9 @@ Blocks.prototype.getCommonBlock = function (peer, height, cb) {
 	});
 };
 
+/**
+ * @param {(err?: string|null, response?) => *} cb 
+ */
 //
 //__API__ `count`
 
@@ -619,6 +629,11 @@ Blocks.prototype.count = function (cb) {
 	});
 };
 
+/**
+ * @param {object} filter
+ * @param {*} [options={}]
+ * @param {(err?: string|null, result?) => *} cb
+ */
 //
 //__API__ `loadBlocksData`
 
@@ -662,6 +677,10 @@ Blocks.prototype.loadBlocksData = function (filter, options, cb) {
 	}, cb);
 };
 
+/**
+ * @param {*} filter
+ * @param {(err?, blocks?) => *} cb
+ */
 //
 //__API__ `loadBlocksPart`
 
@@ -678,6 +697,12 @@ Blocks.prototype.loadBlocksPart = function (filter, cb) {
 	});
 };
 
+/**
+ * @param {number} limit
+ * @param {number} [offset=0]
+ * @param {boolean} [verify=false] Sanity check the block.
+ * @param {(err?, result?) => *} cb
+ */
 //
 //__API__ `loadBlocksOffset`
 
@@ -742,6 +767,10 @@ Blocks.prototype.loadBlocksOffset = function (limit, offset, verify, cb) {
 	});
 };
 
+/**
+ * @param {number} numbers Approximate number of blocks to remove.
+ * @param {(err?, lastBlock?) => *} cb
+ */
 //
 //__API__ `removeSomeBlocks`
 
@@ -790,7 +819,9 @@ Blocks.prototype.removeSomeBlocks = function(numbers, cb){
 	});
 }
 
-
+/**
+ * @param {(err?, result?) => *} cb
+ */
 //
 //__API__ `removeLastBlock`
 
@@ -827,6 +858,9 @@ Blocks.prototype.removeLastBlock = function(cb){
 	});
 }
 
+/**
+ * @param {(err?, block?) => *} cb
+ */
 //
 //__API__ `loadLastBlock`
 
@@ -884,6 +918,10 @@ Blocks.prototype.onVerifyBlock = function (block, cb) {
 	}
 }
 
+/**
+ * @param {object} block
+ * @returns {{errors: string[], verified: boolean}}
+ */
 //
 //__API__ `verifyBlockHeader`
 
@@ -953,7 +991,11 @@ Blocks.prototype.verifyBlockHeader = function (block) {
 	return result;
 };
 
-
+/**
+ * @param {object} block
+ * @param {boolean} [checkPreviousBlock=false]
+ * @returns {{errors: string[], verified: boolean}}
+ */
 // Will return all possible errors that are intrinsic to the block.
 // NO DATABASE access
 // checkPreviousBlock: includes check if we have the previous block of the internal chain
@@ -1256,6 +1298,10 @@ __private.applyGenesisBlock = function (block, cb) {
 	});
 };
 
+/**
+ * @param {object} block
+ * @param {(message: string, block?) => *} cb
+ */
 // Main function to process a Verified Block.
 // * Verify the block is compatible with database state (DATABASE readonly)
 // * Apply the block to database if both verifications are ok
@@ -1360,6 +1406,10 @@ Blocks.prototype.processBlock = function (block, cb) {
 		});
 };
 
+/**
+ * @param {object} block
+ * @param {(err: string, block?) => *} cb
+ */
 //
 //__API__ `processEmptyBlock`
 
@@ -1397,6 +1447,10 @@ Blocks.prototype.processEmptyBlock = function (block, cb) {
 
 };
 
+/**
+ * @param {*} blockId
+ * @param {(message, block?) => *} cb
+ */
 //
 //__API__ `simpleDeleteAfterBlock`
 
@@ -1410,6 +1464,10 @@ Blocks.prototype.simpleDeleteAfterBlock = function (blockId, cb) {
 	});
 };
 
+/**
+ * @param {*} peer
+ * @param {(err: string, block?) => *} cb
+ */
 //
 //__API__ `loadBlocksFromPeer`
 
@@ -1445,7 +1503,10 @@ Blocks.prototype.loadBlocksFromPeer = function (peer, cb) {
 	});
 };
 
-
+/**
+ * @param {object} block 
+ * @param {(err, blocks) => *} cb 
+ */
 //
 //__API__ `deleteBlocksBefore`
 
@@ -1477,6 +1538,11 @@ Blocks.prototype.deleteBlocksBefore = function (block, cb) {
 	);
 };
 
+/**
+ * @param {arkjs.ECPair} keypair
+ * @param {number} timestamp
+ * @param {(err?: string) => *} cb
+ */
 //
 //__API__ `generateBlock`
 
@@ -1579,7 +1645,9 @@ Blocks.prototype.onAttachPublicApi = function () {
  	__private.attachApi();
 };
 
-
+/**
+ * @param {() => *} cb
+ */
 //
 //__API__ `cleanup`
 

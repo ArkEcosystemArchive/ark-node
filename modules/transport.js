@@ -389,6 +389,12 @@ __private.removePeer = function (options) {
 };
 
 // Public methods
+
+/**
+ * @param {object} config
+ * @param {object} options
+ * @param {function} cb
+ */
 //
 //__API__ `broadcast`
 
@@ -415,6 +421,12 @@ Transport.prototype.broadcast = function (config, options, cb) {
 	}, cb);
 };
 
+/**
+ * 
+ * @param {object} [config={}]
+ * @param {object} options
+ * @param {function} cb
+ */
 //
 //__API__ `requestFromRandomPeer`
 
@@ -439,6 +451,11 @@ Transport.prototype.requestFromRandomPeer = function (config, options, cb) {
 	});
 };
 
+/**
+ * @param {object} peer
+ * @param {object} options
+ * @param {function} cb
+ */
 //
 //__API__ `requestFromPeer`
 
@@ -563,7 +580,9 @@ Transport.prototype.onBroadcastBlock = function (block) {
 	self.broadcast({all: block.forged, limit: limitbroadcast}, {api: '/blocks', data: {block: blockheaders}, method: 'POST'});
 };
 
-
+/**
+ * @param {() => *} cb
+ */
 //
 //__API__ `cleanup`
 

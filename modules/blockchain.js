@@ -129,11 +129,16 @@ Blockchain.prototype.upsertBlock = function(block, cb){
   return cb && cb(error, __private.blockchain[block.height]);
 }
 
+/**
+ * Check if the block is orphaned, i.e. if the blockchain has already received another (different id) block at same height.
+ * It also check for double forgery (different id, same timestamp, same height and same generatorPublicKey)
+ *
+ * @param {*} block
+ * @returns {boolean} 
+ */
 //
 //__API__ `isOrphaned`
 
-// Check if the block is orphaned, ie if the blockchain has already received another (different id) block at same height
-// It also check for double forgery (different id, same timestamp, same height and same generatorPublicKey)
 Blockchain.prototype.isOrphaned = function(block){
 	if(__private.blockchain[block.height] && __private.blockchain[block.height].id != block.id){
 		if(__private.blockchain[block.height] && __private.blockchain[block.height].generatorPublicKey == block.generatorPublicKey && __private.blockchain[block.height].timestamp == block.timestamp){
@@ -148,27 +153,42 @@ Blockchain.prototype.isOrphaned = function(block){
 	}
 }
 
+/**
+ * Get a block but can't find the previousBlock in the blockchain
+ *
+ * @param {*} block
+ * @returns {boolean}
+ */
 //
 //__API__ `isForked`
 
-// Get a block but can't find the previousBlock in the blockchain
 Blockchain.prototype.isForked = function(block){
 	var previousBlock = __private.blockchain[""+(block.height-1)];
 	return previousBlock && previousBlock.id != block.previousBlock;
 }
 
+/**
+ * Check if block is already in blockchain (ie same id) or already found as orphaned
+ *
+ * @param {*} block
+ * @returns {boolean}
+ */
 //
 //__API__ `isPresent`
 
-// Check if block is already in blockchain (ie same id) or already found as orphaned
 Blockchain.prototype.isPresent = function(block){
 	return (__private.blockchain[block.height] && __private.blockchain[block.height].id == block.id) || __private.orphanedBlocks[block.id];
 }
 
+/**
+ * Check if the blockchain is ready to receive the block (i.e. received the block at height - 1).
+ *
+ * @param {*} block
+ * @returns {boolean}
+ */
 //
 //__API__ `isReady`
 
-// Check if the blockchain is ready to receive the block (ie received the block at height - 1)
 Blockchain.prototype.isReady = function(block){
 	var ready = __private.lastBlock.height == block.height - 1;
 	if(ready){
@@ -180,11 +200,16 @@ Blockchain.prototype.isReady = function(block){
 	}
 }
 
+/**
+ * Set the block to the blockchain model and raise an error if there is already another one at same height.
+ * Does not check if this is coherent with blockchain (i.e. previousBlock).
+ *
+ * @param {*} block
+ * @param {(err?: string, result) => *} [cb=]
+ */
 //
 //__API__ `addBlock`
 
-// Setter the block to the blockchain model, raise error if there is already another one at same height
-// Does not check if this is coherent with blockchain (ie previousBlock)
 Blockchain.prototype.addBlock = function(block, cb){
   var error = null;
   if(!__private.blockchain[block.height]){
@@ -218,6 +243,10 @@ Blockchain.prototype.getPreviousBlock = function(block){
 	return previousBlock;
 }
 
+/**
+ * @param {*} block 
+ * @param {(err?: string, result) => *} cb 
+ */
 //
 //__API__ `removeBlock`
 
@@ -241,7 +270,10 @@ Blockchain.prototype.removeBlock = function(block, cb){
   return cb && cb(error, block);
 };
 
-
+/**
+ * @param {*} height
+ * @returns {number|undefined}
+ */
 //
 //__API__ `getBlockAtHeight`
 

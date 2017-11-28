@@ -106,6 +106,11 @@ __private.attachApi = function () {
 };
 
 // Public methods
+
+/**
+ * @param {string} publicKey
+ * @returns {string}
+ */
 //
 //__API__ `generateAddressByPublicKey`
 

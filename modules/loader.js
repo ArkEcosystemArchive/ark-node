@@ -552,6 +552,9 @@ __private.findGoodPeers = function (heights) {
 
 // Public methods
 
+/**
+ * @param {number} number
+ */
 //
 //__API__ `triggerBlockRemoval`
 
@@ -560,6 +563,9 @@ Loader.prototype.triggerBlockRemoval = function(number){
 	__private.forceRemoveBlocks = number;
 };
 
+/**
+ * @param {function} cb
+ */
 //
 //__API__ `resetMemAccounts`
 
@@ -570,6 +576,9 @@ Loader.prototype.resetMemAccounts = function(cb){
 	}).catch(cb);
 };
 
+/**
+ * @param {function} cb
+ */
 //
 //__API__ `cleanMemAccounts`
 
@@ -580,6 +589,9 @@ Loader.prototype.cleanMemAccounts = function(cb){
 	}).catch(cb);
 };
 
+/**
+ * @param {function} cb
+ */
 //
 //__API__ `rebuildBalance`
 
@@ -618,6 +630,9 @@ Loader.prototype.rebuildBalance = function(cb){
 	});
 };
 
+/**
+ * @param {function} cb
+ */
 //
 //__API__ `rebuildVotes`
 
@@ -628,7 +643,9 @@ Loader.prototype.rebuildVotes = function(cb){
 	}).catch(cb);
 };
 
-
+/**
+ * @returns {object|null}
+ */
 // get the smallest block timestamp at the higjest height from network
 //
 //__API__ `getNetworkSmallestBlock`
@@ -652,6 +669,10 @@ Loader.prototype.getNetworkSmallestBlock = function(){
 	return bestBlock;
 }
 
+/**
+ * @param {boolean} [force=false]
+ * @param {(err?: string|null, network?) => *} cb
+ */
 // Rationale:
 // - We pick 100 random peers from a random peer (could be unreachable).
 // - Then for each of them we grab the height of their blockchain.
@@ -697,6 +718,9 @@ Loader.prototype.getNetwork = function (force, cb) {
 	});
 };
 
+/**
+ * @returns {boolean}
+ */
 //
 //__API__ `syncing`
 
@@ -751,6 +775,9 @@ Loader.prototype.onDownloadBlocks = function (cb) {
 	__private.loadBlocksFromNetwork(cb);
 };
 
+/**
+ * @param {() => *} cb
+ */
 // Shutdown asked.
 //
 //__API__ `cleanup`

@@ -81,7 +81,7 @@ System.prototype.onBind = function (scope) {
 
 /**
  * 
- * @param {*} peer
+ * @param {object} peer
  * @returns {boolean} 
  */
 //

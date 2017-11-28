@@ -343,6 +343,10 @@ shared.sign = function (req, cb) {
 	}, cb);
 };
 
+/**
+ * @param {object} tx
+ * @param {(err?: string) => *} cb
+ */
 //
 //__API__ `processSignature`
 
