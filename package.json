@@ -1,7 +1,38 @@
 {
   "name": "ark-node",
   "version": "0.2.0",
+  "description": "Ark is a next generation crypto-currency and decentralized application platform written entirely in JavaScript.",
+  "keywords": [
+    "ark",
+    "blockchain",
+    "crypto",
+    "cryptocurrency",
+    "dpos",
+    "smartbridge"
+  ],
+  "homepage": "https://ark.io",
+  "bugs": "https://github.com/ArkEcosystem/ark-node/issues",
+  "license": "MIT",
   "private": true,
+  "contributors": [
+    "Boris Povod <boris@crypti.me>",
+    "Pavel Nekrasov <landgraf.paul@gmail.com>",
+    "Oliver Beddows <oliver@lisk.io>",
+    "FX Thoorens <fx.thoorens@ark.io>"
+  ],
+  "main": "app.js",
+  "directories": {
+    "doc": "docs",
+    "example": "optional",
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ArkEcosystem/ark-node.git"
+  },
+  "engines": {
+    "node": ">=4.0.0"
+  },
   "scripts": {
     "start": "node app.js",
     "doc": "docco -t docs/template/arkio.jst -c docs/template/arkio.css modules/* app.js README.md",
@@ -12,7 +43,6 @@
     "test": "./node_modules/.bin/mocha",
     "cov": "./node_modules/.bin/mocha --require blanket -R html-cov test/helpers test/logic > tmp/coverage.html"
   },
-  "author": "Boris Povod <boris@crypti.me>, Pavel Nekrasov <landgraf.paul@gmail.com>, Oliver Beddows <oliver@lisk.io>, FX Thoorens <fx.thoorens@ark.io>",
   "dependencies": {
     "arkjs": "github:arkecosystem/ark-js#mainnet",
     "async": "=2.0.1",
