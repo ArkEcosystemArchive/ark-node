@@ -54,36 +54,34 @@ __private.attachApi = function () {
 		});
 	}
 
-	if (process.env.TOP && process.env.TOP.toUpperCase() === 'TRUE') {
-		router.get('/top', function (req, res, next) {
-			req.sanitize(req.query, schema.top, function (err, report, query) {
-				if (err) { return next(err); }
-				if (!report.isValid) { return res.json({success: false, error: report.issues}); }
+	router.get('/top', function (req, res, next) {
+		req.sanitize(req.query, schema.top, function (err, report, query) {
+			if (err) { return next(err); }
+			if (!report.isValid) { return res.json({success: false, error: report.issues}); }
 
-				self.getAccounts({
-					sort: {
-						balance: -1
-					},
-					offset: query.offset,
-					limit: (query.limit || 100)
-				}, function (err, raw) {
-					if (err) {
-						return res.json({success: false, error: err});
-					}
+			self.getAccounts({
+				sort: {
+					balance: -1
+				},
+				offset: query.offset,
+				limit: (query.limit || 100)
+			}, function (err, raw) {
+				if (err) {
+					return res.json({success: false, error: err});
+				}
 
-					var accounts = raw.map(function (account) {
-						return {
-							address: account.address,
-							balance: account.balance,
-							publicKey: account.publicKey
-						};
-					});
-
-					res.json({success: true, accounts: accounts});
+				var accounts = raw.map(function (account) {
+					return {
+						address: account.address,
+						balance: account.balance,
+						publicKey: account.publicKey
+					};
 				});
+
+				res.json({success: true, accounts: accounts});
 			});
 		});
-	}
+	});
 
 	router.get('/count', function (req, res) {
 		return res.json({success: true, count: Object.keys(__private.accounts).length});
