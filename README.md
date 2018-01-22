@@ -175,6 +175,87 @@ npm run start:newtest
 
 Then you can distribute the config.json (without the delegates secrets inside, and with custom peers settings) to peers to let them join your chain
 
+## Launch your own chain - step by step
+
+First, fork the ark-node repo, make your dummy-node repo and install a node manually!
+
+Create a new network (example "dummy") in network.json and adapt the parameters
+```
+"dummy": {  //define your network name
+  "messagePrefix": "DUMMY message:\n", //define your message prefix
+  "bip32": {
+    "public": 70617039, // ignore unless needed for client side used for serialising keys for backups
+    "private": 70615956 // ignore unless needed for client side used for serialising keys for backups
+  },
+  "pubKeyHash": 30, // define what prefix your addresses should start with: https://en.bitcoin.it/wiki/List_of_address_prefixes
+  "wif": 187, // ignore unless needed for client side used for serialising keys for backups
+  "client": {
+    "token":"DUMMY", // define your token name
+    "symbol":"D", // define your token symbol (like $ for dollar)
+    "explorer":"http://explorer.dummy.io"
+  }
+}
+```
+
+Adapt the file tasks/createGenesisBlock.js
+```
+var network_name = "dummy"; //set your network_name
+```
+Other adaptions are optional
+
+Create a demo folder in the task directory
+```
+cd tasks
+mkdir demo
+```
+
+Generate a genesisBlock.dummy.json + a default config.dummy.json containing all passphrases of genesis delegates
+```
+node createGenesisBlock.js
+```
+
+Copy config.dummy.autoforging.json and genesisBlock.dummy.json to dummy-node directory
+
+Run your network
+
+```
+forever start app.js --config config.dummy.autoforging.json --genesis genesisBlock.dummy.json
+```
+
+
+## Create a node manually (like ARKcommander.sh does)
+
+```
+sudo apt-get update && sudo apt-get dist-upgrade
+sudo apt-get install postgresql postgresql-contrib libpq-dev build-essential python git curl jq libtool autoconf locales automake locate zip unzip htop nmon iftop
+
+sudo -u postgres dropuser --if-exists $USER
+sudo -u postgres psql -c "CREATE USER $USER WITH PASSWORD 'password' CREATEDB;" >&- 2>&-
+createdb ark_dummy
+
+mkdir dummy-node
+git clone https://github.com/ArkEcosystem/dummy-node.git 2>/dev/null
+cd dummy-node
+
+curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.32.0/install.sh 2>/dev/null | bash
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+
+nvm install 6.9.5 >>install.log
+nvm use 6.9.5 >>install.log
+nvm alias default 6.9.5
+
+npm install -g npm
+npm install forever -g
+npm install grunt-cli -g
+
+npm install libpq
+npm install secp256k1
+npm install bindings
+npm install
+
+forever start app.js --config config.dummy.json --genesis genesisBlock.dummy.json
+```
 
 ## Tests
 Load git submodule [ark-js](https://github.com/arkecosystem/ark-js):
