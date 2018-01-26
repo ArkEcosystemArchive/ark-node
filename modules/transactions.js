@@ -473,6 +473,16 @@ shared.addTransactions = function (req, cb) {
 								return cb('Invalid requester public key');
 							}
 
+							var transactionType = req.body.transactionType ? req.body.transactionType : transactionTypes.SEND
+
+							if (typeof transactionType !== 'number' || transactionType % 1 !== 0) {
+								return cb('Invalid transaction type');
+							}
+
+							if (transactionType > 5 || transactionType < 0) {
+								return cb('Invalid transaction type');
+							}
+
 							var secondKeypair = null;
 
 							if (requester.secondSignature) {
@@ -483,7 +493,7 @@ shared.addTransactions = function (req, cb) {
 
 							try {
 								transaction = library.logic.transaction.create({
-									type: transactionTypes.SEND,
+									type: transactionType,
 									amount: req.body.amount,
 									sender: account,
 									recipientId: recipientId,
