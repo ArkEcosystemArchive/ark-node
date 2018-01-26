@@ -1,0 +1,7 @@
+{
+  "editor.insertSpaces": true,
+  "files.trimTrailingWhitespace": true,
+  "[javascript]": {
+    "editor.tabSize": 2
+  }
+}
