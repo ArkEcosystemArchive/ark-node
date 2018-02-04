@@ -30,6 +30,10 @@ __private.keypairs = {};
 // tempo helper to start forging not righ now
 __private.coldstart = new Date().getTime();
 
+/**
+ * @param {(err: null, result: Delegates) => *} cb
+ * @param {*} scope
+ */
 // Constructor
 function Delegates (cb, scope) {
 	library = scope;
@@ -477,6 +481,10 @@ __private.loadMyDelegates = function (cb) {
 
 
 // Public methods
+/**
+ * @param {string} publicKey
+ * @returns {boolean}
+ */
 //
 //__API__ `isAForgingDelegatesPublicKey`
 
@@ -486,7 +494,10 @@ Delegates.prototype.isAForgingDelegatesPublicKey = function(publicKey) {
 	return !!__private.keypairs[publicKey];
 }
 
-
+/**
+ * @param {object} query
+ * @param {(error?, delegates?) => *} cb
+ */
 //
 //__API__ `getDelegates`
 
@@ -545,6 +556,11 @@ Delegates.prototype.getDelegates = function (query, cb) {
 	});
 };
 
+/**
+ * @param {string} publicKey
+ * @param {Array} votes
+ * @param {function} cb
+ */
 //
 //__API__ `checkConfirmedDelegates`
 
@@ -553,6 +569,11 @@ Delegates.prototype.checkConfirmedDelegates = function (publicKey, votes, cb) {
 	return __private.checkDelegates(publicKey, votes, 'confirmed', cb);
 };
 
+/**
+ * @param {string} publicKey
+ * @param {Array} votes
+ * @param {function} cb
+ */
 //
 //__API__ `checkUnconfirmedDelegates`
 
@@ -561,6 +582,10 @@ Delegates.prototype.checkUnconfirmedDelegates = function (publicKey, votes, cb) 
 	return __private.checkDelegates(publicKey, votes, 'unconfirmed', cb);
 };
 
+/**
+ * @param {object} block
+ * @param {(err?: string|null, block?) => *} cb
+ */
 //
 //__API__ `validateBlockSlot`
 
@@ -647,7 +672,9 @@ Delegates.prototype.onAttachPublicApi = function () {
 	__private.attachApi();
 };
 
-
+/**
+ * @param {() => *} cb 
+ */
 //
 //__API__ `cleanup`
 
@@ -656,6 +683,9 @@ Delegates.prototype.cleanup = function (cb) {
 	return cb();
 };
 
+/**
+ * @returns {boolean}
+ */
 // Ready to forge when it is its slot
 //
 //__API__ `isForging`
@@ -665,6 +695,9 @@ Delegates.prototype.isForging = function(){
 	return __private.forging;
 }
 
+/**
+ * @returns {boolean}
+ */
 // Is node active at current height of internal blockchain
 //
 //__API__ `isActiveDelegate`
@@ -674,6 +707,9 @@ Delegates.prototype.isActiveDelegate = function(){
 	return __private.isActiveDelegate;
 }
 
+/**
+ * @param {Array} activeDelegates
+ */
 //
 //__API__ `updateActiveDelegate`
 
@@ -696,6 +732,9 @@ Delegates.prototype.updateActiveDelegate = function(activeDelegates){
 	__private.isActiveDelegate = isActive;
 }
 
+/**
+ * @returns {boolean}
+ */
 //
 //__API__ `enableForging`
 
@@ -709,6 +748,9 @@ Delegates.prototype.enableForging = function () {
 	return __private.forging;
 };
 
+/**
+ * @returns {boolean}
+ */
 //
 //__API__ `disableForging`
 

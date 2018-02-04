@@ -1,5 +1,10 @@
 'use strict';
 
+/**
+ * @param {string} orderBy
+ * @param {object} [options={}]
+ * @returns {{error: string}|{sortField: string, sortMethod: string}}
+ */
 function OrderBy (orderBy, options) {
 	options = (typeof options === 'object') ? options : {};
 	options.sortField  = options.sortField  || null;

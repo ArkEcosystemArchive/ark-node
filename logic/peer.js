@@ -26,6 +26,13 @@ Peer.bind = function (scope) {
 	};
 };
 
+/**
+ * @constructor
+ * @param {string} ip
+ * @param {*} port
+ * @param {*} version
+ * @param {*} os
+ */
 // single Peer object
 function Peer(ip, port, version, os){
 	this.ip = ip.trim();
@@ -80,6 +87,9 @@ Peer.prototype.stopMonitoring = function(){
 	this.intervalId = null;
 }
 
+/**
+ * @param {number} minutesToBan
+ */
 Peer.prototype.ban = function(minutesToBan){
 	this.banuntil = new Date().getTime() + minutesToBan*60*1000;
 	library.logger.info(this + " banned for "+minutesToBan+" minutes");
@@ -104,6 +114,9 @@ Peer.prototype.toObject = function(){
   };
 };
 
+/**
+ * @returns {string}
+ */
 Peer.prototype.toString = function(){
   return this.protocol+"://"+this.ip+":"+this.port;
 };

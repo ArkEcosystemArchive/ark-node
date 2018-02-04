@@ -17,6 +17,10 @@ var modules, library, self, __private = {}, shared = {};
 
 __private.assetTypes = {};
 
+/**
+ * @param {(err: null, result: Multisignatures) => *} cb
+ * @param {*} scope
+ */
 // Constructor
 function Multisignatures (cb, scope) {
 	library = scope;
@@ -339,6 +343,10 @@ shared.sign = function (req, cb) {
 	}, cb);
 };
 
+/**
+ * @param {object} tx
+ * @param {(err?: string) => *} cb
+ */
 //
 //__API__ `processSignature`
 

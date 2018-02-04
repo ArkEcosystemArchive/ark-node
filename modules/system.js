@@ -5,6 +5,10 @@ var os = require('os');
 // Private fields
 var modules, library, self, __private = {}, shared = {};
 
+/**
+ * @param {(err: null, result: System) => *} cb
+ * @param {*} scope
+ */
 // Constructor
 function System (cb, scope) {
 	library = scope;
@@ -21,6 +25,10 @@ function System (cb, scope) {
 // Private methods
 
 // Public methods
+
+/**
+ * @returns {string}
+ */
 //
 //__API__ `getOS`
 
@@ -29,6 +37,9 @@ System.prototype.getOS = function () {
 	return __private.osName;
 };
 
+/**
+ * @returns {string}
+ */
 //
 //__API__ `getVersion`
 
@@ -37,6 +48,9 @@ System.prototype.getVersion = function () {
 	return __private.version;
 };
 
+/**
+ * @returns {number}
+ */
 //
 //__API__ `getPort`
 
@@ -45,6 +59,9 @@ System.prototype.getPort = function () {
 	return __private.port;
 };
 
+/**
+ * @returns {string}
+ */
 //
 //__API__ `getNethash`
 
@@ -62,6 +79,11 @@ System.prototype.onBind = function (scope) {
 	modules = scope;
 };
 
+/**
+ * 
+ * @param {object} peer
+ * @returns {boolean} 
+ */
 //
 //__API__ `isMyself`
 

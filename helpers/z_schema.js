@@ -3,6 +3,10 @@
 var ip = require('ip');
 var bs58check = require('bs58check');
 
+/**
+ * @class
+ * @param {*} network
+ */
 function schema(network){
   this.z_schema = require('z-schema');
 

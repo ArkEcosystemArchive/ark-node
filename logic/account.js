@@ -11,6 +11,10 @@ var slots = require('../helpers/slots.js');
 // Private fields
 var self, db, library, __private = {}, genesisBlock = null;
 
+/**
+ * @param {*} scope
+ * @param {(err: null, result: Account) => *} cb
+ */
 // Constructor
 function Account (scope, cb) {
 	this.scope = scope;

@@ -11,6 +11,10 @@ var constants = require('../helpers/constants.js');
 // Private fields
 var __private = {}, genesisblock = null;
 
+/**
+ * @param {*} scope
+ * @param {(err: null, result: Block) => *} [cb]
+ */
 // Constructor
 function Block (scope, cb) {
 	this.scope = scope;

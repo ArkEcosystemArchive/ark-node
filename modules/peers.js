@@ -28,6 +28,10 @@ var __private = {
 	headers: {}
 };
 
+/**
+ * @param {(err: null, result: Peers) => *} cb
+ * @param {*} scope
+ */
 // Constructor
 function Peers (cb, scope) {
 	library = scope;
@@ -37,6 +41,11 @@ function Peers (cb, scope) {
 }
 
 // Public methods
+
+/**
+ * @param {object} peer
+ * @returns {Peer}
+ */
 //
 //__API__ `inspect`
 
@@ -141,6 +150,11 @@ __private.banManager = function (cb) {
 };
 
 // Public methods
+
+/**
+ * @param {number|object} peer
+ * @returns {object}
+ */
 //
 //__API__ `inspect`
 
@@ -168,6 +182,10 @@ Peers.prototype.inspect = function (peer) {
 	return peer;
 };
 
+/**
+ * @param {Array} array
+ * @returns {Array}
+ */
 function shuffle(array) {
 	var currentIndex = array.length, temporaryValue, randomIndex;
 
@@ -187,6 +205,9 @@ function shuffle(array) {
 	return array;
 }
 
+/**
+ * @returns {Array}
+ */
 //
 //__API__ `listGoodPeers`
 
@@ -202,6 +223,9 @@ Peers.prototype.listGoodPeers = function() {
 	return shuffle(list);
 };
 
+/**
+ * @returns {Array}
+ */
 //
 //__API__ `listPBFTPeers`
 
@@ -217,6 +241,9 @@ Peers.prototype.listPBFTPeers = function() {
 	return shuffle(list);
 };
 
+/**
+ * @returns {Array}
+ */
 //
 //__API__ `listBroadcastPeers`
 

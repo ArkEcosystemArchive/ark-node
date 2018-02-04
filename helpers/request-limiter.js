@@ -2,6 +2,23 @@
 
 var RateLimit = require('express-rate-limit');
 
+/**
+ * @typedef RateLimitOptionalsType
+ * @property {number} [max=]
+ * @property {number} [delayMs=]
+ * @property {number} [delayAfter=]
+ * @property {number} [windowMs=]
+ */
+
+ /**
+ * @typedef RateLimitType
+ * @property {number} max
+ * @property {number} delayMs
+ * @property {number} delayAfter
+ * @property {number} windowMs
+ */
+
+ /** @type {RateLimitType} */
 var defaults = {
 	max: 0, // Disabled
 	delayMs: 0, // Disabled
@@ -9,6 +26,10 @@ var defaults = {
 	windowMs: 60000 // 1 minute window
 };
 
+/**
+ * @param {RateLimitOptionalsType} [limits=]
+ * @returns {RateLimitType}
+ */
 function applyLimits (limits) {
 	if (typeof limits === 'object') {
 		return {

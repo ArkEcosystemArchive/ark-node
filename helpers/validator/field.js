@@ -3,13 +3,12 @@
 module.exports = Field;
 
 /**
- *
+ * @class
  * @param {Validator} validator Validator instance
- * @param {string} path Validation field path
+ * @param {*} [path=[]] Validation field path
  * @param {*} value Validated value
  * @param {object} rules Set of rules
- * @param {*} thisArg Value used as this reference within rule callback calls.
- * @constructor
+ * @param {*} [thisArg=null] Value used as this reference within rule callback calls.
  */
 function Field (validator, path, value, rules, thisArg) {
 	this.isAsync = false;
@@ -26,6 +25,7 @@ function Field (validator, path, value, rules, thisArg) {
 
 /**
  * Create child field.
+ *
  * @param {string} path Validation field path
  * @param {*} value Validated value
  * @param {object} rules Set of rules
@@ -43,8 +43,9 @@ Field.prototype.child = function (path, value, rules, thisArg) {
 };
 
 /**
- * Validate field value and trigger callback on result
- * @param callback
+ * Validate field value and trigger callback on result.
+ *
+ * @param {function} [callback=null]
  */
 //
 //__API__ `validate`
@@ -128,7 +129,8 @@ Field.prototype.validate = function(callback) {
 
 /**
  * End validation. Drop validation stack.
- * @param {Error} err Report and error if passed. Optional
+ *
+ * @param {Error} [err=] Report and error if passed. Optional
  */
 //
 //__API__ `end`
@@ -151,7 +153,8 @@ Field.prototype.end = function(err) {
 
 /**
  * Create validation async. Callback get done function to emit validation end.
- * @param {function(done:function)} callback
+ *
+ * @param {(done: (err?: Error) => void) => void} callback
  */
 //
 //__API__ `async`
@@ -184,6 +187,7 @@ Field.prototype.async = function(callback) {
 
 /**
  * Report an invalid validation result
+ *
  * @param {{}} report Validation report object
  */
 //

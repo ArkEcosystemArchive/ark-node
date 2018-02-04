@@ -3,6 +3,10 @@
 var extend = require('extend');
 var util = require('util');
 
+/**
+ * @constructor
+ * @param {*} config
+ */
 function Sequence (config) {
 	var _default = {
 		onWarning: null,
@@ -43,6 +47,11 @@ Sequence.prototype.__tick = function (cb) {
 	task.worker.apply(task.worker, args);
 };
 
+/**
+ * @param {function} [worker=] 
+ * @param {function|Array} [args=]
+ * @param {*} [done=]
+ */
 //
 //__API__ `add`
 
@@ -61,6 +70,9 @@ Sequence.prototype.add = function (worker, args, done) {
 	}
 };
 
+/**
+ * @returns {number}
+ */
 //
 //__API__ `count`
 

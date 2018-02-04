@@ -8,6 +8,10 @@ var slots = require('../helpers/slots.js');
 // Private fields
 var modules, library, self, __private = {};
 
+/**
+ * @param {(err: null, result: TransactionPool) => void} cb
+ * @param {*} scope
+ */
 // Constructor
 function TransactionPool (cb, scope) {
 	library = scope;
@@ -138,6 +142,10 @@ TransactionPool.prototype.onAddTransactionsToPool = function (transactions, cb) 
 	self.receiveTransactions(transactions, cb);
 };
 
+/**
+ * @param {string} id
+ * @returns {boolean}
+ */
 //
 //__API__ `transactionInPool`
 
@@ -150,6 +158,10 @@ TransactionPool.prototype.transactionInPool = function (id) {
 	].filter(Boolean).length > 0;
 };
 
+/**
+ * @param {string} id
+ * @returns {object}
+ */
 //
 //__API__ `getTransactionFromMempool`
 
@@ -158,6 +170,10 @@ TransactionPool.prototype.getTransactionFromMempool = function (id) {
 	return __private.mempool[id];
 };
 
+/**
+ * @param {string} id
+ * @returns {object}
+ */
 //
 //__API__ `getUnconfirmedTransaction`
 
@@ -166,6 +182,10 @@ TransactionPool.prototype.getUnconfirmedTransaction = function (id) {
 	return self.unconfirmed[id];
 };
 
+/**
+ * @param {string} id
+ * @returns {object}
+ */
 //
 //__API__ `getQueuedTransaction`
 
@@ -174,6 +194,10 @@ TransactionPool.prototype.getQueuedTransaction = function (id) {
 	return self.queued[id];
 };
 
+/**
+ * @param {string} id
+ * @returns {object}
+ */
 //
 //__API__ `getMultisignatureTransaction`
 
@@ -182,6 +206,10 @@ TransactionPool.prototype.getMultisignatureTransaction = function (id) {
 	return self.multisignature[id];
 };
 
+/**
+ * @param {*} ids
+ * @param {(err: null, missingTxIds: Array, txs: Array) => void} cb
+ */
 //
 //__API__ `getMissingTransactions`
 
@@ -190,6 +218,11 @@ TransactionPool.prototype.getMissingTransactions = function (ids, cb) {
 	return __private.getMissingTransactions(ids, cb);
 };
 
+/**
+ * @param {boolean} [reverse=false]
+ * @param {number} [limit=]
+ * @returns {Array}
+ */
 //
 //__API__ `getUnconfirmedTransactionList`
 
@@ -198,7 +231,11 @@ TransactionPool.prototype.getUnconfirmedTransactionList = function (reverse, lim
 	return __private.getTransactionList(self.unconfirmed, reverse, limit);
 };
 
-
+/**
+ * @param {boolean} [reverse=false]
+ * @param {number} [limit=]
+ * @returns {Array}
+ */
 //
 //__API__ `getQueuedTransactionList `
 
@@ -207,6 +244,12 @@ TransactionPool.prototype.getQueuedTransactionList  = function (reverse, limit) 
 	return __private.getTransactionList(self.queued, reverse, limit);
 };
 
+/**
+ * @param {boolean} [reverse=false]
+ * @param {boolean} [ready=false]
+ * @param {number} [limit=]
+ * @return {Array}
+ */
 //
 //__API__ `getMultisignatureTransactionList`
 
@@ -221,6 +264,11 @@ TransactionPool.prototype.getMultisignatureTransactionList = function (reverse, 
 	}
 };
 
+/**
+ * @param {*} reverse Unused
+ * @param {number} [limit]
+ * @returns {Array}
+ */
 //
 //__API__ `getMergedTransactionList`
 
@@ -244,6 +292,9 @@ TransactionPool.prototype.getMergedTransactionList = function (reverse, limit) {
 	return unconfirmed.concat(multisignatures).concat(queued);
 };
 
+/**
+ * @param {object} transaction
+ */
 //
 //__API__ `addUnconfirmedTransaction`
 
@@ -262,6 +313,9 @@ TransactionPool.prototype.addUnconfirmedTransaction = function (transaction) {
 	}
 };
 
+/**
+ * @param {string} id
+ */
 //
 //__API__ `removeUnconfirmedTransaction`
 
@@ -273,6 +327,9 @@ TransactionPool.prototype.removeUnconfirmedTransaction = function (id) {
 	self.removeMultisignatureTransaction(id);
 };
 
+/**
+ * @returns {number}
+ */
 //
 //__API__ `countUnconfirmed`
 
@@ -281,7 +338,10 @@ TransactionPool.prototype.countUnconfirmed = function () {
 	return Object.keys(self.unconfirmed).length;
 };
 
-
+/**
+ * 
+ * @param {string} id
+ */
 //
 //__API__ `removeQueuedTransaction`
 
@@ -290,6 +350,9 @@ TransactionPool.prototype.removeQueuedTransaction = function (id) {
 	delete self.queued[id];
 };
 
+/**
+ * @returns {number}
+ */
 //
 //__API__ `countQueued`
 
@@ -299,7 +362,9 @@ TransactionPool.prototype.countQueued = function () {
 };
 
 
-
+/**
+ * @param {string} id
+ */
 //
 //__API__ `removeMultisignatureTransaction`
 
@@ -308,6 +373,9 @@ TransactionPool.prototype.removeMultisignatureTransaction = function (id) {
 	delete self.multisignature[id];
 };
 
+/**
+ * @returns {number}
+ */
 //
 //__API__ `countMultisignature`
 
@@ -316,6 +384,9 @@ TransactionPool.prototype.countMultisignature = function () {
 	return Object.keys(self.multisignature).length;
 };
 
+/**
+ * @param {object} transaction
+ */
 //
 //__API__ `addToMempool`
 
@@ -324,7 +395,9 @@ TransactionPool.prototype.addToMempool = function(transaction){
 	__private.mempool[transaction.id]=transaction;
 };
 
-
+/**
+ * @returns {number}
+ */
 //
 //__API__ `getMempoolSize`
 
@@ -333,6 +406,10 @@ TransactionPool.prototype.getMempoolSize = function(){
 	return Object.keys(__private.mempool).length;
 };
 
+/**
+ * @param {Array} transactions 
+ * @param {(err, transactions: Array?) => *} cb 
+ */
 //
 //__API__ `receiveTransactions`
 
@@ -380,7 +457,10 @@ TransactionPool.prototype.receiveTransactions = function (transactions, cb) {
 };
 
 
-
+/**
+ * @param {object} transaction
+ * @param {(err?: string) => *} cb
+ */
 //
 //__API__ `queueTransaction`
 
@@ -407,6 +487,10 @@ TransactionPool.prototype.queueTransaction = function (transaction, cb) {
 	return cb();
 };
 
+/**
+ * @param {function} cb
+ * @returns {void}
+ */
 //
 //__API__ `applyUnconfirmedList`
 
@@ -415,6 +499,11 @@ TransactionPool.prototype.applyUnconfirmedList = function (cb) {
 	return __private.applyUnconfirmedList(self.getUnconfirmedTransactionList(true), cb);
 };
 
+/**
+ * @param {*} ids
+ * @param {function} cb
+ * @returns {void}
+ */
 //
 //__API__ `applyUnconfirmedIds`
 
@@ -423,6 +512,11 @@ TransactionPool.prototype.applyUnconfirmedIds = function (ids, cb) {
 	return __private.applyUnconfirmedList(ids, cb);
 };
 
+/**
+ * 
+ * @param {Array} keepUnconfirmedTransactions 
+ * @param {(err?, removedIds: string[], keptIds: string[]) => *} cb 
+ */
 //
 //__API__ `undoUnconfirmedList`
 
@@ -451,6 +545,9 @@ TransactionPool.prototype.undoUnconfirmedList = function (keepUnconfirmedTransac
 	});
 };
 
+/**
+ * @param {(err?, id: string[])} cb
+ */
 // TODO: to remove
 //
 //__API__ `expireTransactions`
@@ -474,7 +571,9 @@ TransactionPool.prototype.expireTransactions = function (cb) {
 	});
 };
 
-
+/**
+ * @param {() => *} cb
+ */
 //
 //__API__ `cleanup`
 
@@ -491,6 +590,10 @@ TransactionPool.prototype.cleanup = function (cb) {
 	});
 };
 
+/**
+ * @param {number} maxtx
+ * @param {function} cb
+ */
 //
 //__API__ `fillPool`
 

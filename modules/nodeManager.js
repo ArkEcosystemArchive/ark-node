@@ -15,6 +15,10 @@ var __private = {
 	keypairs: {}
 };
 
+/**
+ * @param {(err: null, result: NodeManager) => *} cb
+ * @param {*} scope
+ */
 // ## Constructor
 function NodeManager (cb, scope) {
 	library = scope;
@@ -236,6 +240,9 @@ NodeManager.prototype.onRebuildBlockchain = function(blocksToRemove, state, cb) 
 	}, cb);
 };
 
+/**
+ * @param {(err: null, result) => void} cb
+ */
 //
 //__API__ `performSPVFix`
 
@@ -294,6 +301,9 @@ NodeManager.prototype.performSPVFix = function (cb) {
 	}).catch(cb);
 };
 
+/**
+ * @param {function} cb
+ */
 //
 //__API__ `fixDatabase`
 
@@ -308,7 +318,10 @@ NodeManager.prototype.fixDatabase = function(cb){
 	], cb);
 }
 
-
+/**
+ * @todo Not ready for use!
+ * @param {function} cb
+ */
 //
 //__API__ `SPVRebuild`
 

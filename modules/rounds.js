@@ -53,7 +53,10 @@ var __private = {
 
 };
 
-
+/**
+ * @param {(err: null, result: Rounds) => *} cb
+ * @param {*} scope
+ */
 // Constructor
 function Rounds (cb, scope) {
 	library = scope;
@@ -62,6 +65,10 @@ function Rounds (cb, scope) {
 	return cb(null, self);
 }
 
+/**
+ * @param {object} block
+ * @param {function} cb
+ */
 //
 //__API__ `tick`
 
@@ -108,6 +115,10 @@ Rounds.prototype.tick = function(block, cb){
 	}
 }
 
+/**
+ * @param {object} block
+ * @param {function} cb
+ */
 // *backward tick*
 //
 //__API__ `backwardTick`
@@ -456,6 +467,9 @@ Rounds.prototype.onDatabaseLoaded = function (lastBlock) {
 
 };
 
+/**
+ * @param {() => *} cb 
+ */
 //
 //__API__ `cleanup`
 

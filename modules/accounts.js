@@ -17,6 +17,10 @@ var modules, library, self, __private = {}, shared = {};
 __private.assetTypes = {};
 __private.blockReward = new BlockReward();
 
+/**
+ * @param {(err: null, result: Accounts) => *} cb
+ * @param {*} scope
+ */
 // Constructor
 function Accounts (cb, scope) {
 	library = scope;
@@ -102,6 +106,11 @@ __private.attachApi = function () {
 };
 
 // Public methods
+
+/**
+ * @param {string} publicKey
+ * @returns {string}
+ */
 //
 //__API__ `generateAddressByPublicKey`
 

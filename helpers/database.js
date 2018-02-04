@@ -8,6 +8,11 @@ var path = require('path');
 // var isWin = /^win/.test(process.platform);
 // var isMac = /^darwin/.test(process.platform);
 
+/**
+ * @class
+ * @param {*} pgp 
+ * @param {*} db 
+ */
 function Migrator (pgp, db) {
 	this.checkMigrations = function (waterCb) {
 		db.one('SELECT to_regclass(\'migrations\')').then(function (row) {
@@ -112,6 +117,16 @@ function Migrator (pgp, db) {
 	};
 }
 
+/**
+ * @typedef LoggerType
+ * @property {(this: LoggerType, ...any[]) => void} log
+ */
+
+/**
+ * @param {object} config
+ * @param {LoggerType} logger
+ * @param {(err, db) => *} cb
+ */
 module.exports.connect = function (config, logger, cb) {
 	var pgOptions = {
 		pgNative: true
