@@ -75,7 +75,7 @@ var config = {
     address: "0.0.0.0",
     version: config_version,
     fileLogLevel: "info",
-    logFileName: "logs/ark.log",
+    logFileName: "logs/"+network_name+".log",
     consoleLogLevel: "debug",
     trustProxy: false,
     db: {
@@ -139,8 +139,8 @@ var config = {
         options: {
             port: 443,
             address: "0.0.0.0",
-            key: "./ssl/ark.key",
-            cert: "./ssl/ark.crt"
+            key: "./ssl/"+network_name+".key",
+            cert: "./ssl/"+network_name+"crt"
         }
     },
     network: network_name
