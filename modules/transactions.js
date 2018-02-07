@@ -129,23 +129,34 @@ __private.list = function (filter, cb) {
 		return cb(orderBy.error);
 	}
 
-	library.db.query(sql.list({
+	library.db.query(sql.countList({
 		where: where,
-		owner: owner,
-		sortField: orderBy.sortField,
-		sortMethod: orderBy.sortMethod
+		owner: owner
 	}), params).then(function (rows) {
-		var transactions = [];
+		var count = rows.length ? rows[0].count : 0;
 
-		for (var i = 0; i < rows.length; i++) {
-			transactions.push(library.logic.transaction.dbRead(rows[i]));
-		}
+		library.db.query(sql.list({
+			where: where,
+			owner: owner,
+			sortField: orderBy.sortField,
+			sortMethod: orderBy.sortMethod
+		}), params).then(function (rows) {
+			var transactions = [];
 
-		var data = {
-			transactions: transactions,
-		};
+			for (var i = 0; i < rows.length; i++) {
+				transactions.push(library.logic.transaction.dbRead(rows[i]));
+			}
 
-		return cb(null, data);
+			var data = {
+				transactions: transactions,
+				count: count
+			};
+
+			return cb(null, data);
+		}).catch(function (err) {
+			library.logger.error("stack", err.stack);
+			return cb('Transactions#list error');
+		});
 	}).catch(function (err) {
 		library.logger.error("stack", err.stack);
 		return cb('Transactions#list error');
@@ -333,7 +344,7 @@ shared.getTransactions = function (req, cb) {
 				return cb('Failed to get transactions: ' + err);
 			}
 
-			return cb(null, {transactions: data.transactions});
+			return cb(null, {transactions: data.transactions, count: data.count});
 		});
 	});
 };
