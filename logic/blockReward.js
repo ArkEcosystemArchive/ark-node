@@ -61,7 +61,7 @@ BlockReward.prototype.calcReward = function (height) {
 
 //
 BlockReward.prototype.calcSupply = function (height) {
-	return constants.totalAmount + (__private.parseHeight(height) - constants.rewards.offset) * 2;
+	return constants.totalAmount + ((__private.parseHeight(height) - constants.rewards.offset) * Math.pow(10, 8)) * 2;
 };
 
 // Export
