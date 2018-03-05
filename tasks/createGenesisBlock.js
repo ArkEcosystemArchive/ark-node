@@ -366,6 +366,11 @@ var genesisBlock = create({
 
 config.nethash = genesisBlock.payloadHash;
 
+// create directory
+if (!fs.existsSync(output_dir)) {
+    fs.mkdirSync(output_dir);
+}
+
 fs.writeFile(output_dir+"/genesisBlock."+config.network+".json",JSON.stringify(genesisBlock, null, 2));
 fs.writeFile(output_dir+"/config."+config.network+".json",JSON.stringify(config, null, 2));
 
