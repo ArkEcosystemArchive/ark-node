@@ -11,6 +11,8 @@ var networks = require('../networks.json');
 
 // network name that SHOULD already be preconfigured in ../networks.json
 var network_name = "bitcoin";
+var delegates_number = 51;
+
 if(!networks[network_name]){
   console.log("WARNING: no configuration found in networks.json for '"+network_name+"'. Defaulting to 'devnet'");
   network_name = "devnet";
@@ -30,7 +32,7 @@ var config_version = '0.0.1';
 
 // ips of your nodes in your network
 var seed_peers = [
-        {
+      {
         ip: "127.0.0.1",
         port: 4100
       },{
@@ -307,7 +309,7 @@ genesis.publicKey = arkjs.crypto.getKeys(genesis.passphrase).publicKey;
 genesis.address = arkjs.crypto.getAddress(genesis.publicKey, networks[config.network].pubKeyHash);
 
 // creation of delegates
-for(var i=1; i<52; i++){
+for(var i=1; i<=delegates_number; i++){
   var delegate = {
     'passphrase': bip39.generateMnemonic(),
     'username': "genesis_"+i
@@ -370,19 +372,20 @@ fs.writeFile(output_dir+"/genesisBlock."+config.network+".json",JSON.stringify(g
 fs.writeFile(output_dir+"/config."+config.network+".json",JSON.stringify(config, null, 2));
 
 // add delegates passphrases in config for testing on one single node
-for(var i=0;i<51;i++){
+for(var i=0;i<delegates_number;i++){
 	config.forging.secret.push(delegates[i].passphrase);
 }
 fs.writeFile(private_dir+"/config."+config.network+".autoforging.json", JSON.stringify(config, null, 2));
 
 var forging = [];
 seed_peers.forEach(function(seed){
-    forging.push({secret:[]});
+    forging.push([]);
 });
+
 // split all delegates accross all seed_peers
-for(var i=0;i<51;i++){
+for(var i=0;i<delegates_number;i++){
   var seed_index = i % seed_peers.length;
-  forging[seed_index].secret.push(delegates[i].passphrase);
+  forging[seed_index].push(delegates[i].passphrase);
 }
 
 seed_peers.forEach(function(peer,index){
