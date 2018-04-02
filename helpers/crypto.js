@@ -8,7 +8,7 @@ function Crypto(scope){
 }
 
 Crypto.prototype.makeKeypair = function (seed) {
-	return arkjs.crypto.getKeys(seed, this.network);
+	return arkjs.crypto.getKeys(seed, {network: this.network});
 };
 
 Crypto.prototype.sign = function (hash, keypair) {
