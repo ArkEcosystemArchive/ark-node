@@ -1,8 +1,8 @@
 'use strict';
 
 module.exports = {
-	activeDelegates: 51,
-	maximumVotes: 1,
+	activeDelegates: 40,
+	maximumVotes: 5,
 	addressLength: 208,
 	blockHeaderLength: 248,
 	confirmationLength: 77,
@@ -41,6 +41,6 @@ module.exports = {
 		distance: 3000000, // Distance between each milestone
 	},
 	signatureLength: 196,
-	totalAmount: 12500000000000000,
+	totalAmount: 30000000000000000,
 	unconfirmedTransactionTimeOut: 10800 // 1080 blocks
 };

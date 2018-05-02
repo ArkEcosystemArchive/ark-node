@@ -1,0 +1,138 @@
+{
+  "port": 4100,
+  "address": "0.0.0.0",
+  "version": "0.0.1",
+  "fileLogLevel": "info",
+  "logFileName": "logs/ark.log",
+  "consoleLogLevel": "debug",
+  "trustProxy": false,
+  "db": {
+    "host": "localhost",
+    "port": 5432,
+    "database": "bitclaims",
+    "user": null,
+    "password": "password",
+    "poolSize": 20,
+    "poolIdleTimeout": 30000,
+    "reapIntervalMillis": 1000,
+    "logEvents": [
+      "error"
+    ]
+  },
+  "api": {
+    "mount": true,
+    "access": {
+      "whiteList": []
+    },
+    "options": {
+      "limits": {
+        "max": 0,
+        "delayMs": 0,
+        "delayAfter": 0,
+        "windowMs": 60000
+      }
+    }
+  },
+  "peers": {
+    "minimumNetworkReach": 1,
+    "list": [
+      {
+        "ip": "127.0.0.1",
+        "port": 4100
+      },
+      {
+        "ip": "127.0.0.2",
+        "port": 4100
+      },
+      {
+        "ip": "127.0.0.3",
+        "port": 4100
+      },
+      {
+        "ip": "127.0.0.4",
+        "port": 4100
+      },
+      {
+        "ip": "127.0.0.5",
+        "port": 4100
+      }
+    ],
+    "blackList": [],
+    "options": {
+      "limits": {
+        "max": 0,
+        "delayMs": 0,
+        "delayAfter": 0,
+        "windowMs": 60000
+      },
+      "maxUpdatePeers": 20,
+      "timeout": 5000
+    }
+  },
+  "forging": {
+    "coldstart": 6,
+    "force": true,
+    "secret": [
+      "shift sibling brown pretty culture sword sustain liberty yellow design response comic",
+      "property multiply old team hotel ocean under citizen volume rule faith when",
+      "pipe donate vacuum copy donate light tape suspect pretty online swift relief",
+      "finger tonight dinosaur face assist airport lonely mother food control tomorrow allow",
+      "address setup civil stadium broken radio velvet fine enlist benefit use flash",
+      "shoot elite off monitor mixed remember daughter program flavor sample tackle junior",
+      "scatter bread vintage pilot shell brain love bus olympic illness swift middle",
+      "bench garlic obey social cry wash frequent rely choose bus giraffe card",
+      "peanut speed hen income claw chunk life ensure vocal setup hurdle save",
+      "cereal country hollow accuse range danger donate cushion coast cliff electric oyster",
+      "slab cream sport call abuse prosper lounge ozone novel gloom despair foster",
+      "fox escape jelly tank found pyramid lobster glass kind primary siege carry",
+      "banner dilemma yellow vague one cash turtle market badge brother cloud person",
+      "glue disorder error seven word ask steel hint enact afford they pond",
+      "amused certain enlist train web wife diesel toy collect future tired add",
+      "shove fine boss because hedgehog dune canal toe material doll endless town",
+      "jump use wool shrimp reflect city skill exile sign echo correct winner",
+      "magnet girl post drive charge mansion differ jazz artist nut permit keep",
+      "broken palace column width emotion category find apology humble border laundry rebuild",
+      "jaguar boy marble stairs public snake gaze lock rose prefer need bundle",
+      "foil judge stable canyon twelve junior behind hen brick dizzy chalk abuse",
+      "spirit title term soap crack resist deny miss hollow valve reason flag",
+      "void wheel permit diagram album punch room salt owner kidney corn dynamic",
+      "renew web crane bird ignore frequent document gentle mixture observe tree tail",
+      "green dinner order problem involve cool truly husband decorate swallow round salt",
+      "island gift wool gallery peasant adjust announce hint actress snow achieve thumb",
+      "knife shoulder utility alpha deal build canoe wait trash there business sun",
+      "sugar subject merit claim captain addict kit better stove cannon pole rough",
+      "knife modify riot hammer swamp public arrange apology firm already nerve pool",
+      "youth tomorrow have cube air teach patch moment share shift either tail",
+      "pave fire connect nature company prepare layer entire blur cement person adjust",
+      "head flip earn roof solid symptom hen begin explain inherit tumble grow",
+      "aunt cute detect monkey skirt copper example easy night crucial swamp pull",
+      "cheese pudding fossil goat inhale miss evidence velvet opinion illegal banner write",
+      "salad balcony gallery worry miracle power eager tent also engage acid slow",
+      "wheat peace gloom chalk elder donate question pulp penalty attitude grunt face",
+      "romance video indoor breeze grass human praise kind reveal project tourist angle",
+      "poverty sing oxygen canvas thrive funny miss resist electric poem inform immune",
+      "keep thunder course consider stool share agree tobacco sniff art then myself",
+      "divide exact rich tray avocado kind discover surprise void awful saddle brisk"
+    ],
+    "access": {
+      "whiteList": [
+        "127.0.0.1"
+      ]
+    }
+  },
+  "loading": {
+    "verifyOnLoading": false,
+    "loadPerIteration": 5000
+  },
+  "ssl": {
+    "enabled": false,
+    "options": {
+      "port": 443,
+      "address": "0.0.0.0",
+      "key": "./ssl/ark.key",
+      "cert": "./ssl/ark.crt"
+    }
+  },
+  "network": "Bitclaims",
+  "nethash": "317aca698d16678d2b047ccdbc1be8029eb833f21001747aa87654f0c14297f8"
+}
