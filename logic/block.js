@@ -308,12 +308,10 @@ Block.prototype.objectNormalize = function (block) {
 	var i;
 
 	for (i in block) {
-		if (block[i] == null || typeof block[i] === 'undefined') {
+		if (!Block.prototype.schema.properties[i] || block[i] == null || typeof block[i] === 'undefined') {
 			delete block[i];
 		}
 	}
-
-
 
 	var report = this.scope.schema.validate(block, Block.prototype.schema);
 
@@ -331,6 +329,7 @@ Block.prototype.objectNormalize = function (block) {
 	} catch (e) {
 		throw e;
 	}
+// console.log(block);
 
 	return block;
 };

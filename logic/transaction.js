@@ -970,6 +970,10 @@ Transaction.prototype.schema = {
 		},
 		asset: {
 			type: 'object'
+		},
+		hop: {
+			type: 'integer',
+			minimum: 0
 		}
 	},
 	required: ['type', 'timestamp', 'senderPublicKey', 'signature']
@@ -984,8 +988,12 @@ Transaction.prototype.objectNormalize = function (trs) {
 		throw 'Unknown transaction type ' + trs.type;
 	}
 
+	if(trs.hop && trs.hop < 0) {
+		trs.hop = 0;
+	}
+
 	for (var i in trs) {
-		if (trs[i] === null || typeof trs[i] === 'undefined') {
+		if (!Transaction.prototype.schema.properties[i] || trs[i] === null || typeof trs[i] === 'undefined') {
 			delete trs[i];
 		}
 	}
