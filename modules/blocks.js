@@ -913,6 +913,7 @@ Blocks.prototype.verifyBlockHeader = function (block) {
 	// if (block.timestamp - lastBlock.timestamp)/(block.height-lastBlock.height) < blocktime (here 8s)
 	if( block.height > lastBlock.height && block.timestamp < lastBlock.timestamp){
 		result.errors.push('Invalid block timestamp, block forged on another chain');
+		console.log(block)
 	}
 
 	var valid;
