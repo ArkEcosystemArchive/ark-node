@@ -760,7 +760,7 @@ shared.getDelegate = function (req, cb) {
 				if (req.body.publicKey) {
 					return delegate.publicKey === req.body.publicKey;
 				} else if (req.body.username) {
-					return delegate.username === req.body.username;
+					return delegate.username.toLowerCase() === req.body.username.toLowerCase();
 				}
 
 				return false;
