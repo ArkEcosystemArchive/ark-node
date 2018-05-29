@@ -913,7 +913,7 @@ Transaction.prototype.afterSave = function (trs, cb) {
 	}
 };
 
-Transaction.prototype.schema = {
+var txschema =  {
 	id: 'Transaction',
 	type: 'object',
 	properties: {
@@ -979,6 +979,8 @@ Transaction.prototype.schema = {
 	required: ['type', 'timestamp', 'senderPublicKey', 'signature']
 };
 
+Transaction.prototype.schema = txschema;
+
 //
 //__API__ `objectNormalize`
 
@@ -988,18 +990,18 @@ Transaction.prototype.objectNormalize = function (trs) {
 		throw 'Unknown transaction type ' + trs.type;
 	}
 
-	if(trs.hop && trs.hop < 0) {
+	if (!trs.hop || trs.hop < 0) {
 		trs.hop = 0;
 	}
 
 	for (var i in trs) {
-		if (!Transaction.prototype.schema.properties[i] || trs[i] === null || typeof trs[i] === 'undefined') {
+		if (!txschema.properties[i] || trs[i] === null || typeof trs[i] === 'undefined') {
 			delete trs[i];
 		}
 	}
 
 
-	var report = this.scope.schema.validate(trs, Transaction.prototype.schema);
+	var report = this.scope.schema.validate(trs, txschema);
 	if (!report) {
 		var log=this.scope.logger;
 		throw 'Failed to validate transaction schema: ' + this.scope.schema.getLastErrors().map(function (err) {
