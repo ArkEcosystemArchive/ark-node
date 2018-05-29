@@ -986,16 +986,11 @@ Transaction.prototype.objectNormalize = function (trs) {
 		throw 'Unknown transaction type ' + trs.type;
 	}
 
-	if (!trs.hop || trs.hop < 0) {
-		trs.hop = 0;
-	}
-
 	for (var i in trs) {
 		if (!txschema.properties[i] || trs[i] === null || typeof trs[i] === 'undefined') {
 			delete trs[i];
 		}
 	}
-
 
 	var report = this.scope.schema.validate(trs, txschema);
 	if (!report) {
