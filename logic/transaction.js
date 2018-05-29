@@ -970,10 +970,6 @@ var txschema =  {
 		},
 		asset: {
 			type: 'object'
-		},
-		hop: {
-			type: 'integer',
-			minimum: 0
 		}
 	},
 	required: ['type', 'timestamp', 'senderPublicKey', 'signature']
