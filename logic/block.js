@@ -292,6 +292,10 @@ var blockschema = {
 			type: 'array',
 			uniqueItems: true
 		},
+		transactionIds: {
+			type: 'array',
+			uniqueItems: true
+		},
 		version: {
 			type: 'integer',
 			minimum: 0
@@ -329,9 +333,9 @@ Block.prototype.objectNormalize = function (block) {
 			block.transactions[i] = this.scope.transaction.objectNormalize(block.transactions[i]);
 		}
 	} catch (e) {
+		console.log(e);
 		throw e;
 	}
-// console.log(block);
 
 	return block;
 };
