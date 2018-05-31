@@ -970,6 +970,10 @@ var txschema =  {
 		},
 		asset: {
 			type: 'object'
+		},
+		hop: {
+			type: 'integer',
+			minimum: 0
 		}
 	},
 	required: ['type', 'timestamp', 'senderPublicKey', 'signature']
@@ -991,6 +995,8 @@ Transaction.prototype.objectNormalize = function (trs) {
 			delete trs[i];
 		}
 	}
+
+	if(!trs.hop || trs.hop < 0) trs.hop = 0;
 
 	var report = this.scope.schema.validate(trs, txschema);
 	if (!report) {
