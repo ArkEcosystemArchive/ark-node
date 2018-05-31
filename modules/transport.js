@@ -26,15 +26,11 @@ function Transport (cb, scope) {
 	self = this;
 
 	setInterval(function(){
-		if(__private.broadcastTransactions.length > 0){
-			var transactions = __private.broadcastTransactions;
-			if(__private.broadcastTransactions.length > 10){
-				transactions = __private.broadcastTransactions.splice(0,10);
-			}
-			else{
-				__private.broadcastTransactions=[];
-			}
-			self.broadcast({limit: 5}, {api: '/transactions', data: {transactions: transactions}, method: 'POST'});
+		var maxspliced = 10;
+		if(maxspliced > __private.broadcastTransactions.length) maxspliced = __private.broadcastTransactions.length;
+		if(maxspliced > 0){
+			var transactions = __private.broadcastTransactions.splice(0, maxspliced);
+			self.broadcast({limit: 20}, {api: '/transactions', data: {transactions: transactions}, method: 'POST'});
 		}
 	}, 3000);
 

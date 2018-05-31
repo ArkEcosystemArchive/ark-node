@@ -499,12 +499,13 @@ NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 					modules.blockchain.removeBlock(block);
 					return mSequence(err, block);
 				}
-				modules.blockchain.upsertBlock(block);
 				library.logger.debug("processing block with "+block.transactions.length+" transactions", block.height);
 				return library.bus.message('verifyBlock', block, function(err){
 					if(err){
 						library.logger.error("Error processing block at height", block.height);
-						modules.blockchain.removeBlock(block);
+					}
+					else {
+						modules.blockchain.upsertBlock(block);
 					}
 					return mSequence(err, block);
 				});
