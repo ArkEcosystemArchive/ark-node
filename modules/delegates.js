@@ -14,7 +14,7 @@ var schema = require('../schema/delegates.js');
 var slots = require('../helpers/slots.js');
 var sql = require('../sql/delegates.js');
 var transactionTypes = require('../helpers/transactionTypes.js');
-var crypto = require('../helpers/crypto.js');
+var crypto = require('crypto');
 
 // Private fields
 var modules, library, self, __private = {}, shared = {};
