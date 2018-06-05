@@ -30,9 +30,9 @@ function Transport (cb, scope) {
 		if(maxspliced > __private.broadcastTransactions.length) maxspliced = __private.broadcastTransactions.length;
 		if(maxspliced > 0){
 			var transactions = __private.broadcastTransactions.splice(0, maxspliced);
-			self.broadcast({limit: 20}, {api: '/transactions', data: {transactions: transactions}, method: 'POST'});
+			self.broadcast({limit: 5}, {api: '/transactions', data: {transactions: transactions}, method: 'POST'});
 		}
-	}, 3000);
+	}, 10000);
 
 	cb(null, self);
 }
