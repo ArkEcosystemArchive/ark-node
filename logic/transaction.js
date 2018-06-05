@@ -996,7 +996,7 @@ Transaction.prototype.objectNormalize = function (trs) {
 		}
 	}
 
-	if(!trs.hop || trs.hop < 0) trs.hop = 0;
+	if(!trs.hop || trs.hop < 0) trs.hop = 4;
 
 	var report = this.scope.schema.validate(trs, txschema);
 	if (!report) {

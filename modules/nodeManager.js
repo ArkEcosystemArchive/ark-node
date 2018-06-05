@@ -609,7 +609,7 @@ NodeManager.prototype.onTransactionsReceived = function(transactions, source, cb
 							}
 						}
 						else { // TODO: backward compatibility, to deprecate
-							transaction.hop = 1;
+							transaction.hop = 4;
 							transaction.broadcast = true;
 						}
 						skimmedtransactions.push(transaction);
