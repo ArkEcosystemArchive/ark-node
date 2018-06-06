@@ -112,7 +112,7 @@ __private.attachApi = function () {
 				return res.json({success: false, error: 'Invalid block id sequence'});
 			}
 
-			escapeIds = [escapedIds[0]];
+			escapedIds = [escapedIds[0]];
 
 			var lastBlock = modules.blockchain.getLastBlock()
 			library.db.query(sql.getCommonBlock, escapedIds).then(function (rows) {
