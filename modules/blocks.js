@@ -393,7 +393,7 @@ __private.popLastBlock = function (oldLastBlock, cb) {
 };
 
 __private.getIdSequence = function (height, cb) {
-	library.db.query(sql.getIdSequence, { height: height, limit: 10, delegates: slots.delegates, activeDelegates: constants.activeDelegates }).then(function (rows) {
+	library.db.query(sql.getIdSequence, { height: height, limit: 1, delegates: slots.delegates, activeDelegates: constants.activeDelegates }).then(function (rows) {
 		if (rows.length === 0) {
 			return cb('Failed to get id sequence for height: ' + height);
 		}
@@ -526,7 +526,7 @@ Blocks.prototype.lastReceipt = function (lastReceipt) {
 
 		else {
 			__private.lastReceipt.stale = __private.lastReceipt.secondsAgo > 60;
-			__private.lastReceipt.rebuild = __private.lastReceipt.secondsAgo > 200;
+			__private.lastReceipt.rebuild = __private.lastReceipt.secondsAgo > 1000;
 		}
 	}
 	return __private.lastReceipt;
