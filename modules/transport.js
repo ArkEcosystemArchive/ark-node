@@ -26,17 +26,13 @@ function Transport (cb, scope) {
 	self = this;
 
 	setInterval(function(){
-		if(__private.broadcastTransactions.length > 0){
-			var transactions = __private.broadcastTransactions;
-			if(__private.broadcastTransactions.length > 10){
-				transactions = __private.broadcastTransactions.splice(0,10);
-			}
-			else{
-				__private.broadcastTransactions=[];
-			}
+		var maxspliced = 10;
+		if(maxspliced > __private.broadcastTransactions.length) maxspliced = __private.broadcastTransactions.length;
+		if(maxspliced > 0){
+			var transactions = __private.broadcastTransactions.splice(0, maxspliced);
 			self.broadcast({limit: 5}, {api: '/transactions', data: {transactions: transactions}, method: 'POST'});
 		}
-	}, 3000);
+	}, 10000);
 
 	cb(null, self);
 }
@@ -115,6 +111,8 @@ __private.attachApi = function () {
 
 				return res.json({success: false, error: 'Invalid block id sequence'});
 			}
+
+			escapedIds = [escapedIds[0]];
 
 			var lastBlock = modules.blockchain.getLastBlock()
 			library.db.query(sql.getCommonBlock, escapedIds).then(function (rows) {

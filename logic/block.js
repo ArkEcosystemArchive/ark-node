@@ -242,7 +242,7 @@ Block.prototype.dbSave = function (block) {
 	};
 };
 
-Block.prototype.schema = {
+var blockschema = {
 	id: 'Block',
 	type: 'object',
 	properties: {
@@ -292,6 +292,10 @@ Block.prototype.schema = {
 			type: 'array',
 			uniqueItems: true
 		},
+		transactionIds: {
+			type: 'array',
+			uniqueItems: true
+		},
 		version: {
 			type: 'integer',
 			minimum: 0
@@ -300,6 +304,8 @@ Block.prototype.schema = {
 	required: ['blockSignature', 'generatorPublicKey', 'numberOfTransactions', 'payloadHash', 'payloadLength', 'timestamp', 'totalAmount', 'totalFee', 'reward', 'transactions', 'version']
 };
 
+
+Block.prototype.schema = blockschema;
 //
 //__API__ `objectNormalize`
 
@@ -308,14 +314,12 @@ Block.prototype.objectNormalize = function (block) {
 	var i;
 
 	for (i in block) {
-		if (block[i] == null || typeof block[i] === 'undefined') {
+		if (!blockschema.properties[i] || block[i] == null || typeof block[i] === 'undefined') {
 			delete block[i];
 		}
 	}
 
-
-
-	var report = this.scope.schema.validate(block, Block.prototype.schema);
+	var report = this.scope.schema.validate(block, blockschema);
 
 
   if (!report) {
@@ -329,6 +333,7 @@ Block.prototype.objectNormalize = function (block) {
 			block.transactions[i] = this.scope.transaction.objectNormalize(block.transactions[i]);
 		}
 	} catch (e) {
+		console.log(e);
 		throw e;
 	}
 
