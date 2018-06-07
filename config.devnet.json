@@ -1,7 +1,7 @@
 {
   "port": 4002,
   "address": "0.0.0.0",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "fileLogLevel": "info",
   "logFileName": "logs/ark.log",
   "consoleLogLevel": "debug",
