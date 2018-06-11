@@ -926,6 +926,12 @@ var txschema =  {
 		blockId: {
 			type: 'string'
 		},
+		blockid: {
+			type: 'string'
+		},
+		confirmations: {
+			type: 'integer'
+		},
 		type: {
 			type: 'integer'
 		},
