@@ -104,21 +104,36 @@ __private.updatePeersList = function (cb) {
 				return cb();
 			}
 
-			var peers = res.body.peers;
+			var reach = library.config.peers.queryReach || 20;
+
+			var peers = res.body.peers
+				.filter(peer => peer.ip.substr(0,3) != 127) // exclude loopback addresses
+				.slice(0, reach); // don't query everyone - that would be spammy
 
 			async.each(peers, function (peer, eachCb) {
+
 				peer = self.inspect(peer);
 
 				library.schema.validate(peer, schema.updatePeersList.peer, function (err) {
 					if (err) {
 						err.forEach(function (e) {
-							library.logger.error(['Rejecting invalid peer:', peer.ip, e.path, e.message].join(' '));
 						});
 
-						return eachCb();
 					} else {
-						self.accept(peer);
-						return eachCb();
+						// make sure every node we're trying to add is real
+						modules.transport.requestFromPeer(peer, {
+							api: '/status',
+							method: 'GET'
+						}, function (err, res) {
+							if (res.body && res.body.height) {
+								library.logger.debug("Adding peer", peer.ip);
+								self.accept(peer);
+								return eachCb();
+							} else {
+								library.logger.error(['Rejecting invalid peer:', peer.ip, e.path, e.message].join(' '));
+								return eachCb();
+							}
+						});
 					}
 				});
 			}, cb);
