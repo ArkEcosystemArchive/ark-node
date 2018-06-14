@@ -111,12 +111,12 @@ __private.updatePeersList = function (cb) {
 				.slice(0, reach); // don't query everyone - that would be spammy
 
 			async.each(peers, function (peer, eachCb) {
-
 				peer = self.inspect(peer);
 
 				library.schema.validate(peer, schema.updatePeersList.peer, function (err) {
 					if (err) {
 						err.forEach(function (e) {
+							library.logger.error(['Rejecting invalid peer:', peer.ip, e.path, e.message].join(' '));
 						});
 
 					} else {
