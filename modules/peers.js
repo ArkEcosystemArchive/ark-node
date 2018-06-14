@@ -107,8 +107,9 @@ __private.updatePeersList = function (cb) {
 			var reach = library.config.peers.queryReach || 20;
 
 			var peers = res.body.peers
-				.filter(peer => peer.ip.substr(0,3) != 127) // exclude loopback addresses
+				.filter(peer => peer.ip.substr(0,3) != "127") // exclude loopback addresses
 				.slice(0, reach); // don't query everyone - that would be spammy
+				.peers.sort((a, b) => a.delay - b.delay) // sort by delay
 
 			async.each(peers, function (peer, eachCb) {
 				peer = self.inspect(peer);

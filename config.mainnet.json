@@ -34,6 +34,7 @@
     }
   },
   "peers": {
+    "queryReach": 20,
     "minimumNetworkReach": 20,
     "list": [
       {"ip":"5.39.9.240", "port":4001},
