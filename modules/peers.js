@@ -108,8 +108,8 @@ __private.updatePeersList = function (cb) {
 
 			var peers = res.body.peers
 				.filter(peer => peer.ip.substr(0,3) != "127") // exclude loopback addresses
+				.peers.sort((a, b) => return 0.5 - Math.random()) // randomize the list to prevent malicious list crafting
 				.slice(0, reach); // don't query everyone - that would be spammy
-				.peers.sort((a, b) => a.delay - b.delay) // sort by delay
 
 			async.each(peers, function (peer, eachCb) {
 				peer = self.inspect(peer);
