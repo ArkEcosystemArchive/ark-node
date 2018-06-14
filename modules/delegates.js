@@ -166,18 +166,18 @@ __private.attachApi = function () {
 				});
 			});
 		});
-	
-		router.get('/forging/status', function (req, res) {
-			library.schema.validate(req.query, schema.forgingStatus, function (err) {
-				if (err) {
-					return res.json({success: false, error: err[0].message});
-				}
-	
-				return res.json({success: true, enabled: !!__private.keypairs[req.query.publicKey]});
-			});
-		});	
 
 	}
+
+	router.get('/forging/status', function (req, res) {
+		library.schema.validate(req.query, schema.forgingStatus, function (err) {
+			if (err) {
+				return res.json({success: false, error: err[0].message});
+			}
+
+			return res.json({success: true, enabled: !!__private.keypairs[req.query.publicKey]});
+		});
+	});	
 
 	
 	// router.map(__private, {

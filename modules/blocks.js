@@ -506,12 +506,12 @@ Blocks.prototype.lastReceipt = function (lastReceipt) {
 		__private.lastReceipt.secondsAgo = Math.floor((timeNow -  __private.lastReceipt.getTime()) / 1000);
 		if(modules.delegates.isActiveDelegate()){
 			__private.lastReceipt.stale = __private.lastReceipt.secondsAgo > 8;
-			__private.lastReceipt.rebuild = __private.lastReceipt.secondsAgo > 60;
+			__private.lastReceipt.rebuild = __private.lastReceipt.secondsAgo > 1000;
 		}
 
 		else if(modules.delegates.isForging()){
 			__private.lastReceipt.stale = __private.lastReceipt.secondsAgo > 30;
-			__private.lastReceipt.rebuild = __private.lastReceipt.secondsAgo > 100;
+			__private.lastReceipt.rebuild = __private.lastReceipt.secondsAgo > 1000;
 		}
 
 		else {
