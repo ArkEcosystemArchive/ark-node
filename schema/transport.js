@@ -49,8 +49,7 @@ module.exports = {
 				format: 'csv'
 			},
 			blockid: {
-				type: 'string',
-				maxLength: 64
+				type: 'integer'
 			}
 		},
 		required: ['ids']
