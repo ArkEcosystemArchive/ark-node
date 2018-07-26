@@ -34,7 +34,7 @@
     "json-schema": "=0.2.3",
     "json-sql": "LiskHQ/json-sql#27e1ed1",
     "lodash": "=4.16.2",
-    "method-override": "=2.3.6",
+    "method-override": "=2.3.10",
     "pg-monitor": "=0.5.11",
     "pg-native": "=1.10.0",
     "pg-promise": "=5.3.3",
