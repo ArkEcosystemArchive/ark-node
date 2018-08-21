@@ -1,6 +1,5 @@
 BEGIN;
 
-CREATE INDEX IF NOT EXISTS "votes_uniq" ON votes ("votes", "transactionId");
 CREATE INDEX IF NOT EXISTS "delegates_username_uniq" ON delegates ("username");
 CREATE INDEX IF NOT EXISTS "delegates_transactionId_uniq" ON delegates ("transactionId");
 
