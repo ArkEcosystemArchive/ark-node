@@ -160,7 +160,8 @@ NodeManager.prototype.onBlocksReceived = function(blocks, peer, cb) {
 			block.totalAmount = parseInt(block.totalAmount);
 			block.totalFee = parseInt(block.totalFee);
 			block.verified = false;
-		  block.processed = false;
+			block.processed = false;
+			if (block.numberOfTransactions == 0) block.transactions = [];
 			block.broadcast = blocks.length == 1;
 
 			// rationale: onBlocksReceived received is called within another thread than onBlockReceived
@@ -402,12 +403,12 @@ NodeManager.prototype.onBlockReceived = function(block, peer, cb) {
 					modules.blockchain.removeBlock(block);
 					return mSequence && mSequence(err, block);
 				}
-				modules.blockchain.upsertBlock(block);
 				library.logger.debug("processing block with "+block.transactions.length+" transactions", block.height);
 				return library.bus.message('verifyBlock', block, function(err){
 					if(err){
 						library.logger.error("Error processing block at height", block.height);
-						modules.blockchain.removeBlock(block);
+					} else {
+						modules.blockchain.upsertBlock(block);
 					}
 					return mSequence && mSequence(err, block);
 				});
