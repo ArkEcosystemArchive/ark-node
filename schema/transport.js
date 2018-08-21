@@ -47,6 +47,9 @@ module.exports = {
 			ids: {
 				type: 'string',
 				format: 'csv'
+			},
+			blockid: {
+				type: 'integer'
 			}
 		},
 		required: ['ids']
