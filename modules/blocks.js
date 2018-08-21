@@ -393,7 +393,7 @@ __private.popLastBlock = function (oldLastBlock, cb) {
 };
 
 __private.getIdSequence = function (height, cb) {
-	library.db.query(sql.getIdSequence, { height: height, limit: 10, delegates: slots.delegates, activeDelegates: constants.activeDelegates }).then(function (rows) {
+	library.db.query(sql.getIdSequence, { height: height, limit: 1, delegates: slots.delegates, activeDelegates: constants.activeDelegates }).then(function (rows) {
 		if (rows.length === 0) {
 			return cb('Failed to get id sequence for height: ' + height);
 		}
@@ -516,17 +516,17 @@ Blocks.prototype.lastReceipt = function (lastReceipt) {
 		__private.lastReceipt.secondsAgo = Math.floor((timeNow -  __private.lastReceipt.getTime()) / 1000);
 		if(modules.delegates.isActiveDelegate()){
 			__private.lastReceipt.stale = __private.lastReceipt.secondsAgo > 8;
-			__private.lastReceipt.rebuild = __private.lastReceipt.secondsAgo > 60;
+			__private.lastReceipt.rebuild = __private.lastReceipt.secondsAgo > 1000;
 		}
 
 		else if(modules.delegates.isForging()){
 			__private.lastReceipt.stale = __private.lastReceipt.secondsAgo > 30;
-			__private.lastReceipt.rebuild = __private.lastReceipt.secondsAgo > 100;
+			__private.lastReceipt.rebuild = __private.lastReceipt.secondsAgo > 1000;
 		}
 
 		else {
 			__private.lastReceipt.stale = __private.lastReceipt.secondsAgo > 60;
-			__private.lastReceipt.rebuild = __private.lastReceipt.secondsAgo > 200;
+			__private.lastReceipt.rebuild = __private.lastReceipt.secondsAgo > 1000;
 		}
 	}
 	return __private.lastReceipt;
@@ -913,6 +913,7 @@ Blocks.prototype.verifyBlockHeader = function (block) {
 	// if (block.timestamp - lastBlock.timestamp)/(block.height-lastBlock.height) < blocktime (here 8s)
 	if( block.height > lastBlock.height && block.timestamp < lastBlock.timestamp){
 		result.errors.push('Invalid block timestamp, block forged on another chain');
+		console.log(block)
 	}
 
 	var valid;

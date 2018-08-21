@@ -45,10 +45,14 @@ function CheckIpInList (list, addr, returnListIsEmpty) {
 	}
 
 	// Check subnets
-	for (i = 0, n = list._subNets.length; i < n; i++) {
-		if (list._subNets[i].contains(addr)) {
-			return true;
+	try {
+			for (i = 0, n = list._subNets.length; i < n; i++) {
+			if (list._subNets[i].contains(addr)) {
+				return true;
+			}
 		}
+	} catch (error) {
+		return false;
 	}
 
 	// IP address not found
