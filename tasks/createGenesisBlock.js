@@ -6,86 +6,153 @@ var crypto = require('crypto');
 var bip39 = require('bip39');
 var ByteBuffer = require('bytebuffer');
 var bignum = require('../helpers/bignum.js');
-var ed = require('../helpers/ed.js');
+var Crypto = require('../helpers/crypto.js');
+var networks = require('../networks.json');
 
+// network name that SHOULD already be preconfigured in ../networks.json
+var network_name = "bitcoin";
+if(!networks[network_name]){
+  console.log("WARNING: no configuration found in networks.json for '"+network_name+"'. Defaulting to 'devnet'");
+  network_name = "devnet";
+}
+
+// directory to export passphrases of premine account and genesis delegates. Should exist
+var private_dir = './demo';
+
+// directory to export config and genesisBlock files. Should exist
+var output_dir = './demo';
+
+// default port for node
+var default_port = 4100;
+
+// version of network to set in the config file
+var config_version = '0.0.1';
+
+// ips of your nodes in your network
+var seed_peers = [
+        {
+        ip: "127.0.0.1",
+        port: 4100
+      },{
+        ip: "127.0.0.2",
+        port: 4100
+      },{
+        ip: "127.0.0.3",
+        port: 4100
+      },{
+        ip: "127.0.0.4",
+        port: 4100
+      },{
+        ip: "127.0.0.5",
+        port: 4100
+      }
+];
+
+// default db named
+var db_name = "ark_" + network_name;
+
+// optional premined accounts. Example :
+// [
+//   {address:"Aoasdk8wehw98eve8fvwr", total:13940327},
+//   {address:"A12lknlkh23902h3n4l2234", total:1000000000}
+// ]
+// total in satoshi
+var genesisAccounts = [];
+if(fs.existsSync('./private/genesis.'+network_name+'.accounts.json')) {
+    var genesisAccounts = JSON.parse(fs.readFileSync('./private/genesis.'+network_name+'.accounts.json'));
+}
+else {
+  console.log("WARNING: no premined accounts found ('./private/genesis."+network_name+".accounts.json').");
+}
+
+// Total of premined token in satoshi. The premined accounts will be substracted to this
+var totalpremine = 2100000000000000;
+
+
+// config file that will be tuned and exported
 var config = {
-    "port": 4000,
-    "address": "127.0.0.1",
-    "version": "0.3.0",
-    "fileLogLevel": "info",
-    "logFileName": "logs/ark.log",
-    "consoleLogLevel": "debug",
-    "trustProxy": false,
-    "db": {
-        "host": "localhost",
-        "port": 5432,
-        "database": "ark_testnet",
-        "user": null,
-        "password": "password",
-        "poolSize": 20,
-        "poolIdleTimeout": 30000,
-        "reapIntervalMillis": 1000,
-        "logEvents": [
+    port: default_port,
+    address: "0.0.0.0",
+    version: config_version,
+    fileLogLevel: "info",
+    logFileName: "logs/ark.log",
+    consoleLogLevel: "debug",
+    trustProxy: false,
+    db: {
+        host: "localhost",
+        port: 5432,
+        database: db_name,
+        user: null,
+        password: "password",
+        poolSize: 20,
+        poolIdleTimeout: 30000,
+        reapIntervalMillis: 1000,
+        logEvents: [
             "error"
         ]
     },
-    "api": {
-        "mount": true,
-        "access": {
-            "whiteList": []
+    api: {
+        mount:true,
+        access: {
+            whiteList: []
         },
-        "options": {
-            "limits": {
-                "max": 0,
-                "delayMs": 0,
-                "delayAfter": 0,
-                "windowMs": 60000
+        options: {
+            limits: {
+                max: 0,
+                delayMs: 0,
+                delayAfter: 0,
+                windowMs: 60000
             }
         }
     },
-    "peers": {
-        "minimumNetworkReach":20,
-        "list": [{"ip":"127.0.0.1", "port":4000}],
-        "blackList": [],
-        "options": {
-            "limits": {
-                "max": 0,
-                "delayMs": 0,
-                "delayAfter": 0,
-                "windowMs": 60000
+    peers: {
+        minimumNetworkReach:1,
+        list: seed_peers,
+        blackList: [],
+        options: {
+            limits: {
+                max: 0,
+                delayMs: 0,
+                delayAfter: 0,
+                windowMs: 60000
             },
-            "maxUpdatePeers": 20,
-            "timeout": 5000
+            maxUpdatePeers: 20,
+            timeout: 5000
         }
     },
-    "forging": {
-        "coldstart": 6,
-        "force": true,
-        "secret": [],
-        "access": {
-            "whiteList": [
+    forging: {
+        coldstart: 6,
+        force: true,
+        secret: [],
+        access: {
+            whiteList: [
                 "127.0.0.1"
             ]
         }
     },
-    "loading": {
-        "verifyOnLoading": false,
-        "loadPerIteration": 5000
+    loading: {
+        verifyOnLoading: false,
+        loadPerIteration: 5000
     },
-    "ssl": {
-        "enabled": false,
-        "options": {
-            "port": 443,
-            "address": "0.0.0.0",
-            "key": "./ssl/ark.key",
-            "cert": "./ssl/ark.crt"
+    ssl: {
+        enabled: false,
+        options: {
+            port: 443,
+            address: "0.0.0.0",
+            key: "./ssl/ark.key",
+            cert: "./ssl/ark.crt"
         }
-    }
+    },
+    network: network_name
+};
+// general functions
+makeKeypair = function (seed) {
+	return arkjs.crypto.getKeys(seed, networks[config.network]);
 };
 
 sign = function (block, keypair) {
 	var hash = getHash(block);
-	return ed.sign(hash, keypair).toString('hex');
+	return keypair.sign(hash).toDER().toString("hex");
 };
 
 
@@ -106,7 +173,7 @@ getHash = function (block) {
 
 
 getBytes = function (block) {
-	var size = 4 + 4 + 4 + 8 + 4 + 4 + 8 + 8 + 4 + 4 + 4 + 32 + 32 + 66;
+	var size = 4 + 4 + 4 + 8 + 4 + 4 + 8 + 8 + 4 + 4 + 4 + 32 + 32 + 64;
 	var b, i;
 
 	try {
@@ -207,7 +274,6 @@ create = function (data) {
 
   block.id=getId(block);
 
-
 	try {
 		block.blockSignature = sign(block, data.keypair);
 	} catch (e) {
@@ -217,84 +283,117 @@ create = function (data) {
 	return block;
 }
 
+
+// START of the script
+
 var delegates = [];
-var votes = [];
 var transactions = [];
+var remainingfund = {};
+arkjs.crypto.setNetworkVersion(networks[network_name].pubKeyHash);
 
 var genesis = {
   passphrase: bip39.generateMnemonic(),
-  balance: 12500000000000000
-}
+  balance: totalpremine
+};
 
 var premine = {
   passphrase: bip39.generateMnemonic()
-}
+};
 
 premine.publicKey = arkjs.crypto.getKeys(premine.passphrase).publicKey;
-premine.address = arkjs.crypto.getAddress(premine.publicKey);
+premine.address = arkjs.crypto.getAddress(premine.publicKey, networks[config.network].pubKeyHash);
 
 genesis.publicKey = arkjs.crypto.getKeys(genesis.passphrase).publicKey;
-genesis.address = arkjs.crypto.getAddress(genesis.publicKey);
-genesis.wif = arkjs.crypto.getKeys(genesis.passphrase).toWIF();
+genesis.address = arkjs.crypto.getAddress(genesis.publicKey, networks[config.network].pubKeyHash);
 
-var premineTx = arkjs.transaction.createTransaction(genesis.address,genesis.balance,null, premine.passphrase)
-
-premineTx.fee = 0;
-premineTx.timestamp = 0;
-premineTx.senderId = premine.address;
-premineTx.signature = arkjs.crypto.sign(premineTx,arkjs.crypto.getKeys(genesis.passphrase));
-premineTx.id = arkjs.crypto.getId(premineTx);
-
-transactions.push(premineTx);
-
+// creation of delegates
 for(var i=1; i<52; i++){
   var delegate = {
     'passphrase': bip39.generateMnemonic(),
     'username': "genesis_"+i
   };
 
+	delegate.publicKey = arkjs.crypto.getKeys(delegate.passphrase).publicKey;
+	delegate.address = arkjs.crypto.getAddress(delegate.publicKey, networks[config.network].pubKeyHash);
+
+	// create delegate
   var createDelegateTx = arkjs.delegate.createDelegate(delegate.passphrase, delegate.username);
   createDelegateTx.fee = 0;
   createDelegateTx.timestamp = 0;
-  createDelegateTx.senderId = genesis.address;
+  createDelegateTx.senderId = delegate.address;
   createDelegateTx.signature = arkjs.crypto.sign(createDelegateTx,arkjs.crypto.getKeys(delegate.passphrase));
   createDelegateTx.id = arkjs.crypto.getId(createDelegateTx);
 
-
-  delegate.publicKey = createDelegateTx.senderPublicKey;
-  delegate.address = arkjs.crypto.getAddress(createDelegateTx.senderPublicKey);
-
-  votes.push("+"+delegate.publicKey)
   transactions.push(createDelegateTx);
 
   delegates.push(delegate);
 }
 
+var total = 0;
 
-var voteTransaction = arkjs.vote.createVote(genesis.passphrase,votes);
-voteTransaction.fee = 0;
-voteTransaction.timestamp = 0;
-voteTransaction.senderId = genesis.address;
-voteTransaction.signature = arkjs.crypto.sign(voteTransaction,arkjs.crypto.getKeys(genesis.passphrase));
-voteTransaction.id = arkjs.crypto.getId(voteTransaction);
+for(var i=0; i < genesisAccounts.length; i++){
+  var account = genesisAccounts[i];
+  total += account.total;
 
-transactions.push(voteTransaction);
+	//send ark to account
+	var premineTx = arkjs.transaction.createTransaction(account.address, account.total, null, premine.passphrase);
 
+	premineTx.fee = 0;
+	premineTx.timestamp = 0;
+	premineTx.senderId = premine.address;
+	premineTx.signature = arkjs.crypto.sign(premineTx,arkjs.crypto.getKeys(premine.passphrase));
+	premineTx.id = arkjs.crypto.getId(premineTx);
+	transactions.push(premineTx);
+
+}
+
+remainingfund.total = totalpremine - total;
+
+var preminefund = arkjs.transaction.createTransaction(genesis.address, remainingfund.total, null, premine.passphrase);
+
+preminefund.fee = 0;
+preminefund.timestamp = 0;
+preminefund.senderId = premine.address;
+preminefund.signature = arkjs.crypto.sign(preminefund,arkjs.crypto.getKeys(premine.passphrase));
+preminefund.id = arkjs.crypto.getId(preminefund);
+transactions.push(preminefund);
 
 var genesisBlock = create({
-  keypair: arkjs.crypto.getKeys(genesis.passphrase),
+  keypair: arkjs.crypto.getKeys(genesis.passphrase, networks[config.network]),
   transactions:transactions,
   timestamp:0
 });
 
+config.nethash = genesisBlock.payloadHash;
+
+// create directory
+if (!fs.existsSync(output_dir)) {
+    fs.mkdirSync(output_dir);
+}
+
+fs.writeFile(output_dir+"/genesisBlock."+config.network+".json",JSON.stringify(genesisBlock, null, 2));
+fs.writeFile(output_dir+"/config."+config.network+".json",JSON.stringify(config, null, 2));
+
+// add delegates passphrases in config for testing on one single node
 for(var i=0;i<51;i++){
 	config.forging.secret.push(delegates[i].passphrase);
 }
+fs.writeFile(private_dir+"/config."+config.network+".autoforging.json", JSON.stringify(config, null, 2));
 
-config.nethash = genesisBlock.payloadHash;
+var forging = [];
+seed_peers.forEach(function(seed){
+    forging.push({secret:[]});
+});
+// split all delegates accross all seed_peers
+for(var i=0;i<51;i++){
+  var seed_index = i % seed_peers.length;
+  forging[seed_index].secret.push(delegates[i].passphrase);
+}
 
+seed_peers.forEach(function(peer,index){
+  config.forging.secret = forging[index];
+  fs.writeFile(private_dir+"/config."+config.network+"."+peer.ip+".json", JSON.stringify(config, null, 2));
+});
 
-fs.writeFile("private/genesisBlock.private.json",JSON.stringify(genesisBlock, null, 2));
-fs.writeFile("private/config.private.json",JSON.stringify(config, null, 2));
-fs.writeFile("private/delegatesPassphrases.private.json", JSON.stringify(delegates, null, 2));
-fs.writeFile("private/genesisPassphrase.private.json", JSON.stringify(genesis, null, 2));
+fs.writeFile(private_dir+"/delegatesPassphrases."+config.network+".json", JSON.stringify(delegates, null, 2));
+fs.writeFile(private_dir+"/genesisPassphrase."+config.network+".json", JSON.stringify(genesis, null, 2));

@@ -1,10 +1,7 @@
-# Ark
-
+![ARK-NODE](https://i.imgur.com/ej8GvMn.png)
 Ark is a next generation crypto-currency and decentralized application platform, written entirely in JavaScript. For more information please refer to our website: https://ark.io/.
 
-The Token Exchange Campaign is up at https://tec.ark.io
-
-This version is still alpha, use at your own risks
+This version is still beta, use at your own risks
 
 ## Install, Upgrade etc...
 You need to provision a linux (ubuntu tested) server (digital ocean, vultur or other).
@@ -16,7 +13,14 @@ wget https://ark.io/ARKcommander.sh
 bash ARKcommander.sh
 ```
 
-For developers, please read below in section "Developer Installation"
+For developers, please read the "Developer Installation" section below.  
+
+or Alternatively run
+```
+cd
+wget https://ark.io/DARKcommander.sh
+bash DARKcommander.sh
+```
 
 ## Details
 
@@ -49,6 +53,35 @@ This is a fork from Lisk with the following features:
 
 ## Developer Installation
 
+### Vagrant
+
+[Vagrant](https://www.vagrantup.com/) is a virtual development environment manager backed by a provider like [VirtualBox](https://www.virtualbox.org/wiki/Downloads).
+
+To start the Vagrant environment:
+
+```
+vagrant up
+```
+
+All dependency installation and configuration for the dev environment is in the `VagrantFile`. After installation, ark-node will automatically start and log all output to the console.
+
+To log into the Vagrant environment:
+
+```
+vagrant ssh
+```
+
+To destroy and revert to the original state:
+
+```
+vagrant destroy
+vagrant up
+```
+
+There will be a drive shared with the host machine inside the VM, mounted at `/vagrant`.
+
+### Non-Vagrant
+
 Install essentials:
 
 ```
@@ -59,15 +92,14 @@ sudo apt-get install -y curl build-essential python git
 Install PostgreSQL (min version: 9.5.2)
 
 ```
-sudo apt-get install -y postgresql postgresql-contrib
+sudo apt-get install -y postgresql postgresql-contrib libpq-dev
 sudo -u postgres createuser --createdb --password $USER
-createdb ark_test
 ```
 
 Install Node.js (tested with version 6.9.2, but any recent LTS release should do):
 
 ```
-sudo apt-get install -y nodejs
+sudo apt-get install -y nodejs npm
 sudo npm install -g n
 sudo n 6.9.2
 ```
@@ -80,7 +112,7 @@ sudo npm install grunt-cli -g
 
 Clone this repository
 ```
-git clone https://github.com/arkecosytem/ark-node.git
+git clone https://github.com/arkecosystem/ark-node.git
 cd ark-node
 ```
 
@@ -94,19 +126,19 @@ npm install
 To launch Ark on testnet:
 ```
 createdb ark_testnet
-node run start:testnet
+npm run start:testnet
 ```
 
 To launch Ark on devtnet:
 ```
 createdb ark_devnet
-node run start:devnet
+npm run start:devnet
 ```
 
 To launch Ark on mainnet (when launched):
 ```
 createdb ark_mainnet
-node run start:mainnet
+npm run start:mainnet
 ```
 
 **NOTE:** The **port**, **address**, **genesis block** and **config-path** can be overridden by providing the relevant command switch:
@@ -121,11 +153,16 @@ Generate a genesisBlock.json + a default config.json containing all passphrases 
 ```
 node tasks/createGenesisBlock.js
 ```
-You can find generated files in tasks/
-- genesisBlock.json
-- config.json
-- delegatesPassphrases.json (containing details about the genesis delegates)
-- genesisPassphrase.json (containing the details of account having all premined arks)
+
+Be sure to configure this file for your needs
+
+- a genesisBlock.json containing the genesis block
+- a config.json containing configuration to start relay nodes
+- an autoforging config.json containing configuration to start all delegates on a single node (for testing purpose)
+- a bunch of config files to distribute to different configured delegate nodes starting the network.
+- a delegatesPassphrases.json containing details about the genesis delegates
+- a genesisPassphrase.json containing the details of delegates that will launch your network
+
 
 Obviously you can hack away tasks/createGenesisBlock.js for your own custom use.
 
@@ -170,6 +207,9 @@ npm test -- test/api/transactions.js
 peace vanish bleak box tuna woman rally manage undo royal lucky since
 ```
 
+## Security
+
+If you discover a security vulnerability within this application, please send an e-mail to security@ark.io. All security vulnerabilities will be promptly addressed.
 
 ## Authors
 - FX Thoorens <fx.thoorens@ark.io>
@@ -182,7 +222,7 @@ peace vanish bleak box tuna woman rally manage undo royal lucky since
 
 The MIT License (MIT)
 
-Copyright (c) 2016 Ark
+Copyright (c) 2016-2017 Ark
 Copyright (c) 2016 Lisk
 Copyright (c) 2014-2015 Crypti
 
