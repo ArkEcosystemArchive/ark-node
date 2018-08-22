@@ -84,6 +84,12 @@ function schema(network){
     }
   });
 
+  this.z_schema.registerFormat('voteString', function (str) {
+    //Excluding capital hex characters
+    //(mainnet database could contain mixed case vote strings?)
+    return /^[-+]0[23][0-9a-fA-F]{64}$/.test(str);
+  });
+
   this.z_schema.registerFormat('queryList', function (obj) {
     obj.limit = 100;
     return true;
