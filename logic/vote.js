@@ -210,10 +210,6 @@ Vote.prototype.schema = {
 	properties: {
 		votes: {
 			type: 'array',
-			items: {
-				type: 'string',
-				format: 'voteString',
-			},
 			minLength: 1,
 			maxLength: constants.maximumVotes,
 			uniqueItems: true
