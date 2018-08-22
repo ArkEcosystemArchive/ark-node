@@ -17,7 +17,7 @@ function Account (scope, cb) {
 
 	self = this;
 	db = this.scope.db;
-	library = this.scope.library;
+	library = this.scope;
 	genesisBlock = this.scope.genesisblock.block;
 
 	this.table = 'mem_accounts';
