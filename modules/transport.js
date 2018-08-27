@@ -32,7 +32,7 @@ function Transport (cb, scope) {
 			var transactions = Object.keys(__private.broadcastTransactions).splice(0, maxspliced).map(tx => {
 				var thistx = __private.broadcastTransactions[tx];
 				delete __private.broadcastTransactions[tx];
-				return thisTx;
+				return thistx;
 			});
 			self.broadcast({limit: 20}, {api: '/transactions', data: {transactions: transactions}, method: 'POST'});
 		}
