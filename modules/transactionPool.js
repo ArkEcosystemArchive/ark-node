@@ -360,7 +360,6 @@ TransactionPool.prototype.receiveTransactions = function (transactions, cb) {
 			__private.processVerifyTransaction(transaction, function (err) {
 				if (!err) {
 					__private.mempool[transaction.id]=transaction;
-					library.logger.info("tx added to mempool", transaction.id);
 					return self.queueTransaction(transaction, eachSeriesCb);
 				} else {
 					// delete all invalid txs after 1 min

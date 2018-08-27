@@ -18,7 +18,7 @@ var modules, library, self, __private = {}, shared = {};
 
 __private.headers = {};
 __private.messages = {};
-__private.broadcastTransactions = [];
+__private.broadcastTransactions = {};
 
 // Constructor
 function Transport (cb, scope) {
@@ -27,9 +27,13 @@ function Transport (cb, scope) {
 
 	setInterval(function(){
 		var maxspliced = 10;
-		if(maxspliced > __private.broadcastTransactions.length) maxspliced = __private.broadcastTransactions.length;
+		if(maxspliced > Object.keys(__private.broadcastTransactions).length) maxspliced = Object.keys(__private.broadcastTransactions).length;
 		if(maxspliced > 0){
-			var transactions = __private.broadcastTransactions.splice(0, maxspliced);
+			var transactions = Object.keys(__private.broadcastTransactions).splice(0, maxspliced).map(tx => {
+				var thistx = __private.broadcastTransactions[tx];
+				delete __private.broadcastTransactions[tx];
+				return thisTx;
+			});
 			self.broadcast({limit: 20}, {api: '/transactions', data: {transactions: transactions}, method: 'POST'});
 		}
 	}, 3000);
@@ -507,7 +511,7 @@ Transport.prototype.onBroadcastTransaction = function (transaction) {
 	delete transaction.verified;
 	delete transaction.processed;
 
-	__private.broadcastTransactions.push(transaction);
+	__private.broadcastTransactions[transaction.id] = transaction;
 };
 
 //
