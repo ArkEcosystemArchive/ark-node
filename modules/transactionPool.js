@@ -30,7 +30,7 @@ function TransactionPool (cb, scope) {
 	if(!__private.mempoolConfig){
 		__private.mempoolConfig = {
 			intervalInSeconds: 3600*1000, // every hours
-			maximumAgeInMinutes: 72*3600  // 72 hours
+			maximumAgeInMinutes: 72*60  // 72 hours
 		}
 	}
 	else{
@@ -38,7 +38,7 @@ function TransactionPool (cb, scope) {
 			__private.mempoolConfig.intervalInSeconds=intervalInSeconds=3600*1000;
 		}
 		if(!__private.mempoolConfig.maximumAgeInMinutes){
-			__private.mempoolConfig.maximumAgeInMinutes=72*3600;
+			__private.mempoolConfig.maximumAgeInMinutes=72*60;
 		}
 	}
 
