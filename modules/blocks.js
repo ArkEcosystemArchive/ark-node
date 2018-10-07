@@ -1045,9 +1045,7 @@ Blocks.prototype.verifyBlock = function (block, checkPreviousBlock) {
 	for (var i in transactions) {
 		var transaction = transactions[i];
 
-		if(!transaction.id){
-			transaction.id = library.logic.transaction.getId(transaction);
-		}
+		transaction.id = library.logic.transaction.getId(transaction);
 
 		var bytes;
 
@@ -1068,7 +1066,7 @@ Blocks.prototype.verifyBlock = function (block, checkPreviousBlock) {
 			result.errors.push('Encountered duplicate transaction: ' + transaction.id);
 		}
 
-		appliedTransactions[transaction.id] = transaction;
+		appliedTransactions[transaction.id] = modules.transactionPool.getTransactionFromMempool(transaction.id);
 
 		payloadHash.update(bytes);
 
