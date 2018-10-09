@@ -6,6 +6,7 @@
   "logFileName": "logs/ark.log",
   "consoleLogLevel": "info",
   "trustProxy": false,
+  "minimumVersion": "1.2.0",
   "db": {
     "host": "localhost",
     "port": 5432,

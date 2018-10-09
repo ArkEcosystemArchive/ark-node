@@ -42,7 +42,9 @@ function Peers (cb, scope) {
 
 // Return a Peer object, trying to sort out with lite clients
 // By default one Peer by IP is accepted.
-Peers.prototype.accept = function(peer){
+Peers.prototype.accept = function(peer, noAccept){
+	if (noAccept)
+		return new Peer(peer.ip, peer.port, peer.version, peer.os);
 	var candidate;
 	if(__private.peers[peer.ip]){
 		 candidate = __private.peers[peer.ip];
@@ -128,8 +130,12 @@ __private.updatePeersList = function (cb) {
 							method: 'GET'
 						}, function (err, res) {
 							if (res.body && res.body.height) {
-								library.logger.debug("Adding peer", peer.ip);
-								self.accept(peer);
+								if(peer.version >= library.config.minimumVersion) {
+									library.logger.debug("Adding peer", peer.ip);
+									self.accept(peer);
+								} else {
+									library.logger.error("Peer version below minimum - " + peer.ip + ": " + peer.version);
+								}
 								return eachCb();
 							} else {
 								library.logger.error(['Rejecting invalid peer:', peer.ip, e.path, e.message].join(' '));
