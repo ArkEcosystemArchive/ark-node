@@ -477,18 +477,18 @@ __private.timestampState = function (lastReceipt) {
 	var timeNow = new Date().getTime();
 	__private.lastReceipt.secondsAgo = Math.floor((timeNow -  __private.lastReceipt.date.getTime()) / 1000);
 	if(modules.delegates.isActiveDelegate()){
-		__private.lastReceipt.stale = __private.lastReceipt.secondsAgo > 10;
-		__private.lastReceipt.rebuild = __private.lastReceipt.secondsAgo > 60;
+		__private.lastReceipt.stale = __private.lastReceipt.secondsAgo > 60;
+		__private.lastReceipt.rebuild = __private.lastReceipt.secondsAgo > 300;
 	}
 
 	else if(modules.delegates.isForging()){
-		__private.lastReceipt.stale = __private.lastReceipt.secondsAgo > 30;
-		__private.lastReceipt.rebuild = __private.lastReceipt.secondsAgo > 100;
+		__private.lastReceipt.stale = __private.lastReceipt.secondsAgo > 60;
+		__private.lastReceipt.rebuild = __private.lastReceipt.secondsAgo > 300;
 	}
 
 	else {
-		__private.lastReceipt.stale = __private.lastReceipt.secondsAgo > 60;
-		__private.lastReceipt.rebuild = __private.lastReceipt.secondsAgo > 200;
+		__private.lastReceipt.stale = __private.lastReceipt.secondsAgo > 300;
+		__private.lastReceipt.rebuild = __private.lastReceipt.secondsAgo > 500;
 	}
 
 	if(__private.lastBlock.height < 52){
