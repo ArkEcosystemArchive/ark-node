@@ -134,7 +134,7 @@ __private.updatePeersList = function (cb) {
 									library.logger.debug("Adding peer", peer.ip);
 									self.accept(peer);
 								} else {
-									library.logger.error("Peer version below minimum - " + peer.ip + ": " + peer.version);
+									library.logger.debug("Peer version below minimum - " + peer.ip + ": " + peer.version);
 								}
 								return eachCb();
 							} else {

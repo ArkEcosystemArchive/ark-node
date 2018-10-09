@@ -83,7 +83,7 @@ __private.attachApi = function () {
 			if (req.peer.version >= library.config.minimumVersion) {
                 modules.peers.accept(req.peer);
             } else {
-                library.logger.error("Peer version below minimum - " + req.peer.ip + ": " + req.peer.version);
+                library.logger.debug("Peer version below minimum - " + req.peer.ip + ": " + req.peer.version);
             }
 
 			return next();
@@ -203,7 +203,7 @@ __private.attachApi = function () {
 		if (req.peer.version >= library.config.minimumVersion) {
 			modules.peers.accept(req.peer);
 		} else {
-			library.logger.error("Peer version below minimum - " + req.peer.ip + ": " + req.peer.version);
+			library.logger.debug("Peer version below minimum - " + req.peer.ip + ": " + req.peer.version);
 		}
 
 
