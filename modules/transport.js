@@ -449,10 +449,10 @@ Transport.prototype.requestFromRandomPeer = function (config, options, cb) {
 //
 Transport.prototype.requestFromPeer = function (peer, options, cb) {
 	var url;
-	if (req.peer.version >= library.config.minimumVersion) {
-		peer = modules.peers.accept(req.peer);
+	if (peer.version >= library.config.minimumVersion) {
+		peer = modules.peers.accept(peer);
 	} else {
-		peer = modules.peers.accept(req.peer, true);
+		peer = modules.peers.accept(peer, true);
 	}
 	library.logger.trace("requestFromPeer", peer.toObject());
 
