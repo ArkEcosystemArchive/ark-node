@@ -1301,7 +1301,7 @@ Blocks.prototype.processBlock = function (block, cb) {
 								}
 								// Get account from database if any (otherwise cold wallet).
 								// DATABASE: read only
-								modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, cb);
+								modules.accounts.getAccount({publicKey: transaction.senderPublicKey}, waterfallCb);
 							}).catch(function (err) {
 								library.logger.error("stack", err.stack);
 								return waterfallCb('Blocks#processBlock error');
