@@ -42,7 +42,7 @@ function Peers (cb, scope) {
 
 // Return a Peer object, trying to sort out with lite clients
 // By default one Peer by IP is accepted.
-Peers.prototype.accept = function(peer){
+Peers.prototype.accept = function(peer, noAccept){
 	if (noAccept)
 		return new Peer(peer.ip, peer.port, peer.version, peer.os);
 	var candidate;
