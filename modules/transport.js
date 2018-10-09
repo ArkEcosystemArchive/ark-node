@@ -79,8 +79,12 @@ __private.attachApi = function () {
 
 			req.peer.os = headers.os;
 			req.peer.version = headers.version;
-
-			modules.peers.accept(req.peer);
+			
+			if (req.peer.version >= library.config.minimumVersion) {
+                modules.peers.accept(req.peer);
+            } else {
+                library.logger.error("Peer version below minimum - " + req.peer.ip + ": " + req.peer.version);
+            }
 
 			return next();
 		});
@@ -195,8 +199,12 @@ __private.attachApi = function () {
 
 			return res.status(200).json({success: false, error: e.toString()});
 		}
-
-		modules.peers.accept(req.peer);
+		
+		if (req.peer.version >= library.config.minimumVersion) {
+			modules.peers.accept(req.peer);
+		} else {
+			library.logger.error("Peer version below minimum - " + req.peer.ip + ": " + req.peer.version);
+		}
 
 
 		library.bus.message('blockReceived', block, req.peer, function(error, data){
@@ -441,7 +449,11 @@ Transport.prototype.requestFromRandomPeer = function (config, options, cb) {
 //
 Transport.prototype.requestFromPeer = function (peer, options, cb) {
 	var url;
-	peer = modules.peers.accept(peer);
+	if (req.peer.version >= library.config.minimumVersion) {
+		peer = modules.peers.accept(req.peer);
+	} else {
+		peer = modules.peers.accept(req.peer, true);
+	}
 	library.logger.trace("requestFromPeer", peer.toObject());
 
 	if (options.api) {
