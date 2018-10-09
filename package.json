@@ -24,7 +24,7 @@
     "commander": "=2.9.0",
     "compression": "=1.6.2",
     "cors": "=2.8.1",
-    "ejs": "=2.5.2",
+    "ejs": "=2.5.5",
     "express": "=4.14.0",
     "express-domain-middleware": "=0.1.0",
     "express-query-int": "=1.0.1",
@@ -34,7 +34,7 @@
     "json-schema": "=0.2.3",
     "json-sql": "LiskHQ/json-sql#27e1ed1",
     "lodash": "=4.17.5",
-    "method-override": "=2.3.6",
+    "method-override": "=2.3.10",
     "pg-monitor": "=0.5.11",
     "pg-native": "=1.10.0",
     "pg-promise": "=5.3.3",
@@ -70,7 +70,7 @@
     "jsdox": "=0.4.10",
     "jshint": "=2.9.3",
     "mocha": "=3.1.0",
-    "moment": "=2.15.1",
+    "moment": "=2.22.2",
     "supertest": "=2.0.0"
   },
   "config": {
