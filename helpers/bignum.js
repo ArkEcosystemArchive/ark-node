@@ -30,7 +30,7 @@ var MAX = 1E9,                   // 0 to 1e+9
 	MAX_POWER = 1E6,               // 1 to 1e+6
 
 	// The maximum number of decimal places for operations involving division.
-	DECIMAL_PLACES = 20,           // 0 to MAX
+	DECIMAL_PLACES = 0,           // 0 to MAX
 
 	/*
 	 * The rounding mode used when rounding to the above decimal places, and when
@@ -51,11 +51,11 @@ var MAX = 1E9,                   // 0 to 1e+9
 
 	// The exponent value at and beneath which toString returns exponential notation.
 	// Number type: -7
-	TO_EXP_NEG = -7,                // 0 to -MAX
+	TO_EXP_NEG = -MAX,                // 0 to -MAX
 
 	// The exponent value at and above which toString returns exponential notation.
 	// Number type: 21
-	TO_EXP_POS = 21,                // 0 to MAX
+	TO_EXP_POS = MAX,                // 0 to MAX
 
 	// RANGE : [MIN_EXP, MAX_EXP]
 
