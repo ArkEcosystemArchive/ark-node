@@ -706,7 +706,7 @@ Transaction.prototype.apply = function (trs, block, sender, cb) {
 		return cb(senderBalance.error);
 	}
 
-	amount = amount.toNumber();
+	amount = parseInt(amount.toFixed(), 10);
 
 	this.scope.account.merge(sender.address, {
 		balance: -amount,
@@ -739,7 +739,7 @@ Transaction.prototype.apply = function (trs, block, sender, cb) {
 //
 Transaction.prototype.undo = function (trs, block, sender, cb) {
 	var amount = bignum(trs.amount.toString());
-	    amount = amount.plus(trs.fee.toString()).toNumber();
+	    amount = parseInt(amount.plus(trs.fee.toString()).toFixed(), 10);
 
 	this.scope.account.merge(sender.address, {
 		balance: amount,
@@ -783,7 +783,7 @@ Transaction.prototype.applyUnconfirmed = function (trs, sender, requester, cb) {
 		return cb(senderBalance.error);
 	}
 
-	amount = amount.toNumber();
+	amount = parseInt(amount.toFixed(), 10);
 
 	this.scope.account.merge(sender.address, {u_balance: -amount}, function (err, sender) {
 		if (err) {
@@ -808,7 +808,7 @@ Transaction.prototype.applyUnconfirmed = function (trs, sender, requester, cb) {
 //
 Transaction.prototype.undoUnconfirmed = function (trs, sender, cb) {
 	var amount = bignum(trs.amount.toString());
-	    amount = amount.plus(trs.fee.toString()).toNumber();
+	    amount = parseInt(amount.plus(trs.fee.toString()).toFixed(), 10);
 
 	this.scope.account.merge(sender.address, {u_balance: amount}, function (err, sender) {
 		if (err) {
