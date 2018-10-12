@@ -12,6 +12,7 @@ var slots = require('../helpers/slots.js');
 var schema = require('../schema/transport.js');
 var sql = require('../sql/transport.js');
 var zlib = require('zlib');
+var semver = require('semver');
 
 // Private fields
 var modules, library, self, __private = {}, shared = {};
@@ -79,8 +80,8 @@ __private.attachApi = function () {
 
 			req.peer.os = headers.os;
 			req.peer.version = headers.version;
-			
-			if (req.peer.version >= library.config.minimumVersion) {
+
+            if(semver.satisfies(req.peer.version, library.config.minimumVersion)) {
                 modules.peers.accept(req.peer);
             } else {
                 library.logger.debug("Peer version below minimum - " + req.peer.ip + ": " + req.peer.version);
@@ -199,8 +200,8 @@ __private.attachApi = function () {
 
 			return res.status(200).json({success: false, error: e.toString()});
 		}
-		
-		if (req.peer.version >= library.config.minimumVersion) {
+
+		if(semver.satisfies(req.peer.version, library.config.minimumVersion)) {
 			modules.peers.accept(req.peer);
 		} else {
 			library.logger.debug("Peer version below minimum - " + req.peer.ip + ": " + req.peer.version);
@@ -449,7 +450,7 @@ Transport.prototype.requestFromRandomPeer = function (config, options, cb) {
 //
 Transport.prototype.requestFromPeer = function (peer, options, cb) {
 	var url;
-	if (peer.version >= library.config.minimumVersion) {
+    if(semver.satisfies(peer.version, library.config.minimumVersion)) {
 		peer = modules.peers.accept(peer);
 	} else {
 		peer = modules.peers.accept(peer, true);

@@ -9,6 +9,7 @@ var path = require('path');
 var Router = require('../helpers/router.js');
 var Peer = require('../logic/peer.js');
 var schema = require('../schema/peers.js');
+var semver = require('semver');
 
 // Private fields
 var modules, library, self, shared = {};
@@ -130,7 +131,7 @@ __private.updatePeersList = function (cb) {
 							method: 'GET'
 						}, function (err, res) {
 							if (res.body && res.body.height) {
-								if(peer.version >= library.config.minimumVersion) {
+								if(semver.satisfies(peer.version, library.config.minimumVersion)) {
 									library.logger.debug("Adding peer", peer.ip);
 									self.accept(peer);
 								} else {
