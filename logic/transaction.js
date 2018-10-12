@@ -398,6 +398,11 @@ Transaction.prototype.verify = function (trs, sender, requester, cb) {
 		cb = requester;
 	}
 
+    // Skip validation for exceptions
+    if (exceptions.blocks.indexOf(trs.blockId) !== -1) {
+        return self.checkConfirmed(trs, cb);
+    }
+
 	// Get transaction id
 	var txId;
 
