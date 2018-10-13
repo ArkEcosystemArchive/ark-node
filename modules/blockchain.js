@@ -340,6 +340,7 @@ Blockchain.prototype.onBlockRemoved = function(block) {
 Blockchain.prototype.onBlockReceived = function(block, peer) {
 	if(self.isPresent(block)){
 		library.logger.debug("Block already received", {id: block.id, height:block.height, peer:peer.string});
+		block.ready = false;
 		return;
 	}
 
