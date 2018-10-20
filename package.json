@@ -41,6 +41,7 @@
     "popsicle": "=8.2.0",
     "pug": "^2.0.0-beta11",
     "randomstring": "=1.1.5",
+    "request-ip": "^2.1.1",
     "rimraf": "=2.5.4",
     "socket.io": "=1.4.8",
     "strftime": "=0.9.2",

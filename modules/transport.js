@@ -12,6 +12,7 @@ var slots = require('../helpers/slots.js');
 var schema = require('../schema/transport.js');
 var sql = require('../sql/transport.js');
 var zlib = require('zlib');
+var requestIp = require('request-ip');
 
 // Private fields
 var modules, library, self, __private = {}, shared = {};
@@ -54,7 +55,7 @@ __private.attachApi = function () {
 		try {
 			req.peer = modules.peers.inspect(
 				{
-					ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
+					ip: requestIp.getClientIp(req),
 					port: req.headers.port
 				}
 			);
@@ -79,7 +80,7 @@ __private.attachApi = function () {
 
 			req.peer.os = headers.os;
 			req.peer.version = headers.version;
-			
+
 			if (req.peer.version >= library.config.minimumVersion) {
                 modules.peers.accept(req.peer);
             } else {
@@ -199,7 +200,7 @@ __private.attachApi = function () {
 
 			return res.status(200).json({success: false, error: e.toString()});
 		}
-		
+
 		if (req.peer.version >= library.config.minimumVersion) {
 			modules.peers.accept(req.peer);
 		} else {
