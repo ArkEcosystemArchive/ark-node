@@ -15,6 +15,7 @@ var slots = require('../helpers/slots.js');
 var sql = require('../sql/delegates.js');
 var transactionTypes = require('../helpers/transactionTypes.js');
 var crypto = require('crypto')
+var requestIp = require('request-ip');
 
 // Private fields
 var modules, library, self, __private = {}, shared = {};
@@ -95,7 +96,7 @@ __private.attachApi = function () {
 					return res.json({success: false, error: err[0].message});
 				}
 
-				var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+				var ip = requestIp.getClientIp(req);
 
 				if (!checkIpInList(library.config.forging.access.whiteList, ip)) {
 					return res.json({success: false, error: 'Access denied'});
@@ -134,7 +135,7 @@ __private.attachApi = function () {
 					return res.json({success: false, error: err[0].message});
 				}
 
-				var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+				var ip = requestIp.getClientIp(req);
 
 				if (!checkIpInList(library.config.forging.access.whiteList, ip)) {
 					return res.json({success: false, error: 'Access denied'});

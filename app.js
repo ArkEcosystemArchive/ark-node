@@ -19,6 +19,7 @@ var z_schema = require('./helpers/z_schema.js');
 var colors = require('colors');
 var vorpal = require('vorpal')();
 var spawn = require('child_process').spawn;
+var requestIp = require('request-ip');
 
 process.stdin.resume();
 
@@ -301,7 +302,7 @@ d.run(function () {
 
 			scope.network.app.use(function (req, res, next) {
 				var parts = req.url.split('/');
-				var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+				var ip = requestIp.getClientIp(req);
 
 				// Log client connections
 				logger.trace(req.method + ' ' + req.url + ' from ' + ip + ":" + req.headers.port);
