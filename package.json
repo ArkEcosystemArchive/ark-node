@@ -15,7 +15,7 @@
   "author": "Boris Povod <boris@crypti.me>, Pavel Nekrasov <landgraf.paul@gmail.com>, Oliver Beddows <oliver@lisk.io>, FX Thoorens <fx.thoorens@ark.io>",
   "dependencies": {
     "arkjs": "github:arkecosystem/ark-js#mainnet",
-    "async": "=2.0.1",
+    "async": "=2.1.6",
     "bip39": "^2.2.0",
     "body-parser": "^1.18.3",
     "bytebuffer": "=5.0.1",
