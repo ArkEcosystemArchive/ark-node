@@ -1,5 +1,7 @@
 # Ark
 
+**:warning: DEPRECATED IN FAVOR OF https://github.com/ArkEcosystem/core :warning:***
+
 Ark is a next generation crypto-currency and decentralized application platform, written entirely in JavaScript. For more information please refer to our website: https://ark.io/.
 
 The Token Exchange Campaign is up at https://tec.ark.io
